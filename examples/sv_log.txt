@@ -1,0 +1,3 @@
+[SSH agent killed]
+[Remote-controlled dialog window]
+[Exiting server]

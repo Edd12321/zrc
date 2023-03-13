@@ -1,0 +1,39 @@
+#!/usr/bin/env zrc
+echo "Welcome to Zrc!";
+echo "The time is: $(date)";
+#echo "Disk usage:";
+#df -h;
+
+# Prompt variables
+set HOSTNAME = $(hostname | tr -d '\n');
+set USER     = $(whoami   | tr -d '\n');
+
+set RBOLD = $(/bin/echo -ne {\e[1;31m});
+set GREEN = $(/bin/echo -ne {\e[0;32m});
+set RESET = $(/bin/echo -ne {\e[0m});
+
+fn __git_ps1 {
+	git tag >(2=);
+	if {$E:? == 0} {
+		echo -n '(';
+		git branch | grep {^*} | colrm 1 2 | tr -d '\n';
+		echo -n ')';
+	}
+}
+
+fn __status_ps1 {
+	if {[string length $status] && [string cmp $status "0"]} {
+		echo -n [string cat $RBOLD "($status)" $RESET];
+	}
+}
+
+set PS1 = {[string cat [set status = $E:?;return ""]$GREEN $USER $RESET\@$HOSTNAME]\
+           [string cat $GREEN $(pwd | sed 's|^$E:HOME|~|' | tr -d '\n')]\
+           [string cat $RESET $(__git_ps1) $(__status_ps1)% '\ ']}
+
+
+# Aliases
+fn mkcd {
+	mkdir @argv(1);
+	cd @argv(1);
+}
