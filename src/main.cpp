@@ -279,6 +279,13 @@ eval_stream(std::istream& in)
 					args[k++] = strdup(str.c_str());
 			}
 
+			else if (!k && aliases.find(toks.wl[i]) != aliases.end()) {
+				for (std::string& str : aliases[toks.wl[i]].wl) {
+					str_subst(str);
+					args[k++] = strdup(str.c_str());
+				}
+			}
+
 			// Pipeline operators
 			else if (toks.wl[i] == "<" ) io_left (toks.wl[++i]      );
 			else if (toks.wl[i] == ">" ) io_right(toks.wl[++i], 0, 1);
@@ -300,11 +307,11 @@ eval_stream(std::istream& in)
 				fd_parse(toks, i);
 				continue;
 			}
-			// Filename globbing
 			else if (!toks.is_bare(i)) {
-					str_subst(toks.wl[i]);
-					args[k++] = strdup(toks.wl[i].c_str());
+				str_subst(toks.wl[i]);
+				args[k++] = strdup(toks.wl[i].c_str());
 			} else {
+				// Glob
 				WordList glob_vec = glob(toks.wl[i]);
 				for (j = 0, len = glob_vec.size(); j < len; ++j)
 					args[k++] = strdup(glob_vec.wl[j].c_str());

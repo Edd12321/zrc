@@ -33,7 +33,33 @@ set PS1 = {[string cat [set status = $E:?;return ""]$GREEN $USER $RESET\@$HOSTNA
 
 
 # Aliases
-fn mkcd {
-	mkdir @argv(1);
-	cd @argv(1);
+alias l      "ls -hF --color"
+alias la     "ls -all"
+alias l.     "eval ls -d .*"
+alias c      "clear"
+alias ..     "cd .."
+alias ...    "cd ../.."
+alias ....   "cd ../../.."
+alias .....  "cd ../../../.."
+alias sha1   "openssl sha1"
+alias ports  "netstat -tulanp"
+alias mkdir  "mkdir -pv"
+alias pacman "\$E:AUTH pacman"
+alias calc   "bc -l"
+alias emacs  "emacs -nw"
+fn mkcd { mkdir @argv(1); cd @argv(1); }
+
+# Default programs
+set E:AUTH     = "doas";
+set E:EDITOR   = "emacs";
+set E:VISUAL   = "emacs";
+set E:TERMINAL = "xfce4-terminal -e";
+set E:MANPAGER = "most";
+set E:AS       = "fasm";
+set E:CXX      = "g++";
+set E:CC       = "gcc";
+set E:BROWSER  = "firefox";
+
+if {[string cmp $E:TERM "linux"]} {
+	set E:TERM = "xterm-256color";
 }

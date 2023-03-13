@@ -21,9 +21,11 @@
 
 typedef std::string FunctionName;
 typedef std::string CodeBlock;
+typedef std::string AliasName;
 #define DispatchTable std::map
 
 DispatchTable<FunctionName, CodeBlock> funcs;
+DispatchTable<AliasName, WordList> aliases;
 
 /** Closes the Zrc session **/
 Command(exit)   { exit(EXIT_SUCCESS); }
@@ -311,11 +313,39 @@ Command(chr) {
 }
 Command(ord) { return std::to_string((int)argv[1][0]); }
 
+Command(alias) {
+	if (argc == 3) {
+		std::ifstream fin("/dev/null");
+		aliases[argv[1]] = tokenize(argv[2], fin);
+		std::for_each(aliases[argv[1]].wl.begin(), aliases[argv[1]].wl.end(), &str_subst);
+		fin.close();
+	} else if (argc == 1) {
+		for (auto const& it : aliases) {
+			std::cout << "alias " << it.first << " {";
+			for (auto const& s : it.second.wl)
+				std::cout << ' ' << s;
+			std::cout << " }" << std::endl;
+		}
+	} else {
+		syntax_error("[<name> <alias>]");
+	}
+	NoReturn;
+}
+
+Command(unalias) {
+	if (argc != 2)
+		syntax_error("<name>");
+	if (aliases.find(argv[1]) == aliases.end())
+		syntax_error("Alias not found");
+	aliases.erase(argv[1]);
+	NoReturn;
+}
+
 DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
-	de(exit),  de(return), de(fn),      de(nf),   de(jobs),   de(wait), de(cd),
-	de(die),   de(fork),   de(echo),    de(expr), de(eval),   de(if),   de(unless),
-	de(while), de(for),    de(foreach), de(do),   de(switch), de(set),  de(inc),
-	de(array), de(string), de(read),    de(chr),  de(ord),
+	de(exit),  de(return), de(fn),      de(nf),   de(jobs),   de(wait),  de(cd),
+	de(die),   de(fork),   de(echo),    de(expr), de(eval),   de(if),    de(unless),
+	de(while), de(for),    de(foreach), de(do),   de(switch), de(set),   de(inc),
+	de(array), de(string), de(read),    de(chr),  de(ord),    de(alias), de(unalias)
 };
 
 

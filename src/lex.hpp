@@ -66,7 +66,6 @@ tokenize(std::string line, std::istream& in)
 
 	for (i = len2 = 0; i < len; ++i) {
 		switch(line[i]) {
-		
 		// Brace quoting
 		case '[':
 		case '{':
@@ -127,6 +126,8 @@ tokenize(std::string line, std::istream& in)
 			if (strchr("$@\\", line[i]))
 				wl.make_not_bare();
 			tmp += line[i];
+			if (line[i] == '\\')
+				tmp += line[++i];
 		}
 	}
 	wl.add_token(tmp);

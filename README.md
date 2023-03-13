@@ -10,6 +10,7 @@ Zrc is almost half of 1mb in size because its implementation is to the point and
 
 - [ ] Standard library soon?
 - [X] Home directory config file (`~/.zrc`)
+- [X] Aliases
 - [X] **Rich return values** (not just 0-255, but any string)
 - [X] Procedures/functions
 	- [X] Function arguments
