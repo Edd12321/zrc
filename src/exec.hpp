@@ -74,7 +74,7 @@ exec(int argc, char *argv[])
 					Jid index = addjob(pid, FG, argc, argv);
 					waitpid(pid, &cs, 0);
 					ret_val = itoa(WEXITSTATUS(cs));
-					setvar("E:!", itoa(pid));
+					setvar("!", itoa(pid));
 					deljob(index);
 				}
 			}
@@ -102,7 +102,7 @@ exec(int argc, char *argv[])
 				// Only show in interactive mode
 				if (TERMINAL)
 					std::cerr << FMT << '\n';
-				setvar("E:!", itoa(pid));
+				setvar("!", itoa(pid));
 			}
 			break;
 		}
@@ -114,7 +114,7 @@ exec(int argc, char *argv[])
 		dup2(baks[i].first, baks[i].second);
 	baks.clear();
 
-	setvar("E:?", ret_val);
+	setvar("?", ret_val);
 	
 	cleanup_memory();
 	for (i = 0; i < argc; ++i)

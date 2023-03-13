@@ -14,7 +14,7 @@ set RESET = $(/bin/echo -ne {\e[0m});
 
 fn __git_ps1 {
 	git tag >(2=);
-	if {$E:? == 0} {
+	if {$? == 0} {
 		echo -n '(';
 		git branch | grep {^*} | colrm 1 2 | tr -d '\n';
 		echo -n ')';
@@ -27,7 +27,7 @@ fn __status_ps1 {
 	}
 }
 
-set PS1 = {[string cat [set status = $E:?;return ""]$GREEN $USER $RESET\@$HOSTNAME]\
+set PS1 = {[string cat [set status = $?;return ""]$GREEN $USER $RESET\@$HOSTNAME]\
            [string cat $GREEN $(pwd | sed 's|^$E:HOME|~|' | tr -d '\n')]\
            [string cat $RESET $(__git_ps1) $(__status_ps1)% '\ ']}
 
