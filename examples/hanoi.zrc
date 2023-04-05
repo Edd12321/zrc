@@ -1,0 +1,19 @@
+#!../bin/zrc
+fn hanoi {
+	let {n from_rod to_rod aux_rod} {
+		set n        = $argv(1) \
+		    from_rod = $argv(2) \
+		    to_rod   = $argv(3) \
+			aux_rod  = $argv(4)
+		if {$n != 0} {
+			hanoi [expr $n-1] $from_rod $aux_rod $to_rod
+			echo "Move disk $n from rod $from_rod to rod $to_rod"
+			hanoi [expr $n-1] $aux_rod $to_rod $from_rod
+		}
+	}
+}
+
+fn main {
+	set N = 3
+	hanoi $N 'A' 'C' 'B'
+}; main

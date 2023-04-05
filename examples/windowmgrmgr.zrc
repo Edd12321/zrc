@@ -1,0 +1,20 @@
+#!/usr/bin/env zrc
+# Personal script
+set WM  = $(echo "awesome\nxfwm4" | dmenu | tr -d '\n')
+set CMD = xfconf-query -c xfce4-panel -np /panels/panel-3/autohide-behavior -t int -s
+
+switch $WM {
+	case "awesome" {
+		killall xfwm4
+		picom & awesome --replace &
+		eval $CMD 2
+	}
+	case "xfwm4" {
+		killall picom
+		killall awesome
+		xfwm4 --replace &
+		eval $CMD 0
+	}
+}
+xfce-panel -r
+return 0

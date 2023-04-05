@@ -1,0 +1,30 @@
+#!../bin/zrc
+
+fn Fibonacci {
+	set first  = $argv(1)
+	set second = $argv(2)
+	set x      = $argv(3)
+	if {$x == 0} {
+		echo $first
+	} else {
+		for {set i = 1} {$i < $x} {inc i} {
+			set t = $second
+			set second = [expr $second+$first]
+			set first = $t
+		}
+		echo $second
+	}
+}
+
+fn main {
+	echo -n "k="
+	set k = $(read line)
+
+	# Fibonacci sequence
+	Fibonacci 0 1 $k;
+
+	# Lucas sequence
+	Fibonacci 2 1 $k;
+}
+
+main;

@@ -1,0 +1,64 @@
+#!../bin/zrc
+
+fn MagicSquare {
+	set n = $argv(1)
+	
+	set i = [expr floor($n/2)]
+	set j = [expr $n-1]
+
+	# Initialize the 2D table
+	reading
+
+	# Put all vals one by one
+	for {set num = 1} {$num <= $n*$n} {} {
+		if {$i == -1 && $j == $n} {
+			set j = [expr $n-2] i = 0
+		} else {
+			if {$j == $n} { set j = 0 }
+			if {$i < 0}   { set i = [expr $n-1] }
+		}
+		if {$squ($i,$j)} {
+			set j = [expr $j-2]
+			inc i
+		} else {
+			set squ($i,$j) = $num
+			inc num
+			inc j
+			inc i -1
+		}
+	}
+
+	# Print the matrix
+	display
+}
+
+fn reading {
+	for {set k1 = 0} {$k1 < $n} {inc k1} {
+		for {set k2 = 0} {$k2 < $n} {inc k2} {
+			set squ($k1,$k2) = 0
+		}
+	}
+}
+
+fn display {
+	for {set k1 = 0} {$k1 < $n} {inc k1} {
+		for {set k2 = 0} {$k2 < $n} {inc k2} {
+			printf "%4d" $squ($k1,$k2)
+		}
+		echo
+	}
+}
+
+fn main {
+	echo -n "val=";
+	set val = $(read str);
+
+	if {$val % 2 == 0} {
+		inc val
+	}
+
+	for {set k = 1} {$k <= $val} {inc k 2} {
+		printf "k=%d:\n" $k
+		MagicSquare $k
+	}
+}; main

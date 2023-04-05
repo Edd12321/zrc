@@ -1,0 +1,13 @@
+#!../bin/zrc
+# 
+# A script I use to use a rubik's cube timer offline
+
+set CSTIMER_PATH = ~/Desktop
+set IP_ADDR      = 0.0.0.0:1234
+
+test -d $CSTIMER_PATH] || mkdir -p $CSTIMER_PATH
+cd $CSTIMER_PATH
+test -d cstimer || git clone https://github.com/cs0x7f/cstimer
+cd cstimer/src
+$E:BROWSER $IP_ADDR &
+php -t . -S $IP_ADDR

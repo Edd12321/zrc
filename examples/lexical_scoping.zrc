@@ -1,0 +1,14 @@
+#!../bin/zrc
+set a = 2 b = 3
+
+let {a b} {
+	set a = 3 b = 4
+	echo "a+b = [expr $a+$b] (lexical scoping block)"
+}
+
+@ {
+	set a = 3 b = 4
+	echo "a+b = [expr $a+$b] (forked subshell)"
+}
+
+echo "a+b = [expr $a+$b] (normal)"

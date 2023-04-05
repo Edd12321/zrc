@@ -1,0 +1,22 @@
+#!../bin/zrc
+# Find files with a certain extension in the current directory.
+# Optionally output a list of the files found to a file.
+
+fn find_files {
+	set k = 0
+	foreach file * {
+		foreach ext ".exe" ".com" ".cmd" ".zrc" {
+			if {[string cmp \
+			"$file\n" $(basename $file $ext)] != 0} {
+				echo "Found file $file with extension $ext\!"
+				inc k
+			}
+		}
+	}
+	
+	if {$k} {
+		echo "$k files found!"
+	} else {
+		echo "No files were found!"
+	}
+}; find_files

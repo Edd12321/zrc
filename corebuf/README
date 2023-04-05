@@ -1,0 +1,5 @@
+CoreBuf
+=======
+This is an (unfinished) implementation of coreutils, in case your system doesn't have it.
+
+You can run `make corebuf` from the Zrc root build directory or `./build.zrc` from the corebuf directory.

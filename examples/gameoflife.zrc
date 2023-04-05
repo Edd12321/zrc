@@ -1,0 +1,76 @@
+#!../bin/zrc
+# Draw CGOL routine
+fn draw {
+	clear
+	for {set i = 0} {$i < $H} {inc i} {
+		set line = ""
+		for {set j = 0} {$j < $W} {inc j} {
+			if {$board($i,$j)} {
+				set line = "$line██"
+			} else {
+				set line = "$line  "
+			}
+		}
+		echo $line
+	}
+}
+
+# Get amount of neighbor cells
+fn neighbor {
+	set count = 0
+	for {set I = [expr $i-1]} {$I <= $i+1} {inc I} {
+		for {set J = [expr $j-1]} {$J <= $j+1} {inc J} {
+			if {$board([expr ($I+$H)%$H],[expr ($J+$W)%$W])} {
+				inc count
+			}
+		}
+	}
+	if {$board($i,$j)} {
+		inc count -1
+	}
+	return $count
+}
+
+# Generate a random unsigned integer
+fn rand {
+	return $(shuf -i 200-6500 -n 1)
+}
+
+# Main routine
+fn main {
+	for {set i = -1} {$i < $H+1} {inc i} {
+		for {set j = -1} {$j < $W+1} {inc j} {
+			set board($i,$j) = 0
+		}
+	}
+	for {set c = 0} {$c < floor(($H*$W)/3)} {inc c} {
+		set s1 = [expr [rand] % $H]
+		set s2 = [expr [rand] % $W]
+		set board($s1,$s2) = 1
+	}
+	
+	while 1 {
+		draw
+		for {set i = 0} {$i < $H} {inc i} {
+			for {set j = 0} {$j < $W} {inc j} {
+				set nb = [neighbor]
+				set alive($i,$j) = [expr ($nb == 3 || ($nb == 2 && $board($i,$j)))]
+				set regen($i,$j) = [expr ($nb == 3 && !$board($i,$j))]
+			}
+		}
+		for {set i = 0} {$i < $H} {inc i} {
+			for {set j = 0} {$j < $W} {inc j} {
+				set board($i,$j) = [expr ($alive($i,$j) || $regen($i,$j))]
+			}
+		}
+	}
+}
+
+if {$argc != 4} {
+	die "usage: gameoflife.zrc <w> <h>"
+} else {
+	set W = $argv(2)
+	set H = $argv(3)
+}
+
+@ main;

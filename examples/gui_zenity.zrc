@@ -1,0 +1,34 @@
+#!../bin/zrc
+if {[which zenity > /dev/null] != 0} { die "Please install zenity." }
+if {[which pandoc > /dev/null] != 0} { die "Please install pandoc." }
+
+zenity --info --text="Welcome! Please choose a document to convert...";
+
+set file_old = $(zenity --file-selection --title="Pick a file...");
+set file_new = $(echo -n $file_old \
+	| cut -f1 -d.              \
+	| tr -d '\n'               \
+);
+
+set format = $(
+	zenity --list --title="Convert to..." --column="Format" --column="Text" \
+		docx "Office DOCX"    \
+		odt "Open Document"   \
+		pdf "PDF"             \
+		latex "LaTeX"         \
+		markdown "Markdown"   \
+		asciidoc "AsciiDoc"   \
+		markdown "Markdown"   \
+		mediawiki "MediaWiki" \
+		context "ConTeXt" | tr -d '\n';
+);	
+
+if {![test -f $file_new.$format]} {
+	if {![zenity --question \
+	             --text="$file_new.$format already exists. Overwrite?"]} {
+		exit;
+	}
+}
+pandoc $file_old -t $format -o $file_new.$format;
+zenity --info --text "File copied!";
+xdg-open $file_new.$format;

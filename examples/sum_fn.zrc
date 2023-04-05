@@ -1,0 +1,14 @@
+#!../bin/zrc
+fn PositiveSum {
+	set x = $argv(1)
+	set y = $argv(2)
+
+	return [expr abs($x+$y)]
+}
+
+fn usage {
+	die "usage: sum_fn.zrc <num1> <num2>"
+}
+
+if {$argc != 4} usage
+echo [PositiveSum $argv(2) $argv(3)]

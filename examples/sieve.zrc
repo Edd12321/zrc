@@ -1,0 +1,40 @@
+#!../bin/zrc
+set E:PATH = /bin/:$E:PATH
+
+fn sieve {
+	set n = $argv(1)
+	set x = [expr sqrt($n)]
+
+	# Assume every number is prime.
+	for {set i = 1} {$i <= $n} {inc i} {
+		set prime($i) = 1
+	}
+
+	# Sieve of Eratosthenes.
+	for {set p = 2} {$p <= $x} {inc p} {
+		if {$prime($p)} {
+			for {set i = [expr $p*$p]} {$i <= $n} {inc i $p} {
+				set prime($i) = 0
+			}
+		}
+	}
+
+	# Display the numbers.
+	for {set p = 2} {$p <= $n} {inc p} {
+		if {$prime($p)} {
+			set ANSI = {\e[0;31m}
+		} elsif {$p == 42} {
+			set ANSI = {\e[0;32m}
+		} else {
+			set ANSI = {\e[0m}
+		}
+		printf "%b%4d" $ANSI $p
+		if {$p % $x == 0} {
+			echo;
+		}
+	}
+}
+
+fn main {
+	sieve 900
+}; main

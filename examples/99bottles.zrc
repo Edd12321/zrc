@@ -1,0 +1,12 @@
+#!../bin/zrc
+set bot = 99
+do {
+	printf "%d bottles of beer on the wall,\n" $bot
+	printf "%d bottles of beer!\n" $bot
+	printf "You take one down, pass it around,\n"
+
+	inc bot -1
+	printf "%d bottles of beer on the wall!\n\n" $bot
+} while {$bot > 1};
+
+die "1 bottle of beer on the wall,\n1 bottle of beer!\nYou take it down, pass it around,\nNo more bottles of beer!\n"

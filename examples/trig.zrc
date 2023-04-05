@@ -1,0 +1,16 @@
+#!../bin/zrc
+set E:PATH = /bin/:$E:PATH
+
+printf "n="
+set n = $(read line)
+
+echo "Check file.out !!"
+echo -n > "file.out"
+
+# Trigonometry stuff
+echo "sin($n) =" [expr sin($n)] >> "file.out"
+echo "cos($n) =" [expr cos($n)] >> "file.out"
+echo " tg($n) =" [expr  tg($n)] >> "file.out"
+echo "ctg($n) =" [expr ctg($n)] >> "file.out"
+
+cat "file.out"

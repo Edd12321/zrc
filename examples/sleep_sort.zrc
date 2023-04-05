@@ -1,0 +1,10 @@
+#!../bin/zrc
+fn f {
+	sleep $argv(1)
+	echo -n $argv(1) ' '
+}
+
+for {set i = 2} {$i < $argc} {inc i} {
+	f $argv($i) &
+}
+wait;

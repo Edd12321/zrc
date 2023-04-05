@@ -1,0 +1,97 @@
+#!/usr/bin/env zrc
+echo 'Welcome to Zrc!'
+echo 'The time is: $(date)'
+set E:SHELL = 'zrc'
+#echo "Disk usage:";
+#df -h;
+
+# Prompt variables
+set HOSTNAME = $(hostname)
+set USER     = $(whoami)
+
+set RBOLD = $(/bin/echo -ne {\e[1;31m})
+set GREEN = $(/bin/echo -ne {\e[0;32m})
+set RESET = $(/bin/echo -ne {\e[0m})
+
+fn __git_ps1 {
+	git tag >(2=)
+	if {$? == 0} {
+		echo -n '('
+		git branch | grep {^*} | colrm 1 2 | tr -d '\n'
+		echo -n ')'
+	}
+}
+
+fn __status_ps1 {
+	if {[string length $status] && [string cmp $status "0"]} {
+		echo -n [string cat $RBOLD "($status)" $RESET]
+	}
+}
+
+fn prompt_cmd {
+	set status = $?
+	set PWD = $(pwd | sed 's|^$E:HOME|~|');
+
+	title "(zrc) $PWD" > /dev/tty
+	return {}
+}
+
+fn title {
+	/bin/echo -ne {\e]0;}
+	echo -n $argv(1) \a
+}
+
+set PS1 = {[string cat [prompt_cmd]$GREEN $USER $RESET\@$HOSTNAME]\
+           [string cat $GREEN $PWD]\
+           [string cat \
+		$RESET \
+		$(__git_ps1) \
+		$(__status_ps1)% '\ ']}
+
+
+# Aliases
+alias l       "ls -hF --color"
+alias la      "ls -all"
+alias l.      "eval ls -d .*"
+alias c       "clear"
+alias mkd     "mkdir -pv"
+alias rmd     "rmdir -pv"
+alias j       "jobs"
+alias p       "ps -l"
+alias du      "du -k"
+alias ..      "cd .."
+alias ...     "cd ../.."
+alias ....    "cd ../../.."
+alias .....   "cd ../../../.."
+alias sha1    "openssl sha1"
+alias ports   "netstat -tulanp"
+alias net     "\$E:AUTH systemctl restart NetworkManager"
+alias mkdir   "mkdir -pv"
+alias pacman  "\$E:AUTH pacman"
+alias calc    "bc -ql"
+alias emacs   "emacs -nw"
+alias history "eval cat ~/.zrc_history | \$E:PAGER"
+
+# Custom tools
+# https://github.com/Edd12321/{cstop,evct,zrc}
+alias top+ 'cstop;reset'
+alias vi+  'evct'
+set E:PATH = $E:HOME/.dots/work/etc/zrc.git/corebuf/bin:$E:PATH
+
+fn mkcd { mkdir $argv(1) && cd $argv(1); }
+fn lcd  { cd $argv(1) && l }
+
+# Default programs
+set E:AUTH     = "doas"
+set E:EDITOR   = "emacs"
+set E:VISUAL   = "emacs"
+set E:TERMINAL = "xfce4-terminal"
+set E:MANPAGER = "most"
+set E:AS       = "fasm"
+set E:CXX      = "g++"
+set E:CC       = "gcc"
+set E:BROWSER  = "firefox"
+
+if {[string cmp $E:TERM "linux"]} {
+	set E:TERM = "xterm-256color"
+}

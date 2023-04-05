@@ -1,0 +1,70 @@
+#!../bin/zrc
+
+###########################
+# Converts decimal2binary #
+###########################
+fn to_bin {
+	set val = $argv(1)
+	set k   = 0
+	set res = ""
+	while {$val} {
+		set res = "[expr $val&1]$res"
+		set val =  [expr ($val >> 1)]
+		inc k
+	}
+	# Add leading zeroes
+	for {set n = $k} {$n < 8} {inc n} {
+		set res = "0$res"
+	}
+	return $res
+}
+
+################
+# Help message #
+################
+fn usage {
+	die "usage: ip_tool.zrc <ip1.ip2.ip3.ip4> <mask>"
+}
+
+################
+# Main routine #
+################
+fn main {
+	# IP address
+	for {set i = 1} {$i <= 4} {inc i} {
+		set ip($i) = $(echo -n $argv(1) | cut -d. -f$i)
+		set ip = "$ip[to_bin $ip($i)]"
+	}
+	
+	# SubNet mask
+	for {set i = 1} {$i <= $argv(2)} {inc i} {
+		set mask = "$mask\1"
+	}
+	for {set i = $argv(2)} {$i < 32} {inc i} {
+		set mask = "$mask\0"
+	}
+	
+	echo $ip
+	echo $mask
+	echo --------------------------------
+
+	echo -n ">>> Network address (base2):   "
+	for {set i = 0} {$i < 32} {inc i} {
+		set c1 = [string index $ip   $i]
+		set c2 = [string index $mask $i]
+		set fin = "$fin[expr ($c1 & $c2)]"
+	}
+	printf "%b%s%b\n" {\e[0;32m} $fin {\e[0m}
+	set fin = ""
+
+	echo -n ">>> Broadcast address (base2): "
+	for {set i = 0} {$i < 32} {inc i} {
+		set c1 = [string index $ip   $i]
+		set c2 = [string index $mask $i]
+		set fin = "$fin[expr ($c1 | !($c2))]"
+	}
+	printf "%b%s%b\n" {\e[0;32m} $fin {\e[0m}
+}
+
+if {$argc != 4} usage
+main $argv(2) $argv(3)

@@ -1,0 +1,120 @@
+#!../bin/zrc
+##################################################
+# HTTP Server demo                               #
+# Run remote-controlled commands on the server   #
+##################################################
+
+fn css {
+	echo -n "
+	pre {
+		background-color: #f9f2f4;
+		color:            #c7254e;
+		border-radius:    4px;
+		padding:          2px 4px;
+		width:            fit-content;
+	}"
+}
+
+fn button {
+	return "
+	<form action=\"$argv(1)\">
+		<input type=\"submit\" value=\"$argv(2)\">
+	</form>"
+}
+
+fn serve {
+	# The message itself
+	echo "
+		<!DOCTYPE HTML>
+		<html>
+		<head>
+		<style>"$(css)"</style>
+		</head>
+		<body>
+			<h1>Zrc dashboard demo</h1>
+			"$(date)"
+
+			<!-----COMMANDS BEGIN----->
+			"[button 'remo dialog' 'Show dialog on server']"
+			"[button 'remo killsv' 'Close the server'     ]"
+			"[button 'remo ksshag' 'Kill ssh-agent'       ]"
+			"[button 'remo shutdn' 'Shut down PC'         ]"
+			"[button 'remo clrscr' 'Clear terminal'       ]"
+			<!-----COMMANDS END----->
+
+			<h2>MPStat</h2><pre>
+				"$(mpstat | ansifilter)"
+			</pre>
+			<h2>VMStat</h2><pre>
+				"$(vmstat | ansifilter)"
+			</pre>
+			<h2>IOStat</h2><pre>
+				"$(iostat | ansifilter)"
+			</pre>
+		</body>
+		</html>
+	"
+}
+
+fn log {
+	echo $argv(1) | tee -a $LOG_FILE
+}
+
+fn remo {
+	# Subcommands:
+	# The end user may only do one of these things,
+	# Creating a wrapper function (like `remo`) is a
+	# good option to avoid RCE.
+	
+	#1:
+	if {[string cmp $argv(1) "ksshag"] == 0} {
+		log "\[SSH agent killed]"
+		ssh-agent -k &
+
+	#2:
+	} elsif {[string cmp $argv(1) "dialog"] == 0} {
+		log "\[Remote-controlled dialog window]";
+		zenity --info \
+		       --title="Dialog Box"\
+		       --text="test"
+	
+	#3:
+	} elsif {[string cmp $argv(1) "killsv"] == 0} {
+		log "\[Exiting server]"
+		exit
+	
+	#4:
+	} elsif {[string cmp $argv(1) "shutdn"] == 0} {
+		log "\[Shutting down]"
+		poweroff
+	
+	#5:
+	} elsif {[string cmp $argv(1) "clrscr"] == 0} {
+		clear
+
+	#6:
+	} else {
+		log "\[Invalid command]"
+	}
+}
+
+fn main {
+	echo -n "Please enter log filename: "
+	set LOG_FILE = $(read line)
+
+	$E:BROWSER http://localhost:8080\
+		> /dev/null &
+
+	if {[test -f $LOG_FILE] == 0} {
+		rm $LOG_FILE
+	}
+	# Main webserver loop
+	while 1 {
+		set CMD = $(echo -e "HTTP/1.1 200 OK\n\n$(serve)" \
+			| nc -l -k -q 1 -p 8080 \
+			| grep "GET /remo" \
+			| sed -e 's/%20/ /g'
+		)
+		eval [string range $CMD 5 11]
+	}
+}; main
