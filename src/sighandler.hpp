@@ -97,19 +97,29 @@ getfg()
 	return 0;
 }
 
+/** Wait until PID stops being fg process.
+ * 
+ * @param {pid_t}pid
+ * @return void
+ */
+extern inline void
+waitproc(pid_t pid)
+{
+	sigset_t mask;
+	sigemptyset(&mask);
+	for ever {
+		if (getfg() != pid)
+			return;
+		sigsuspend(&mask);
+	}
+}
+
 /** Converts a C-string to uppercase.
  * 
  * @param {char*}s
  * @return void
  */
-void
-upper(char *s)
-{
-	while (*s) {
-		*s = toupper(*s);
-		++s;
-	}
-}
+//void upper(char *s) { while (*s) *s = toupper(*s++); }
 
 extern std::string
 bg_fg(int argc, char *argv[])
@@ -167,47 +177,39 @@ void
 sigchld_handler(int signum)
 {
 	pid_t pid;
-	int cs;
-	bool ok;
+	int cs, mode;
 
 	while ((pid = waitpid(WAIT_ANY, &cs, WNOHANG|WUNTRACED)) > 0) {
 		Jid index = -1;
 		for (auto &it : jt) {
 			if (it.second.pid == pid) {
 				index = it.first;
+				mode  = it.second.state;
 				break;
 			}
 		}
-
 		if (index != -1) {
-			// Process signaled
+			// set foreground PGID to shell's PID
+			if (pid == getfg())
+				if (tcgetpgrp(STDIN_FILENO != zrcpid))
+					tcsetpgrp(STDIN_FILENO, zrcpid);
 			if (WIFSIGNALED(cs)) {
-				if (TERMINAL) {
-					std::cerr << FMT << strsignal(WTERMSIG(cs));
-					std::cerr << '\n';
-				}
+				if (TERMINAL)
+					std::cerr << FMT << strsignal(WTERMSIG(cs)) << '\n';
 				deljob(index);
 			}
-    
-			// Process stopped
 			if (WIFSTOPPED(cs)) {
-				if (TERMINAL) {
-					char *name = strdup(strsignal(WSTOPSIG(cs)));
-					upper(name);
-					std::cerr << FMT << "Stopped (" << name << ")\n";
-					free(name);
-				}
+				if (TERMINAL)
+					std::cerr << FMT << strsignal(WSTOPSIG(cs)) << '\n';
 				jt[index].state = ST;
 			}
-    
-			// Process exited
 			if (WIFEXITED(cs)) {
-				if (TERMINAL) {
-					std::cerr << FMT << "Done ";
-					std::cerr << '(' << WEXITSTATUS(cs) << ")\n";
-				}
+				if (TERMINAL && mode == BG)
+					std::cerr << FMT << strsignal(WEXITSTATUS(cs)) << '\n';
 				deljob(index);
+				ret_val = itoa(WEXITSTATUS(cs));
 			}
+			setvar("!", itoa(pid));
 		}
 	}
 }
@@ -249,4 +251,22 @@ void
 sigquit_handler(int signum)
 {
 	exit(EXIT_FAILURE);
+}
+
+/** signal(2) alternative.
+ *
+ * @param {int}signum,{void (*)(int)}h
+ * @return void
+ */
+typedef void Handle(int);
+Handle*
+signal2(int signum, Handle *h)
+{
+	struct sigaction sa, oa;
+
+	sa.sa_handler = h;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART;
+	sigaction(signum, &sa, &oa);
+	return oa.sa_handler;
 }

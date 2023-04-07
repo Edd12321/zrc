@@ -38,9 +38,14 @@ exec(int argc, char *argv[])
 	pid_t         pid;
 	int           cs;
 	size_t        i, siz;
-
+	sigset_t      mask;
 	w = (bg_or_fg.front() == FG);
 	ret_val = "0";
+
+#define PGROUP_INITIALIZE \
+	sigemptyset(&mask);\
+	sigaddset(&mask, SIGCHLD);\
+	sigprocmask(SIG_BLOCK, &mask, NULL);
 
 	// Nothing happens...
 	if (!argc) return;
@@ -64,21 +69,21 @@ exec(int argc, char *argv[])
 				a_hm["argv"] = bak;
 			
 			} else {
+				PGROUP_INITIALIZE;
 				if ((pid = fork()) < 0)
 					die("fork");
 				
 				if (pid == 0) {
+					setpgid(0, 0);
+					tcsetpgrp(STDIN_FILENO, getpgrp());
+					sigprocmask(SIG_UNBLOCK, &mask, NULL);
 					RUNCMD;
 				
 				} else {
-					Jid index;
 					if (make_new_jobs)
-						index = addjob(pid, FG, argc, argv);
-					waitpid(pid, &cs, 0);
-					ret_val = itoa(WEXITSTATUS(cs));
-					setvar("!", itoa(pid));
-					if (make_new_jobs)
-						deljob(index);
+						addjob(pid, FG, argc, argv);
+					sigprocmask(SIG_UNBLOCK, &mask, NULL);
+					waitproc(pid);
 				}
 			}
 			break;
@@ -87,10 +92,13 @@ exec(int argc, char *argv[])
 		 * Background process *
 		 **********************/
 		case false:
+			PGROUP_INITIALIZE;
 			if ((pid = fork()) < 0)
 				die("fork");
 
 			if (pid == 0) {
+				setpgid(0, 0);
+				sigprocmask(SIG_UNBLOCK, &mask, NULL);
 				if (FOUND_FN(0)) {
 					a_hm.erase("argv");
 					INIT_ZRC_ARGS;
@@ -107,6 +115,7 @@ exec(int argc, char *argv[])
 					if (TERMINAL)
 						std::cerr << FMT << '\n';
 				}
+				sigprocmask(SIG_UNBLOCK, &mask, NULL);
 				setvar("!", itoa(pid));
 			}
 			break;
@@ -125,6 +134,10 @@ exec(int argc, char *argv[])
 	for (i = 0; i < argc; ++i)
 		free(argv[i]);
 	make_new_jobs = false;
+
+	// set fg group ID
+	if (tcgetpgrp(STDIN_FILENO) != zrcpid)
+		tcsetpgrp(STDIN_FILENO, zrcpid);
 }
 
 /** Captures a program fragment's standard output.

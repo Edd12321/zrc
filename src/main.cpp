@@ -64,6 +64,7 @@ typedef int Jid;
 
   int o_in, o_out; 
   bool cin_eq_in, w, make_new_jobs = true;
+  pid_t zrcpid = getpid();
   std::string ret_val;
   std::string filename;
   std::deque<bool> bg_or_fg;
@@ -353,10 +354,12 @@ main(int argc, char *argv[])
 	o_in  = dup(STDIN_FILENO);
 	o_out = dup(STDOUT_FILENO);
 
-	signal(SIGCHLD, sigchld_handler);
-	signal(SIGINT,   sigint_handler);
-	signal(SIGTSTP, sigtstp_handler);
-	signal(SIGQUIT, sigquit_handler);
+	signal2(SIGCHLD, sigchld_handler);
+	signal2(SIGINT,   sigint_handler);
+	signal2(SIGTSTP, sigtstp_handler);
+	signal2(SIGQUIT, sigquit_handler);
+	signal2(SIGTTIN, SIG_IGN);
+	signal2(SIGTTOU, SIG_IGN);
 
 	INIT_ZRC_ARGS;
 
