@@ -146,10 +146,10 @@ class WordList;
   #include "dispatch.hpp"
   #include "sighandler.hpp"
   #include "subst.hpp"
-  #include "zlineedit.hpp"
   #include "expr.hpp"
   #include "expr.cpp"
   #include "exec.hpp"
+  #include "zlineedit.hpp"
   #include "fd.hpp"
 /***** FUNCTIONDECLS END *****/
 

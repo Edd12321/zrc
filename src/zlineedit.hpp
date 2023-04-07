@@ -20,13 +20,11 @@
 
 #define SHOW_PROMPT \
 	if (s_hm.find("PS1") != s_hm.end()) {\
-			if (fork() == 0) {\
-				eval((std::string)"echo -n"+getvar("PS1"));\
-				exit(0);\
-			} else wait(NULL);\
-		} else {\
-			std::cout << default_prompt;\
-		}
+		char *argv[2];\
+		argv[0] = strdup("@");\
+		argv[1] = strdup(((std::string)"echo -n"+getvar("PS1")).c_str());\
+		exec(2, argv);\
+	}
 namespace fs = std::filesystem;
 
 /** Returns a terminal's width and height
