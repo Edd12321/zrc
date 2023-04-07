@@ -71,11 +71,14 @@ exec(int argc, char *argv[])
 					RUNCMD;
 				
 				} else {
-					Jid index = addjob(pid, FG, argc, argv);
+					Jid index;
+					if (make_new_jobs)
+						index = addjob(pid, FG, argc, argv);
 					waitpid(pid, &cs, 0);
 					ret_val = itoa(WEXITSTATUS(cs));
 					setvar("!", itoa(pid));
-					deljob(index);
+					if (make_new_jobs)
+						deljob(index);
 				}
 			}
 			break;
@@ -98,10 +101,12 @@ exec(int argc, char *argv[])
 				exit(0);
 			
 			} else {
-				Jid index = addjob(pid, BG, argc, argv);
-				// Only show in interactive mode
-				if (TERMINAL)
-					std::cerr << FMT << '\n';
+				if (make_new_jobs) {
+					Jid index = addjob(pid, BG, argc, argv);
+					// Only show in interactive mode
+					if (TERMINAL)
+						std::cerr << FMT << '\n';
+				}
 				setvar("!", itoa(pid));
 			}
 			break;
@@ -119,6 +124,7 @@ exec(int argc, char *argv[])
 	cleanup_memory();
 	for (i = 0; i < argc; ++i)
 		free(argv[i]);
+	make_new_jobs = false;
 }
 
 /** Captures a program fragment's standard output.

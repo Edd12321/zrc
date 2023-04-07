@@ -111,6 +111,53 @@ upper(char *s)
 	}
 }
 
+extern std::string
+bg_fg(int argc, char *argv[])
+{
+	Job *j;
+	Jid index = -1;
+	if (argc != 2 && (!isdigit(*argv[1]) && *argv[1] != '%'))
+		syntax_error("<pid>|<%jid>");
+	if (*argv[1] == '%') {
+		int num = atoi(&argv[1][1]);
+		if (jt.find(num) != jt.end()) {
+			j = &jt[num];
+			index = num;
+		}
+	} else {
+		for (auto& it : jt) {
+			if (it.second.pid == atoi(argv[1])) {
+				j = &it.second;
+				index = it.first;
+				break;
+			}
+		}
+	}
+	if (index == -1)
+		syntax_error("Invalid job");
+	
+	if (!strcmp(argv[0], "bg")) {
+		j->state = BG;
+		if (TERMINAL) {
+			pid_t pid = j->pid;
+			std::cerr << FMT;
+		}
+	} else {
+		j->state = FG;
+		kill(-j->pid, SIGCONT);
+		for ever {
+			if (j->pid != getfg()) {
+				if (TERMINAL)
+					std::cerr << j->pid << " no longer fg proc\n";
+				break;
+			} else {
+				sleep(1);
+			}
+		}
+	}
+	return "0";
+}
+
 /** Reaps zombie processes.
  *
  * @param {int}signum

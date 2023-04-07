@@ -24,10 +24,10 @@ Zrc is almost half of 1mb in size because its implementation is to the point and
 - [ ] Full redirection
 	- [X] Basic redirection (`>>`, `>`, `<`)
 	- [ ] Sometimes, fd syntax is broken (`>(2=1)`, `>(2=)`, `>(2)`)
-- [ ] Non-I/O shell operators
+- [X] Non-I/O shell operators
 	- [X] `&&`
 	- [X] `||`
-	- [ ] `!`
+	- [X] `!`
 - [X] Word splitting via `{*}`
 - [X] Quoting
 	- [X] Brace quoting (`{}`)
@@ -54,11 +54,11 @@ Zrc is almost half of 1mb in size because its implementation is to the point and
 	- [X] Lexial scoping (`let`)
 	- [X] Until
 	- [X] Eval
-- [ ] Full job control
+- [X] Full job control
 	- [X] Job table support
 	- [X] Job listing command
-	- [ ] Job manipulation
-	- [ ] Don't separate jobs by pipe
+	- [X] Job manipulation
+	- [X] Don't separate jobs by pipe
 	- [X] Background and foreground processes with `&`
 - [ ] Pleasant interactive shell
 	- [X] History file

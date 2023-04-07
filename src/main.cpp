@@ -47,6 +47,7 @@
 }
 
 #define RUN_CURRENT_COMMAND(X) do {               \
+	make_new_jobs = true;                         \
     args[k] = NULL;                               \
     if (can_runcmd) {                             \
         exec(k, args);                            \
@@ -62,7 +63,7 @@ typedef int Jid;
   extern char **environ;
 
   int o_in, o_out; 
-  bool cin_eq_in, w;
+  bool cin_eq_in, w, make_new_jobs = true;
   std::string ret_val;
   std::string filename;
   std::deque<bool> bg_or_fg;
@@ -99,6 +100,7 @@ class WordList;
   void                      sigint_handler (int                       );
   void                      sigtstp_handler(int                       );
   void                      sigquit_handler(int                       );
+  extern std::string        bg_fg          (int, char**               );
   // SIGHANDLER.HPP
 
   static std::string        get_var        (std::string_view          );
@@ -140,9 +142,9 @@ class WordList;
   #include "lex.hpp"
   #include "array.hpp"
   #include "string.hpp"
+  #include "dispatch.hpp"
   #include "sighandler.hpp"
   #include "subst.hpp"
-  #include "dispatch.hpp"
   #include "zlineedit.hpp"
   #include "expr.hpp"
   #include "expr.cpp"

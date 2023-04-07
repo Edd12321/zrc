@@ -436,6 +436,22 @@ Command(unset) {
 	return "0";
 }
 
+/** Invert a command's return value **/
+Command(not) {
+	exec(--argc, ++argv);
+	// Avoid double free(1)
+	for (int i = 0; i < argc; ++i)
+		argv[i] = NULL;
+	argv = NULL;
+	ret_val = (ret_val=="0")?"1":"0";
+	setvar("?", ret_val);
+	NoReturn;
+}
+
+/* Job control */
+Command(bg) { return bg_fg(argc, argv); }
+Command(fg) { return bg_fg(argc, argv); }
+
 Command(help);
 
 DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
@@ -443,14 +459,15 @@ DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_tab
 	de(die),   ce(@,fork), de(echo),    de(expr),  de(eval),   de(if),    de(unless),
 	de(while), de(for),    de(foreach), de(do),    de(switch), de(set),   de(inc),
 	de(array), de(string), de(read),    de(chr),   de(ord),    de(alias), de(unalias),
-	de(let),   de(until),  de(source),  de(unset), de(help)
+	de(let),   de(until),  de(source),  de(unset), de(help),   ce(!,not), de(bg),
+	de(fg)
 };
 
 /** Show a list of all BuiltIns **/
 Command(help) {
 	for (auto& it : dispatch_table)
 		std::cout << it.first << ' ';
-	std::cout << '\n';
+	std::cout << std::endl;
 	return "0";
 }
 
