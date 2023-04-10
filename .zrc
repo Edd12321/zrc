@@ -14,7 +14,7 @@ set GREEN = $(/bin/echo -ne {\e[0;32m})
 set RESET = $(/bin/echo -ne {\e[0m})
 
 fn __git_ps1 {
-	git tag >(2=)
+	git tag >(2=) > /dev/null
 	if {$? == 0} {
 		echo -n '('
 		git branch | grep {^*} | colrm 1 2 | tr -d '\n'
