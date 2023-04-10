@@ -1,0 +1,18 @@
+.TH UNTIL 1
+.SH NAME
+until \- Repeatedly execute script body until a condition is not met
+.SH SYNOPSIS
+.B until
+<expr> <block>
+.SH DESCRIPTION
+The
+.I until
+command repeteadly evaluates its first argument as an 'expr' expression and executes the second argument as a script until said expression is true.
+.SH EXAMPLES
+.EX
+	set i = 10
+	until {!$i} {
+		printf %d\n $i
+		set i -= 1
+	}
+.EE

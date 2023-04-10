@@ -1,0 +1,19 @@
+.TH EVAL 1
+.SH NAME
+eval \- Evaluate contents as a script
+.SH SYNOPSIS
+.B eval
+<w1> <w2>... <wn>
+.SH DESCRIPTION
+The
+.I eval
+utility's first argument must be followed by a string, representing a code block to be eval'ed. If multiple arguments are given, it concatenates all of them into one single argument. The utility executes the code inside of the block, and indirectly returns the last exit code from that block.
+.SH EXAMPLE
+.EX
+	# Shows '2'
+	echo [eval {
+		return 0
+		return 1
+		return 2
+	}]
+.EE

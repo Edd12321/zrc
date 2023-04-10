@@ -1,0 +1,20 @@
+.TH ALIAS 1
+.SH NAME
+alias \- Show all aliases or set an alias
+.SH SYNOPSIS
+.B alias
+[<name> <val>]
+.SH DESCRIPTION
+The
+.I alias
+utility checks whether or not two arguments were given. If this is true, then it sets the
+.B <name>
+alias to
+.B
+<val>.
+If no arguments were given, the command displays a list of aliases, which may be sourced as a script.
+.SH EXAMPLES
+.EX
+	alias
+	alias lh 'ls -all ~ .'
+.EE

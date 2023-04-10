@@ -1,0 +1,22 @@
+.TH INC 1
+.SH NAME
+inc \- Increment a variable
+.SH SYNOPSIS
+.B inc
+<var> [<val>]
+.SH DESCRIPTION
+The
+.I inc
+utility increments the specified variable by either 1 (the default value) or by the second optional argument, if given.
+.SH EXAMPLES
+.EX
+	set a = 0
+	inc a 2
+	
+	echo $a
+	# 2
+
+	inc a
+	echo $a
+	# 3
+.EE

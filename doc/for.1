@@ -1,0 +1,29 @@
+.TH FOR 1
+.SH NAME
+for \- Execute a set of commands multiple times
+.SH SYNOPSIS
+.B for
+<cmd> <expr> <cmd> <block>
+.SH DESCRIPTION
+The
+.I for
+command is a looping command, similar to the C "for" statement. It is equivalent to the while construct below:
+.SH EXAMPLE
+.EX
+	fn stmt1 { #... }
+	fn stmt2 { #... }
+	fn stmt3 { #... }
+	set exp = 1
+	
+	# "While" version
+	stmt1
+	while {$exp} {
+		stmt2
+		stmt3
+	}
+
+	# "For" version
+	for {stmt1} {$exp} {stmt3} {
+		stmt2
+	}
+.EE

@@ -1,0 +1,59 @@
+.TH STRING 1
+.SH NAME
+STRING \- Manipulate strings
+.SH SYNOPSIS
+.B string [OPTION]
+.SH DESCRIPTION
+.I String
+is used for viewing and modifying the fundamental language construct of Zrc, the text string.
+.SH OPTIONS
+.TP
+.B index <str> <i>
+Returns the value found at index
+.I i
+in string
+.IR str .
+.TP
+.B length <str>
+Returns the length of a string
+.I str
+.TP
+.B cat <str1> <str2>
+Concatenates the strings
+.I str1
+and
+.I str2
+and returns the result.
+.TP
+.B cmp <str1> <str2>
+Compares
+.I str1
+and
+.I str2
+using strcmp, and returns the result.
+.TP
+.B replace <str> <i1> <c2>
+Replaces the character at index
+.I i1
+with
+.I c2
+in the string
+.IR str .
+.TP
+.B range <str> <i1> <i2>
+Returns the substring found between indexes
+.I i1
+and
+.I i2
+while making sure to not reach out of bounds in string
+.IR str .
+.SH EXAMPLES
+.EX
+	set str = "Zrc is an interesting language."
+	echo [string index $str 0] \\
+	     [string length $str] \\
+	     [string cat $str "(sometimes)"] \\
+	     [string cmp $str "Random string"] \\
+	     [string replace $str 30 ' '] \\
+	     [string range $str 0 3]
+.EE

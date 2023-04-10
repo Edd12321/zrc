@@ -1,0 +1,17 @@
+.TH UNLESS 1
+.SH NAME
+unless \- Execute script body unless a condition is met
+.SH SYNOPSIS
+.B unless
+<expr> <block>
+.SH DESCRIPTION
+The
+.I unless
+command evaluates its first argument as an 'expr' expression and executes the second argument as a script unless said expression is true.
+.SH EXAMPLES
+.EX
+	set i = 0
+	unless $i {
+		echo '$i is zero!'
+	}
+.EE

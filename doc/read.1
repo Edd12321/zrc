@@ -1,0 +1,40 @@
+.TH READ 1
+.SH NAME
+read \- Read text from standard input
+.SH SYNOPSIS
+.B read
+[-p <prompt>][-d <delim>][-q][-w] str|char <n>|line
+.SH DESCRIPTION
+.I Read
+is a command used to do various methods of text input. It can be used in conjunction with
+.I stty
+for more sophisticated reasons like formatted I/O functions, REPLs, and so on. This command has multiple modes:
+.BR str ,
+used for reading words from stdin,
+.BR char ,
+used for reading a set amount of characters, and
+.BR line .
+.SH OPTIONS
+.TP
+.B p <prompt>
+Display a prompt
+.TP
+.B d <delim>
+Choose which delimiter to use (for line mode)
+.TP
+.BR q
+Support std::quoted
+.TP
+.BR w
+Support std::noskipws
+.SH EXAMPLES
+.EX
+	read str
+	read str -w -p '> '
+	read line
+	read line -q
+
+	stty raw
+	read char 5
+	stty cooked
+.EE

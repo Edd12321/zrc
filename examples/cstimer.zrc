@@ -5,7 +5,7 @@
 set CSTIMER_PATH = ~/Desktop
 set IP_ADDR      = 0.0.0.0:1234
 
-test -d $CSTIMER_PATH] || mkdir -p $CSTIMER_PATH
+test -d $CSTIMER_PATH || mkdir -p $CSTIMER_PATH
 cd $CSTIMER_PATH
 test -d cstimer || git clone https://github.com/cs0x7f/cstimer
 cd cstimer/src

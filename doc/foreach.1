@@ -1,0 +1,25 @@
+.TH FOREACH 1
+.SH NAME
+foreach \- Iterate through a set of words
+.SH SYNOPSIS
+.B foreach
+<var> <w1> <w2>... <wn> <block>
+.SH DESCRIPTION
+The
+.I foreach
+command sets the variable
+.B <var>
+to all other arguments in order, and at each step executes the contents of
+.BR <block> .
+Note that the variable is not lexically scoped, so you have to manage that yourself with the "let" command. If you have a list you want to work with, use the {*} constructor.
+.SH EXAMPLES
+.EX
+	foreach file * {
+		echo '$file is part of this directory'
+	}
+
+	set list = {a b c d e f}
+	foreach letter {*}$list {
+		echo -n [chr [ord $letter]-32]
+	}
+.EE

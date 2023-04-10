@@ -1,0 +1,50 @@
+.TH ARRAY 1
+.SH NAME
+array \- Manipulate associative arrays
+.SH SYNOPSIS
+.B array [OPTION]
+.SH DESCRIPTION
+.I Array
+is used for working with hashmaps/associative arrays in a Zrc environment. It can be expanded upon with custom functions for achieving more complex behavior, but for the sake of simplicity it is not included in the core interpreter.
+.SH OPTIONS
+.TP
+.B index <a> <i>
+Returns the value found at key
+.I i
+in array
+.IR a .
+.TP
+.B length <a>
+Returns the length of an array
+.I i
+.TP
+.B delete <a>
+Deletes an array
+.IR a .
+.TP
+.B set <a> = {<v1> <v2...>}
+Sets a regular array
+.IR a .
+.TP
+.B setkey <a> = {<k1> <v1> <k2> <v2>...}
+Sets an associative array
+.IR a .
+.TP
+.B unset <a> <k1> <k2>...
+Deletes the keys
+.IR k1 ,
+.IR k2 ,
+etc. in array
+.IR a .
+.SH EXAMPLES
+.EX
+	array set arr = {1 2 3 4 5}
+	array setkey hash = {
+		a 1
+		b 2
+		c 3
+	}
+	echo [array length arr]
+	array delete arr
+	array unset hash 'a'
+.EE

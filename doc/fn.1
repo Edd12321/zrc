@@ -1,0 +1,31 @@
+.TH FN 1
+.SH NAME
+fn \- Run a command and return its opposite exit status
+.SH SYNOPSIS
+.B fn
+<name> <block>
+.SH DESCRIPTION
+This builtin creates a new function with the specified name, that, when called, executes the statements provided by the second argument, replacing $argv(...) with its own arguments.
+.SH EXAMPLE
+.EX
+	fn is_prime {
+		if {$argv(1) < 2} {
+			return 0
+		} elsif {$argv(1) == 2) {
+			return 1
+		} elsif {$argv(1) % 2 == 0} {
+			return 0
+		} else {
+			let {i ok} {
+				set ok = 1
+				for {set i = 3} {$i <= $argv(1)/2} {inc i} {
+					if {$argv(1) % $i == 0} {
+						set ok = 0
+						set i = $argv(1)
+					}
+				}
+				return $ok
+			}
+		}
+	}
+.EE

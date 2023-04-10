@@ -146,6 +146,7 @@ bg_fg(int argc, char *argv[])
 	if (index == -1)
 		syntax_error("Invalid job");
 	
+	kill(-j->pid, SIGCONT);
 	if (!strcmp(argv[0], "bg")) {
 		j->state = BG;
 		if (TERMINAL) {
@@ -154,7 +155,6 @@ bg_fg(int argc, char *argv[])
 		}
 	} else {
 		j->state = FG;
-		kill(-j->pid, SIGCONT);
 		for ever {
 			if (j->pid != getfg()) {
 				if (TERMINAL)

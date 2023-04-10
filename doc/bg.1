@@ -1,0 +1,17 @@
+.TH BG 1
+.SH NAME
+bg \- Turn any job into a background job
+.SH SYNOPSIS
+.B bg
+<pid>|<%jid>
+.SH DESCRIPTION
+This tool sends a job to the background, resuming it if it is stopped. If a PID is specified, the job will be searched for in the job table, but the JID may also be specified directly. If the job is not found/is invalid, the utility returns with an error status of 1.
+.SH EXAMPLES
+.EX
+	# Background PID
+	bg 12345
+
+	# Background jobID
+	bg %1
+	bg %2
+.EE

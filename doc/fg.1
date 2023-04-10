@@ -1,0 +1,17 @@
+.TH FG 1
+.SH NAME
+fg \- Turn any job into a foreground job
+.SH SYNOPSIS
+.B fg
+<pid>|<%jid>
+.SH DESCRIPTION
+This tool sends a job to the foreground, resuming it if it is stopped. If a PID is specified, the job will be searched for in the job table, but the JID may also be specified directly. If the job is not found/is invalid, the utility returns with an error status of 1.
+.SH EXAMPLES
+.EX
+	# Foreground PID
+	fg 12345
+
+	# Foreground jobID
+	fg %1
+	fg %2
+.EE

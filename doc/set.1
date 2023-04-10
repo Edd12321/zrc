@@ -1,0 +1,48 @@
+.TH SET 1
+.SH NAME
+set \- Set multiple variables' values
+.SH SYNOPSIS
+.B set
+<var> [+-*/%|^&:][**][||][&&][//][<<][>>]= <val>...
+.SH DESCRIPTION
+The
+.I set
+utility can be used to set the values of multiple variables, and it can also be used to apply arithmetic operations to variables in a less verbose way than just using 'expr'.
+.PP
+The basic grammar construct used in this tiny "domain-specific language" is the assignment operation, which may be looped repeteadly in the command's argument list. It consists of a 
+.I variable name
+(without the sigil), a variation of the 
+.I assignment
+operator, and the
+.I value
+to set .
+.PP
+If a plain equals sign is provided (var
+.B =
+val), then the variable 'var' gets set to 'val'.
+.PP
+If a "walrus operator" is provided (var
+.B :=
+val), the assigned value is also returned via
+.BI $?.
+.PP
+When the equals sign is preceded by an arithmetic operator, the construct:
+.EX
+	set a OP= b #(where OP is an operator)
+.EE
+is equivalent to:
+.EX
+	set a = [expr (a)OP(b)]
+.EE
+
+.SH EXAMPLES
+.EX
+	set a =   2  # a is now 2
+	set a :=  3  # a and ? are now 3
+
+	set a +=  2  # a is now 5
+	set a -=  4  # a is now 1
+	set a *=  16 # a is now 16
+	set a >>= 1  # a is now 8
+	# etc.
+.EE

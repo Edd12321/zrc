@@ -1,0 +1,25 @@
+.TH @ 1
+.SH NAME
+@ \- Fork a subshell
+.SH SYNOPSIS
+.B @
+<block>
+.SH DESCRIPTION
+.I @
+must be followed by a string, representing a code block to be eval'ed. The utility forks off a new child process, executes the code inside of the block, and returns the last exit code from that block.
+.SH EXAMPLES
+.EX
+	# Shows '2'
+	echo [@ {
+		return 0
+		return 1
+		return 2
+	}]
+
+	set a = b
+	@ {
+		set a = c
+		echo $a #shows 'c'
+	}
+	echo $a #shows 'b'
+.EE

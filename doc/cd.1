@@ -1,0 +1,18 @@
+.TH CD 1
+.SH NAME
+cd \- Change the current directory
+.SH SYNOPSIS
+.B cd
+[<dir>]
+.SH DESCRIPTION
+The
+.I cd
+utility first checks if it has recieved one or zero arguments. In case it has no arguments, it automatically changes the current directory to the home directory. Otherwise, it changes to the first argument given. Multiple arguments are not supported by this builtin.
+.SH EXAMPLES
+.EX
+	cd dir1/
+	cd dir2/
+	cd dir3/ #throws error, dir3 does not exist!
+
+	cd #goes home
+.EE

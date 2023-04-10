@@ -1,0 +1,24 @@
+.TH DO 1
+.SH NAME
+do \- Repeatedly execute script body while a condition is met, but don't check first time
+.SH SYNOPSIS
+.B do <block> while <expr>
+.SH DESCRIPTION
+The
+.I do
+builtin is very similar to the 'do' construct in C. It works exactly like a 'while' statement, except it always runs the block the first time the command is opened, regardless of whether or not the expression returns true.
+.SH EXAMPLE
+.EX
+	fn cmd { echo test }
+	set expr = 1
+	
+	# These two are equivalent:
+	cmd
+	while {$expr} {
+		cmd
+	}
+
+	do {
+		cmd
+	} while {$expr}
+.EE

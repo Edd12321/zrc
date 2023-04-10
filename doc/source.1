@@ -1,0 +1,10 @@
+.TH SOURCE 1
+.SH NAME
+source \- Load a script without forking
+.SH SYNOPSIS
+.B source
+[<file...>]
+.SH DESCRIPTION
+The
+.I source
+utility iterates through all of its args and checks if it can find a file with the same name. For each file found, it executes its contents as a Zrc script. If the tool could not find a file, it displays an error message and bails out.

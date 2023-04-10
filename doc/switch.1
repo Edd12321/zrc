@@ -1,0 +1,39 @@
+.TH SWITCH 1
+.SH NAME
+switch \- Evaluate one of several scripts, depending on the value given as a first argument.
+.SH SYNOPSIS
+.B switch
+<value> {case <c> <cmd>|default...>}
+.SH DESCRIPTION
+The
+.I switch
+command expands its second argument as a list using Zrc's grammar rules (but doesn't expand tildes/globs), implementing a "tiny language" (DSL). There are two types of switch "subcommands" that can be found in the second list: Either the word
+.B case
+followed by a value and a compound block, or the word
+.BR default ,
+followed only by a compound block.
+.PP
+If the word is
+.BR case ,
+then the utility checks if the word right next to it is the same as the first argument given to the procedure. If it is, it short-circuits, executes the block next to the word, and closes the command, preserving the return value of the block.
+.PP
+If the word is
+.BR default ,
+then the utility changes the default fallback compound block to the one found next to the
+.B default
+word. If, at the end of this scanning process, no case statement short-circuited the switch command, the fallback compound block (initally empty) executes.
+.SH EXAMPLES
+.EX
+	set name = $(read line -p "What's your name? ")
+	switch $name {
+		case Johnny {
+			echo Hello, man!
+		}
+		case Bob {
+			echo What's up, Bob?
+		}
+		default {
+			echo Hello, stranger!
+		}
+	}
+.EE

@@ -1,0 +1,18 @@
+.TH WHILE 1
+.SH NAME
+while \- Repeatedly execute script body while a condition is met
+.SH SYNOPSIS
+.B while
+<expr> <block>
+.SH DESCRIPTION
+The
+.I while
+command repeteadly evaluates its first argument as an 'expr' expression and executes the second argument as a script while said expression is true.
+.SH EXAMPLES
+.EX
+	set i = 0
+	while {$i < 10} {
+		printf %d\n $i
+		set i += 1
+	}
+.EE

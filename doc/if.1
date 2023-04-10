@@ -1,0 +1,27 @@
+.TH IF 1
+.SH NAME
+if \- Execute script body if a condition is met
+.SH SYNOPSIS
+.B if
+<expr> <block> [elsif <expr> <block>...|else <block>]
+.SH DESCRIPTION
+The
+.I if
+command evaluates its first argument as an 'expr' expression and executes the second argument as a script if said expression is true. If it is not true, it checks the next argument. If it is
+.BR elsif ,
+it evaluates the argument next to it as an expression and executes another function body, otherwise if it is
+.BR else
+if evaluates the argument next to it regardless of an expression. This can repeat for as many times as necessary.
+.SH EXAMPLE
+.EX
+	set i = 0
+	if {i == -2} { 
+		echo this shouldn\\'t happen
+	} elsif {i == -1} {
+		echo elsif test
+	} elsif {i > 0} {
+		echo elsif test \\# 2
+	} else {
+		echo 0 equals 0 true
+	}
+.EE

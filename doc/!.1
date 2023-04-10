@@ -1,0 +1,18 @@
+.TH ! 1
+.SH NAME
+! \- Run a command and return its opposite exit status
+.SH SYNOPSIS
+.B !
+[<cmd>]
+.SH DESCRIPTION
+This builtin treats its arguments as a command, evaluates it and inverts the
+.I $?
+variable's value (if it is equal to 0, it sets its value to 1, otherwise it sets it to 0).
+.SH EXAMPLES
+.EX
+	# Returns 1
+	! return 0
+
+	# Returns 0
+	! return 1
+.EE
