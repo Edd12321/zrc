@@ -25,29 +25,22 @@ is_expr(std::string str)
 	) == std::string::npos;
 }
 
-/** Checks operator precedence (PEMDAS).
- *
- * @param  void
- * @return void
- */
-static inline int
-prio(char op)
-{
-	if (op == '?'    || op == ':')                                 return  0;
-	if (op ==  OR[0])                                              return  1;
-	if (op == AND[0])                                              return  2;
-	if (op == '|')                                                 return  3;
-	if (op == '^')                                                 return  4;
-	if (op == '&')                                                 return  5;
-	if (op == EQU[0] || op == NEQ[0])                              return  6;
-	if (op == '<'    || op == LEQ[0] || op == '>' || op == GEQ[0]) return  7;
-	if (op == SPC[0])                                              return  8;
-	if (op == SHL[0] || op == SHR[0])                              return  9;
-	if (op == '+'    || op == '-')                                 return 10;
-	if (op == '*'    || op == '/'    || op == '%')                 return 11;
-	if (op == '('    || op == ')')                                 return -1;
-	/* [...] */                                                    return 12;
-}
+std::unordered_map<char, short> prio = {
+	  {    '(', -13 }, {    ')', -13 },
+	  {    '?', -12 }, {    ':', -12 },
+	  {  OR[0], -11 },
+	  { AND[0], -10 },
+	  {    '|',  -9 },
+	  {    '^',  -8 },
+	  {    '&',  -7 },
+	  { EQU[0],  -6 }, { NEQ[0],  -6 },
+	  {    '<',  -5 }, { LEQ[0],  -5 }, {    '>',  -5 }, { GEQ[0],  -5 },
+	  { SPC[0],  -4 },
+	  { SHL[0],  -3 }, { SHR[0],  -3 },
+	  {    '+',  -2 }, {    '-',  -2 },
+	  {    '*',  -1 }, {    '/',  -1 }, { IND[0],  -1 }, {    '%',  -1 }
+	//{ implicit  0 }
+};
 
 /** Check left-associative operators.
  *
@@ -136,12 +129,13 @@ expr(std::string e)
 		dc(+), dc(-), dc(*), dc(/), dc(<), dc(>),
 		di(&), di(|), di(^),
 
-		db(SHL, (int)x<<(int)y), db(LEQ, x <=  y),
-		db(SHR, (int)x>>(int)y), db(GEQ, x >=  y),
-		db(AND, x && y),         db(NEQ, x !=  y),
-		db(OR,  x || y),         db(EQU, x ==  y),
-		db(POW,  pow(x, y)),     db(SPC, x<y?-1:(x>y?1:0)),
-		db("%", fmod(x, y))
+		db(SHL, (int)x<<(int)y),  db(LEQ, x <=  y),
+		db(SHR, (int)x>>(int)y),  db(GEQ, x >=  y),
+		db(AND, x && y),          db(NEQ, x !=  y),
+		db(OR,  x || y),          db(EQU, x ==  y),
+		db(POW,   pow(x, y)),     db(SPC, x<y?-1:(x>y?1:0)),
+		db("%",  fmod(x, y)),
+		db(IND, floor(x/ y))
 	};
 
 	//=====functions===== =====operators=====
@@ -155,7 +149,7 @@ expr(std::string e)
 	REP("tg"   , TG   );  REP("==" , EQU);
 	REP("floor", FLOOR);  REP("!=" , NEQ);
 	REP("ceil" , CEIL );  REP("**" , POW);
-	REP("abs"  , ABS  );
+	REP("abs"  , ABS  );  REP("//" , IND);
 
 	//=====alt=====
 	REP("and"  , AND);
@@ -208,7 +202,7 @@ expr(std::string e)
 				if (e[i] == '-') e[i] = 'm';
 			}
 			while (!ops.empty()
-			&&     prio(e[i]) <= prio(ops.top())
+			&&     prio[e[i]] <= prio[ops.top()]
 			&&     lassoc(e[i])) {
 				rpn += ops.top();
 				rpn += ' ';

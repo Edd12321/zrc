@@ -21,6 +21,7 @@
 #define NEQ   "L"
 #define POW   "Z"
 #define ABS   "X"
+#define IND   "C"
 
 #define REP(X, Y) {\
 	for (size_t pos = 0 ; ; pos += strlen(Y)) {\

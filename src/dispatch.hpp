@@ -19,8 +19,8 @@
 }
 
 #define MakeOp(X)\
-	else if (!strcmp(argv[i], #X "="))\
-		setvar(argv[i-1], expr((std::string)"("+getvar(argv[i-1])+")"#X"("+argv[i+1]+")"))
+	else if (!strcmp(argv[i], X "="))\
+		setvar(argv[i-1], expr((std::string)"("+getvar(argv[i-1])+")" X "("+argv[i+1]+")"))
 
 typedef std::string FunctionName;
 typedef std::string CodeBlock;
@@ -328,7 +328,7 @@ Command(inc) {
 
 /** Set a variable **/
 Command(set) {
-	constexpr char se[] = "<var> [+-*/%|^&<<>>**]|[:]= <val>";
+	constexpr char se[] = "<var> [+-*/%|^&:][**][||][&&][//][<<][>>]= <val>";
 	if (argc < 4)
 		syntax_error(se);
 
@@ -341,14 +341,14 @@ Command(set) {
 			ret_val = argv[i+1];
 		}
 		// expr shortcuts
-		MakeOp(+); MakeOp(<<);
-		MakeOp(-); MakeOp(>>);
-		MakeOp(*); MakeOp(**);
-		MakeOp(/);
-		MakeOp(%);
-		MakeOp(|);
-		MakeOp(^);
-		MakeOp(&);
+		MakeOp("+"); MakeOp("<<");
+		MakeOp("-"); MakeOp(">>");
+		MakeOp("*"); MakeOp("**");
+		MakeOp("/"); MakeOp("&&");
+		MakeOp("%"); MakeOp("||");
+		MakeOp("|"); MakeOp("//");
+		MakeOp("^");
+		MakeOp("&");
 		else syntax_error(se);
 	}
 	NoReturn;

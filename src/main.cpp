@@ -109,7 +109,6 @@ class WordList;
   void                      rq             (std::string&              );
   // SUBST.HPP
 
-  static inline int         prio           (char                      );
   static inline bool        lassoc         (char                      );
   static inline char       *ldtoa          (ld                        );
   extern inline bool        is_expr        (std::string               );
