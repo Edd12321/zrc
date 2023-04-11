@@ -62,7 +62,7 @@ typedef int Jid;
 /***** GLOBAL VARIABLES BEGIN *****/
   extern char **environ;
 
-  int o_in, o_out; 
+  int o_in, o_out, o2_in, o2_out; 
   bool cin_eq_in, w, make_new_jobs = true;
   pid_t zrcpid = getpid();
   std::string ret_val;
@@ -132,7 +132,7 @@ class WordList;
   inline void               fd_parse       (std::string_view          );
   // FD.HPP
 
-  static inline char        zrawch         (char&                     );
+  static inline bool        zrawch         (char&                     );
   bool                      zlineedit      (std::string&              );
   template<typename T> bool zrc_read_line  (std::istream&,std::string&,T const&);
   inline bool               zrc_read_line  (std::istream&,std::string&);
@@ -317,7 +317,7 @@ _skip:
  * @param {string_view}sv
  * @return string
  */
-template<typename T> __attribute__((always_inline)) std::string
+template<typename T> std::string
 eval(T sv)
 {
 	std::stringstream ss;
@@ -325,15 +325,13 @@ eval(T sv)
 	return eval_stream(ss);
 }
 
-static inline __attribute__((always_inline)) void
-version()
+sub version()
 {
 	std::cout << ver << std::endl;
 	exit(EXIT_SUCCESS);
 }
 
-static inline __attribute__((always_inline)) void
-usage()
+sub usage()
 {
 	std::cout << "zrc [--help][--version] [file] [args...]" << std::endl;
 	exit(EXIT_SUCCESS);
@@ -350,9 +348,10 @@ main(int argc, char *argv[])
 	std::ios_base::sync_with_stdio(false);
 	//std::cin.tie(NULL);
 	//std::cout.tie(NULL);
-	o_in  = dup(STDIN_FILENO);
-	o_out = dup(STDOUT_FILENO);
-
+	o_in   = dup(STDIN_FILENO);
+	o_out  = dup(STDOUT_FILENO);
+	o2_in  = dup(STDIN_FILENO);
+	o2_out = dup(STDOUT_FILENO);
 	signal2(SIGCHLD, sigchld_handler);
 	signal2(SIGINT,   sigint_handler);
 	signal2(SIGTSTP, sigtstp_handler);

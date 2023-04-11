@@ -258,6 +258,8 @@ Command(read) {
 	int opt;
 	bool q = false, w = false;
 	char d = '\n';
+
+	optind = 1;
 	while ((opt = getopt(argc, argv, "p:d:qw")) != -1) {
 		switch (opt) {
 		case 'p':
@@ -306,7 +308,10 @@ Command(read) {
 				return "1";
 		}
 		std::cout << ch;
+	} else {
+		syntax_error(se);
 	}
+	std::cout << std::endl;
 	return "0";
 }
 

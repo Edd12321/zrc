@@ -24,6 +24,8 @@
 		argv[0] = strdup("@");\
 		argv[1] = strdup(((std::string)"echo -n"+getvar("PS1")).c_str());\
 		exec(2, argv);\
+	} else {\
+		std::cout << default_prompt << std::flush;\
 	}
 #ifdef __cpp_lib_filesystem
 	namespace fs = std::filesystem;
@@ -233,7 +235,7 @@ namespace zlineshort
 	}
 }
 
-static inline char
+static inline bool
 zrawch(char& ch)
 {
 	struct termios term;
@@ -246,7 +248,7 @@ zrawch(char& ch)
 	term.c_lflag |= ICANON;
 	term.c_lflag |= ECHO;
 	tcsetattr(STDIN_FILENO, TCSADRAIN, &term);
-	return ch;
+	return !std::cin.eof() && !std::cin.fail();
 }
 
 bool

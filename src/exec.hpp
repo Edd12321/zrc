@@ -121,8 +121,8 @@ exec(int argc, char *argv[])
 	// Reset all FDs
 	dup2(o_in, STDIN_FILENO);
 	dup2(o_out, STDOUT_FILENO);
-	for (i = 0, siz = baks.size(); i < siz; ++i)
-		dup2(baks[i].first, baks[i].second);
+	for (auto const& it : baks)
+		dup2(it.first, it.second);
 	baks.clear();
 
 	setvar("?", ret_val);
