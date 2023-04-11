@@ -5,7 +5,7 @@
 
 typedef struct {
 	pid_t    pid;
-	int      argc=0, state=FG;
+	int      argc, state;
 	char   **argv;
 } Job;
 
@@ -15,20 +15,20 @@ extern inline void
 jobs()
 {
 	int i;
-	for (auto const& [k,v] : jt) {
-		std::cout << " [" << std::setw(5) << k     << "] ";
-		std::cout << " (" << std::setw(5) << v.pid << ") ";
+	for (auto const& v : jt) {
+		std::cout << " [" << std::setw(5) << v.first      << "] ";
+		std::cout << " (" << std::setw(5) << v.second.pid << ") ";
 
 		// Status
-		if (v.state == BG)
+		if (v.second.state == BG)
 			std::cout << "Background ";
-		if (v.state == FG)
+		if (v.second.state == FG)
 			std::cout << "Foregorund ";
-		if (v.state == ST)
+		if (v.second.state == ST)
 			std::cout << "Stopped    ";
 
-		for (i = 0; i < v.argc; ++i)
-			std::cout << v.argv[i] << ' ';
+		for (i = 0; i < v.second.argc; ++i)
+			std::cout << v.second.argv[i] << ' ';
 		std::cout << std::endl;
 	}
 }
@@ -66,8 +66,7 @@ addjob(pid_t pid, int state, int argc, char *argv[])
  * @param {Job*}job
  * @return void
  */
-void
-deljob(Jid index)
+sub deljob(Jid index)
 {
 	std::map<Jid, Job>::iterator it;
 	int i;

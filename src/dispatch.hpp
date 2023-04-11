@@ -35,7 +35,7 @@ Command(exit)   { exit(EXIT_SUCCESS); }
 /** Displays a job table **/
 Command(jobs)   { jobs(); return "0"; }
 /** Waits for child processes to finish **/
-Command(wait)   { while (wait(NULL) > 0); return "0"; }
+Command(wait)   { while (wait(NULL) > 0){} return "0"; }
 /** Closes with an error message **/
 Command(die)    { die(argv[1]); return "1"; }
 /** Evaluates an arithmetic expression **/

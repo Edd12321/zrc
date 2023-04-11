@@ -8,7 +8,7 @@ expr \- Evaluate expressions
 This builtin concatenates all of its arguments into one arithmetic expression, evaluates it and returns its value. All of these functions/operators can also be found in other languages, such as C or Python.
 .SS Precedence level 0
 .RB ( , ) ;
-.SS Precedence level 1
+.SS Precedence level 1 (ternary operator)
 .RB ? , : ;
 .SS Precedence level 2
 .RB || , or ;
@@ -36,7 +36,9 @@ This builtin concatenates all of its arguments into one arithmetic expression, e
 .SS Functions
 .RB log10 , log2 , log , sqrt , sin , cos , ctg , tg , floor , ceil , abs;
 .SS Other words
-.RB nan , false , true;
+.RB nan , false , true ;
+.SS Unary operators
+.RB - , + , ~ .
 .SH EXAMPLES
 .EX
 	echo [expr 1+2/(100**3+log(4))//2+sin 2+cos(floor(ceil(-8.7)))]

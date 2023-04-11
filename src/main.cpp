@@ -94,7 +94,7 @@ class WordList;
 
   extern inline void        jobs           (void                      );
   Jid                       addjob         (pid_t , int , int , char**);
-  void                      deljob         (Jid                       );
+  static void               deljob         (Jid                       );
   static pid_t              getfg          (void                      );
   void                      upper          (char*                     );
   void                      sigchld_handler(int                       );

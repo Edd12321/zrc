@@ -13,7 +13,7 @@
  * @param {int}c,{char**}v,{int}i
  * @return void
  */
-template<typename T> static std::string
+template<typename T> std::string
 combine(int c, T v, int i)
 {
     std::string buf = "";
@@ -50,11 +50,10 @@ exec(int argc, char *argv[])
 	// Nothing happens...
 	if (!argc) return;
 	if (!builtin_check(argc, argv)) {
-		switch(w) {
+		if (w) {
 		/**********************
 		 * Foreground process *
 		 **********************/
-		case true:
 			if (FOUND_FN(0)) {
 				// Copy original argc
 				std::string oa = getvar("argc");
@@ -86,12 +85,11 @@ exec(int argc, char *argv[])
 					waitproc(pid);
 				}
 			}
-			break;
 
 		/**********************
 		 * Background process *
 		 **********************/
-		case false:
+		} else {
 			PGROUP_INITIALIZE;
 			if ((pid = fork()) < 0)
 				die("fork");
@@ -118,7 +116,6 @@ exec(int argc, char *argv[])
 				sigprocmask(SIG_UNBLOCK, &mask, NULL);
 				setvar("!", itoa(pid));
 			}
-			break;
 		}
 	}
 	// Reset all FDs

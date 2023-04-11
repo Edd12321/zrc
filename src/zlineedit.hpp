@@ -25,7 +25,13 @@
 		argv[1] = strdup(((std::string)"echo -n"+getvar("PS1")).c_str());\
 		exec(2, argv);\
 	}
-namespace fs = std::filesystem;
+#ifdef __cpp_lib_filesystem
+	namespace fs = std::filesystem;
+#elif __cpp_lib_experimental_filesystem
+	namespace fs = std::experimental::filesystem;
+#else
+	namespace fs = std::__fs::filesystem;
+#endif
 
 /** Returns a terminal's width and height
  * 
