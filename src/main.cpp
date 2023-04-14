@@ -83,7 +83,7 @@ typedef int Jid;
 /***** GLOBAL VARIABLES BEGIN *****/
   extern char **environ;
 
-  int o_in, o_out, o2_in, o2_out; 
+  int o_in, o_out; 
   bool cin_eq_in, w, make_new_jobs = true;
   pid_t zrcpid = getpid();
   std::string ret_val;
@@ -260,6 +260,7 @@ eval_stream(std::istream& in)
 					for (std::string& str : spl.wl)
 						args[k++] = strdup(str.c_str());
 				}
+				/*!*/else if (*it == "<<") { sword = 1; args[k++] = io_hedoc(*(++it), in); unlink(args[k+1]); }
 				/*!*/else if (*it == "<" ) { sword = 1; io_left (*(++it)    ); }
 				/*!*/else if (*it == ">" ) { sword = 1; io_right(*(++it),0,1); }
 				/*!*/else if (*it == ">>") { sword = 1; io_right(*(++it),1,1); }

@@ -217,13 +217,33 @@ io_pipe(int argc, char *argv[])
 {
 	int pd[2];
 	pipe(pd);
-	dup2(pd[1], 1);
+	dup2(pd[1], STDOUT_FILENO);
 	close(pd[1]);
 
 	// Run
 	exec(argc, argv);
-	dup2(pd[0], 0);
+	dup2(pd[0], STDIN_FILENO);
 	close(pd[0]);
 }
 
+/** Heredocs support
+ *
+ * @param {int}argc,{char**}argv
+ * @return void
+ */
+char *
+io_hedoc(std::string_view hs, std::istream& in)
+{
+	char *temp = strdup("/tmp/zheredocXXXXXX");
+	std::string line;
+	int fd;
 
+	fd = mkstemp(temp);
+	while (zrc_read_line(in, line, '>')) {
+		if (line == hs)
+			break;
+		else if (write(fd, (line+"\n").data(), line.length()+1) == -1)
+			die("heredoc: write(3) failed");
+	}
+	return temp;
+}
