@@ -1,11 +1,11 @@
 /** Parses >(2), >(2=), >(2=1) syntax.
  * 
- * @param {vector<string>}&vec,{size_t}&index
+ * @param {vector<string>}&vec,{size_t}index
  * @return void
  */
 
-extern inline void
-fd_parse(WordList& vec, size_t& index)
+extern inline bool
+fd_parse(WordList& vec, size_t const& index)
 {
 	std::string fdstr;
 	WordList fds;
@@ -42,7 +42,8 @@ fd_parse(WordList& vec, size_t& index)
 	if (fds.size() == 1 && is_number(fds.wl[0])) {
 		fd = std::stoi(fds.wl[0]);
 		baks.emplace_back(std::make_pair(dup(fd), fd));
-		io_right(vec.wl[++index], 0, fd);
+		io_right(vec.wl[index+1], 0, fd);
+		return 1;
 	
 	//==================================
 	// Case 2: Closing a file descriptor
@@ -74,4 +75,5 @@ fd_parse(WordList& vec, size_t& index)
 	} else {
 		std::cerr << errmsg << "Invalid FD syntax!\n";
 	}
+	return 0;
 }

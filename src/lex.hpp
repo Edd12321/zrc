@@ -92,7 +92,7 @@ tokenize(std::string line, std::istream& in)
 				if (!cmpnd) break;
 				++i;
 			}
-
+			
 			wl.make_not_bare();
 			if (q != '(')
 				wl.add_token(tmp);
@@ -123,7 +123,7 @@ tokenize(std::string line, std::istream& in)
 			break;
 
 		default:
-			if (strchr("$\\", line[i]))
+			if (line[i] == '$')
 				wl.make_not_bare();
 			tmp += line[i];
 			if (line[i] == '\\')

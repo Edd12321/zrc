@@ -77,9 +77,11 @@ namespace zlineshort
 	}
 	sub W(std::string_view sv)
 	{
-		f.open(filename, std::fstream::out|std::fstream::app);
-		f << sv << std::endl;
-		f.close();
+		if (!std::all_of(sv.begin(), sv.end(), isspace)) {
+			f.open(filename, std::fstream::out|std::fstream::app);
+			f << sv << std::endl;
+			f.close();
+		}
 	}
 
 	/* Arrow key history browsing */
