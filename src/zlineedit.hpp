@@ -268,18 +268,17 @@ zlineedit(std::string& buf)
 		/* The line editing part */
 #if defined(_WIN32)
 		case 224:
-			if (zrawch(c)) {
-				if (c == 'H') up(buf);
-				if (c == 'P') dn(buf);
-				if (c == 'K') lt(buf);
-				if (c == 'M') rt(buf);
-			} else return false;
+			zrawch(c)
+			if (c == 'H') up(buf);
+			if (c == 'P') dn(buf);
+			if (c == 'K') lt(buf);
+			if (c == 'M') rt(buf);
 			break;
 #else
 		case KEY_ESC:
-			if (!zrawch(c)) return false;
+			zrawch(c);
 			if (c == '[') {
-				if (!zrawch(c)) return false;
+				zrawch(c);
 				if (c == 'A') up(buf);
 				if (c == 'B') dn(buf);
 				if (c == 'C') rt(buf);
@@ -316,6 +315,7 @@ zlineedit(std::string& buf)
 			insert(buf, c);
 		}
 	}
+	std::cin.clear();
 	return true;
 }
 

@@ -24,7 +24,7 @@ int
 main(int argc, char *argv[])
 {
 	if (argc == 1)
-		concat(0, "stdin");
+		concat(stdin, "stdin");
 	else for (int i = 1; i < argc; ++i) {
 		if (access(argv[i], F_OK) == 0) {
 			FILE *fin = fopen(argv[i], "r");

@@ -1,0 +1,58 @@
+#!/usr/lib/zrc/bin/zrc
+#-----END HEREDOC-----
+cat << EOF
+Content-type: text/html
+
+<!DOCTYPE HTML>
+<html>
+<head></head>
+<body>
+EOF
+#-----END HEREDOC-----
+set E:MANPATH = /usr/lib/zrc/doc:$E:MANPATH
+
+echo "<a href=man.cgi?all>HOME</a>|"
+echo "<a href=man.cgi?1>SECTION 1</a>|"
+echo "<a href=man.cgi?2>SECTION 2</a>|"
+echo "<a href=man.cgi?3>SECTION 3</a><hr/>"
+set q = $E:QUERY_STRING
+set pat = {{
+	print "<a href=man.cgi?" $1 ">" $1 "</a>";
+	$1 = "";
+	print $0;
+}}
+
+# Just show all manpages
+if {![string cmp $q ''] || ![string cmp $q all]} {
+	echo "<pre>"
+	man -k . | awk $pat
+	echo "</pre>"
+} else {
+	# Show a specific list of manpages
+	set n = [ord [string index $q 0]]
+	if {$n >= [ord '0'] && $n <= [ord '9']} {
+		echo "<pre>"
+		man -k . | grep '($q)' | awk $pat
+	
+	# Display the manpage (compressed or not)
+	} else {
+		set W1 = $(echo $q | awk '-F&' {{print $1}})
+		if [man -w $W1 > /dev/null >(2=1)] {
+			echo "<h3><font color=red>No manual page for $W1!!</font></h3>"
+		} else {
+			set file = $(man -w $W1)
+			if [gzip -t $file] {
+				cat $file | groff -mandoc -Thtml
+			} else {
+				zcat $file | groff -mandoc -Thtml
+			}
+		}
+	}
+}
+
+#-----BEGIN HEREDOC-----
+cat << EOF
+<hr/>
+</body>
+EOF
+#-----END HEREDOC-----

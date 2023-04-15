@@ -233,6 +233,11 @@ eval_stream(std::istream& in)
 	/*FD expr 1*///std::regex const e{"\\>\\((.*?)\\)"};
 	/*FD expr 2*///std::smatch m;
 
+	int o_in2, o_out2;
+	o_in2   = o_in;
+	o_out2  = o_out;
+	o_in    = dup(STDIN_FILENO);
+	o_out   = dup(STDOUT_FILENO);
 	REFRESH_TTY;
 	while (zrc_read_line(in, line)) {
 		bg_or_fg.clear();
@@ -290,6 +295,10 @@ eval_stream(std::istream& in)
 		}
 		REFRESH_TTY;
 	}
+	close(o_in);
+	close(o_out);
+	o_in  = o_in2;
+	o_out = o_out2;
 	in.clear();
 	return ret_val;
 }

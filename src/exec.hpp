@@ -30,7 +30,6 @@ combine(int c, T v, int i)
  * @param {int}argc,{char**}argv
  * @return void
  */
-
 extern void
 exec(int argc, char *argv[])
 {
@@ -159,7 +158,6 @@ io_cap(std::string frag)
 		close(pd[1]);
 		eval(frag);
 		exit(0);
-	
 	} else {
 		close(pd[1]);
 		do {

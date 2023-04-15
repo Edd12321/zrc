@@ -340,7 +340,7 @@ Command(set) {
 	for (int i = 2; i < argc; i += 3) {
 		if (!strcmp(argv[i], "=")) {
 			setvar(argv[i-1], argv[i+1]);
-			ret_val = "0";
+			//ret_val = "0";
 		} else if (!strcmp(argv[i], ":=")) {
 			setvar(argv[i-1], argv[i+1]);
 			ret_val = argv[i+1];
