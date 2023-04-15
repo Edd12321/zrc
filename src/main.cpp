@@ -258,18 +258,12 @@ eval_stream(std::istream& in)
 				/*!*/if (*it == "&" || *it == ";") { sword = 1; RC(1); }
 				/*!*/else if (*it == "&&")         { sword = 1; RC(ret_val=="0"); }
 				/*!*/else if (*it == "||")         { sword = 1; RC(ret_val!="0"); }
-				/*!*/else if (*it == "{*}" && it<zwl.wl.end()-1) {
-					sword = 1;
-					str_subst(*(++it));
-					spl = tokenize(*it, in);
-					for (std::string& str : spl.wl)
-						args[k++] = strdup(str.c_str());
-				}
-				/*!*/else if (*it == "<<") { sword = 1; args[k++] = io_hedoc(*(++it), in); unlink(args[k+1]); }
-				/*!*/else if (*it == "<" ) { sword = 1; io_left (*(++it)    ); }
-				/*!*/else if (*it == ">" ) { sword = 1; io_right(*(++it),0,1); }
-				/*!*/else if (*it == ">>") { sword = 1; io_right(*(++it),1,1); }
-				/*!*/else if (*it == "|" ) {
+				/*!*/else if (*it == "<<" ) { sword = 1; io_hedoc(*(++it), in, 0); continue; }
+				/*!*/else if (*it == "<<<") { sword = 1; io_hedoc(*(++it), in, 1); continue; }
+				/*!*/else if (*it == "<"  ) { sword = 1; io_left (*(++it)       ); continue; }
+				/*!*/else if (*it == ">"  ) { sword = 1; io_right(*(++it), 0 , 1); continue; }
+				/*!*/else if (*it == ">>" ) { sword = 1; io_right(*(++it), 1 , 1); continue; }
+				/*!*/else if (*it == "|"  ) {
 					sword = 1;
 					if (!can_runcmd)
 						continue;
@@ -286,8 +280,15 @@ eval_stream(std::istream& in)
 				}
 			}
 			if (!glb && (!zwl.is_bare(CIND) || !sword)) {
-				/*!*/CHK_FD
-				else {
+				/*!*/if (*it == "{*}"/* && it<zwl.wl.end()-1*/) {
+					sword = 1;
+					str_subst(*(++it));
+					spl = tokenize(*it, in);
+					for (std::string& str : spl.wl)
+						args[k++] = strdup(str.c_str());
+				}
+				/*!*/else CHK_FD
+				     else {
 					str_subst(*it);
 					args[k++] = strdup((*it).c_str());
 				}

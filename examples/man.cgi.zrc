@@ -1,5 +1,5 @@
 #!/usr/lib/zrc/bin/zrc
-#-----END HEREDOC-----
+#-----BEGIN HEREDOC-----
 cat << EOF
 Content-type: text/html
 
@@ -53,6 +53,6 @@ if {![string cmp $q ''] || ![string cmp $q all]} {
 #-----BEGIN HEREDOC-----
 cat << EOF
 <hr/>
-</body>
+</body></html>
 EOF
 #-----END HEREDOC-----

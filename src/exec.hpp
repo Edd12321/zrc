@@ -182,7 +182,7 @@ io_left(std::string fn)
 {
 	str_subst(fn);
 	int fd = open(fn.data(), O_RDONLY);
-	dup2(fd, 0);
+	dup2(fd, STDIN_FILENO);
 	close(fd);
 }
 
@@ -224,24 +224,36 @@ io_pipe(int argc, char *argv[])
 	close(pd[0]);
 }
 
-/** Heredocs support
+/** Heredocs/herestrings support
  *
- * @param {int}argc,{char**}argv
+ * @param {string}hs,{istream&}in,bool mode
  * @return void
  */
-char *
-io_hedoc(std::string_view hs, std::istream& in)
+void
+io_hedoc(std::string hs, std::istream& in, bool mode)
 {
-	char *temp = strdup("/tmp/zheredocXXXXXX");
+	char *temp = strdup("/tmp/zhereXXXXXX");
 	std::string line;
 	int fd;
 
+	str_subst(hs);
 	fd = mkstemp(temp);
-	while (zrc_read_line(in, line, '>')) {
-		if (line == hs)
-			break;
-		else if (write(fd, (line+"\n").data(), line.length()+1) == -1)
-			die("heredoc: write(3) failed");
+	if (mode) {
+		/* HERESTRING */
+		hs += "\n";
+		if (write(fd, hs.data(), hs.length()) == -1)
+			die("herestring: write(3) failed");
+	} else {
+		/* HEREDOC */
+		while (zrc_read_line(in, line, '>')) {
+			if (line == hs)
+				break;
+			else if (write(fd, (line+"\n").data(), line.length()+1) == -1)
+				die("heredoc: write(3) failed");
+		}
 	}
-	return temp;
+	close(fd);
+	io_left(temp);
+	unlink(temp);
+	free(temp);
 }
