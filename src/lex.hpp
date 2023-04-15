@@ -123,7 +123,7 @@ tokenize(std::string line, std::istream& in)
 			break;
 
 		default:
-			if (line[i] == '$')
+			if (strchr("$\\", line[i]))
 				wl.make_not_bare();
 			tmp += line[i];
 			if (line[i] == '\\')
