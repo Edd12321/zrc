@@ -7,7 +7,7 @@ fn find_files {
 	foreach file * {
 		foreach ext ".exe" ".com" ".cmd" ".zrc" {
 			if {[string cmp \
-			$file $(basename $file $ext)] != 0} {
+			$file `{basename $file $ext}] != 0} {
 				echo "Found file $file with extension $ext\!"
 				inc k
 			}

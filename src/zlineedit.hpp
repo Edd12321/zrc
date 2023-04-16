@@ -85,38 +85,23 @@ namespace zlineshort
 	}
 
 	/* Arrow key history browsing */
-	sub up(std::string& buf)
-	{
-		size_t len = buf.length();
 
-		if (!histmax) return;
-		buf = vec[histpos];
-		histpos = (histpos<histmax-1) ? histpos+1 : 0;
-		if (cursor_pos)
-			CURSOR_BWD(cursor_pos);
-		for (long i = 0; i < len; ++i)
-			std::cout << ' ';
-		if (len)
-			CURSOR_BWD(len);
-		std::cout << buf;
-		cursor_pos = buf.length();
-	}
+#define ARROW_MACRO(X) {\
+	size_t len = buf.length();\
+	if (!histmax) return;\
+	histpos = (X);\
+	buf     = (histpos == histmax) ? "" : vec[histpos];\
+	if (cursor_pos) CURSOR_BWD(cursor_pos);\
+	for (long i = 0; i < len; ++i) std::cout << ' ';\
+	if (len) CURSOR_BWD(len);\
+	std::cout << buf;\
+	cursor_pos = buf.length();\
+}
 	sub dn(std::string& buf)
-	{
-		size_t len = buf.length();
+		ARROW_MACRO((histpos<histmax) ? histpos+1 : 0)
 
-		if (!histmax) return;
-		buf = vec[histpos];
-		histpos = (histpos>0) ? histpos-1 : histmax-1;
-		if (cursor_pos)
-			CURSOR_BWD(cursor_pos);
-		for (long i = 0; i < len; ++i)
-			std::cout << ' ';
-		if (len)
-			CURSOR_BWD(len);
-		std::cout << buf;
-		cursor_pos = buf.length();
-	}
+	sub up(std::string& buf)
+		ARROW_MACRO((histpos>0) ? histpos-1 : histmax)
 
 	/* Moving the cursor around */
 	sub lt(std::string& buf)

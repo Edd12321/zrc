@@ -76,8 +76,13 @@ tokenize(std::string line, std::istream& in)
 			if (q == '{') p = '}';
 			if (q == '(') p = ')';
 			
-			if (q != '(')
+			if (!tmp.empty() && tmp.back() == '`' && q == '{') {
+				tmp.pop_back();
 				wl.add_token(tmp);
+				tmp += "`{";
+			} else if (q != '(') {
+				wl.add_token(tmp);
+			}
 
 			for ever {
 				CHK_LINE;
@@ -101,7 +106,6 @@ tokenize(std::string line, std::istream& in)
 		// Regular quoting
 		case '\'':
 		case  '"':
-		case  '`':
 			q = line[i];
 			STR_KLUDGE(q);
 			wl.make_not_bare();

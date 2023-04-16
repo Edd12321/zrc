@@ -32,7 +32,7 @@ fn usage {
 fn main {
 	# IP address
 	for {set i = 1} {$i <= 4} {inc i} {
-		set ip($i) = $(echo -n $argv(1) | cut -d. -f$i)
+		set ip($i) = `{echo -n $argv(1) | cut -d. -f$i}
 		set ip = "$ip[to_bin $ip($i)]"
 	}
 	

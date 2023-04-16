@@ -2,13 +2,13 @@
 ################################
 # Disable Intel CPU throttling #
 ################################
-if {$(id -u) == 0} {
-	set REG = $(rdmsr -d 0x1FC)
+if {`{id -u} == 0} {
+	set REG = `{rdmsr -d 0x1FC}
 	if {$REG & 1 == 0} {
 		if {[string cmp $argv(2) "-d"] == 0}\
 			exit
 		# Enable BD PROCHOT
-		inc REG;
+		inc REG
 	} else {
 		if {[string cmp $argv(2) "-e"] == 0}\
 			exit

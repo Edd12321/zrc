@@ -3,12 +3,12 @@
                "QWERTYUIOPASDFGHJKLZXCVBNM"\
                "qwertyuiopasdfghjklzxcvbnm"
 
-#define ITERATE_PAREN {                        \
+#define ITERATE_PAREN(X,Y) {                   \
     for (++i, cmpnd = 1; i < len; ++i) {       \
-        if (i == len-1 && str[i] != ')')       \
+        if (i == len-1 && str[i] != Y)         \
             die("Unmatched paren");            \
-        if (str[i] == '(') ++cmpnd;            \
-        if (str[i] == ')') --cmpnd;            \
+        if (str[i] == X) ++cmpnd;              \
+        if (str[i] == Y) --cmpnd;              \
         if (!cmpnd)                            \
             break;                             \
         tmp2 += str[i];                        \
@@ -44,12 +44,10 @@ str_subst(std::string& str)
 
 	// Brace quoting:
 	// No substitutions are performed!
-	if ((str[0] == '{' && str.back() == '}')
-	||  (str[0] == '`' && str.back() == '`')) {
+	if (str[0] == '{' && str.back() == '}') {
 		rq(str);
 		return;
 	}
-
 
 	for (i = 0; i < len; ++i) {
 		switch(str[i]) {
@@ -74,7 +72,6 @@ str_subst(std::string& str)
 
 		case '\'':
 		case  '"':
-		case  '`':
 			if NO_QUOTES
 				quote[str[i]] = true;
 			else if (quote[str[i]])
@@ -83,26 +80,34 @@ str_subst(std::string& str)
 				res += str[i];
 			break;
 
-		case '$':
+		case '`':
 			tmp1.clear();
 			tmp2.clear();
-
-		/************************
-		 * Command substitution *
-		 ************************/
-			if (i < len-1 && str[i+1] == '(') {
+			/************************
+			 * Command substitution *
+			 ************************/
+			if (i < len-1 && str[i+1] == '{') {
 				++i;
-				ITERATE_PAREN;
+				ITERATE_PAREN('{','}');
 				// Remove trailing newline unless specified otherwise
+				if (tmp2.front() == '{' && tmp2.back() == '}')
+					rq(tmp2);
 				std::string out = io_cap(tmp2);
 				if (NO_QUOTES && !out.empty() && out.back() == '\n')
 					out.pop_back();
 				res += out;
+			} else {
+				res += '`';
+			}
+			break;
 
+		case '$':
+			tmp1.clear();
+			tmp2.clear();
 		/**********************
 		 * Variable expansion *
 		 **********************/
-			} else if (i < len-1 && strchr("?!", str[i+1])) {
+			if (i < len-1 && strchr("?!", str[i+1])) {
 				std::string tmp;
 				tmp += str[++i];
 				res += getvar(tmp);
@@ -111,7 +116,7 @@ str_subst(std::string& str)
 				for (++i; i < len && strchr(SCALAR, str[i]); ++i) {
 					tmp1 += str[i];
 					if (str[i] == '(') {
-						ITERATE_PAREN;
+						ITERATE_PAREN('(',')');
 						str_subst(tmp2);
 						tmp1 += tmp2+")";
 						arr_ok = true;
@@ -130,17 +135,9 @@ str_subst(std::string& str)
 		 * Return substitution *
 		 ***********************/
 		case '[':
-			tmp1.clear();
-			for (++i, cmpnd = 1; i < len; ++i) {
-				if (i == len-1 && str[i] != ']')
-					die("Unmatched bracket");
-				if (str[i] == '[') ++cmpnd;
-				if (str[i] == ']') --cmpnd;
-				if (!cmpnd)
-					break;
-				tmp1 += str[i];
-			}
-			res += eval(tmp1);
+			tmp2.clear();
+			ITERATE_PAREN('[',']');
+			res += eval(tmp2);
 			break;
 		default:
 			res += str[i];

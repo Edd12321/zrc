@@ -51,7 +51,7 @@ fn display {
 
 fn main {
 	echo -n "val=";
-	set val = $(read str);
+	set val = `{read str};
 
 	if {$val % 2 == 0} {
 		inc val

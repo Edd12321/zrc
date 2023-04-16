@@ -28,11 +28,11 @@ fn serve {
 		<!DOCTYPE HTML>
 		<html>
 		<head>
-		<style>"$(css)"</style>
+		<style>"`{css}"</style>
 		</head>
 		<body>
 			<h1>Zrc dashboard demo</h1>
-			"$(date)"
+			"`{date}"
 
 			<!-----COMMANDS BEGIN----->
 			"[button 'remo dialog' 'Show dialog on server']"
@@ -43,13 +43,13 @@ fn serve {
 			<!-----COMMANDS END----->
 
 			<h2>MPStat</h2><pre>
-				"$(mpstat | ansifilter)"
+				"`{mpstat | ansifilter}"
 			</pre>
 			<h2>VMStat</h2><pre>
-				"$(vmstat | ansifilter)"
+				"`{vmstat | ansifilter}"
 			</pre>
 			<h2>IOStat</h2><pre>
-				"$(iostat | ansifilter)"
+				"`{iostat | ansifilter}"
 			</pre>
 		</body>
 		</html>
@@ -100,7 +100,7 @@ fn remo {
 
 fn main {
 	echo -n "Please enter log filename: "
-	set LOG_FILE = $(read line)
+	set LOG_FILE =`{read line}
 
 	$E:BROWSER http://localhost:8080\
 		> /dev/null &
@@ -110,11 +110,11 @@ fn main {
 	}
 	# Main webserver loop
 	while 1 {
-		set CMD = $(echo -e "HTTP/1.1 200 OK\n\n$(serve)" \
+		set CMD = `{echo -e "HTTP/1.1 200 OK\n\n`{serve}" \
 			| nc -l -k -q 1 -p 8080 \
 			| grep "GET /remo" \
 			| sed -e 's/%20/ /g'
-		)
+		}
 		eval [string range $CMD 5 11]
 	}
 }; main

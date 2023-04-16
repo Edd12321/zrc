@@ -1,6 +1,6 @@
 #!/usr/bin/env zrc
 # Personal script
-set WM  = $(echo "awesome\nxfwm4" | dmenu | tr -d '\n')
+set WM  = `{echo "awesome\nxfwm4" | dmenu | tr -d '\n'}
 set CMD = "xfconf-query -c xfce4-panel -np /panels/panel-3/autohide-behavior -t int -s"
 
 switch $WM {

@@ -33,7 +33,7 @@ fn neighbor {
 
 # Generate a random unsigned integer
 fn rand {
-	return $(shuf -i 200-6500 -n 1)
+	return `{shuf -i 200-6500 -n 1}
 }
 
 # Main routine

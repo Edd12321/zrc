@@ -4,13 +4,13 @@ if {[which pandoc > /dev/null] != 0} { die "Please install pandoc." }
 
 zenity --info --text="Welcome! Please choose a document to convert...";
 
-set file_old = $(zenity --file-selection --title="Pick a file...");
-set file_new = $(echo -n $file_old \
+set file_old = `{zenity --file-selection --title="Pick a file..."};
+set file_new = `{echo -n $file_old \
 	| cut -f1 -d.              \
 	| tr -d '\n'               \
-);
+}
 
-set format = $(
+set format = `{
 	zenity --list --title="Convert to..." --column="Format" --column="Text" \
 		docx "Office DOCX"    \
 		odt "Open Document"   \
@@ -21,7 +21,7 @@ set format = $(
 		markdown "Markdown"   \
 		mediawiki "MediaWiki" \
 		context "ConTeXt" | tr -d '\n';
-);	
+}
 
 if {![test -f $file_new.$format]} {
 	if {![zenity --question \

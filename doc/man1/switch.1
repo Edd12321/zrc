@@ -24,7 +24,7 @@ then the utility changes the default fallback compound block to the one found ne
 word. If, at the end of this scanning process, no case statement short-circuited the switch command, the fallback compound block (initally empty) executes.
 .SH EXAMPLES
 .EX
-	set name = $(read line -p "What's your name? ")
+	set name = `{read line -p "What's your name? "}
 	switch $name {
 		case Johnny {
 			echo Hello, man!

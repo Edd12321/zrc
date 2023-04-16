@@ -1,5 +1,5 @@
 #!../bin/zrc
-set input = $(read line)
+set input = `{read line}
 
 switch $input {
 	case 0 {

@@ -182,7 +182,7 @@ rq(std::string& str)
 static bool
 die(std::string_view err)
 {
-	std::cerr << err;
+	std::cerr << err << '\n';
 	exit(EXIT_FAILURE);
 	return 0;//dummy return
 }
@@ -318,7 +318,7 @@ std::string eval(T sv)
 }
 
 sub version() { die(ver); }
-sub usage()   { die("zrc [--help][--version] [<file>] [<args...>]"); }
+sub usage()   { die("zrc [--help][--version][-c <cmd>] [<file>] [<args...>]"); }
 
 int
 main(int argc, char *argv[])
@@ -361,7 +361,12 @@ main(int argc, char *argv[])
 	} else {
 		if (!strcmp(argv[1], "--version")) version();
 		if (!strcmp(argv[1], "--help")) usage();
-		if (!access(argv[1], F_OK)) {
+		if (!strcmp(argv[1], "-c")) {
+			if (argc == 3)
+				eval(argv[2]);
+			else
+				usage();
+		} else if (!access(argv[1], F_OK)) {
 			fp.open(argv[1], std::ios::in);
 			eval_stream(fp);
 			fp.close();

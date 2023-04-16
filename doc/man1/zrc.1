@@ -114,16 +114,16 @@ is an array that stores all arguments passed to the current function (or to the 
 .PP
 .B COMMAND OUTPUT SUBSTITUTION:
 Any sequence of the type
-.B $(...)
+.B `{...}
 treats everything inside braces as a command and returns the standard output it produces. Implicitly, it erases the ending newline character for convenience's sake, but this behavior can be bypassed using quotes. Note that you can nest these:
 .EX
-	echo $(basename a/b/c/d)
+	echo `{basename a/b/c/d}
 	# Displays 'd'
 
-	echo $(basename $(basename a/b/c))
+	echo `{basename `{basename a/b/c}}
 	# Displays 'c'
 
-	echo "$(basename $(basename a/b/c))"
+	echo "`{basename `{basename a/b/c}}"
 	# Displays 'c\\n'
 .EE
 .PP
@@ -133,7 +133,7 @@ As opposed to traditional shells, Zrc supports
 , which means that functions and builtins (but not external programs) can return values other than the classic "status numbers" 0-255 (they can be any string). You can access the return value of a command by using square brackets:
 .EX
 	echo [ls -all]
-	echo [$(echo ls) -all]
+	echo [`{echo ls -all}]
 	echo [[[]]] #echo's 127
 	echo $?
 .EE
@@ -154,7 +154,7 @@ are simpler than the substitutions: You can group together words ­using normal 
 	return 'a b c'
 
 	# Returns "abcdef"
-	return 'a'"b"cd"e"`f`
+	return 'a'"b"cd"e"'f'
 
 	# Doesn't evaluate to "[a]"
 	return '[a]'
@@ -171,8 +171,8 @@ are simpler than the substitutions: You can group together words ­using normal 
 .EE
 There is also "brace quoting", borrowed from Tcl: Brace quoting ends the current word and begins a new one, containing everything between braces. No substitutions are allowed within braces:
 .EX
-	# Prints "$(a)", doesn't run the command
-	echo {$(a)}
+	# Prints "`{a}", doesn't run the command
+	echo {`{a}}
 
 	# Nesting
 	echo {{{}}}
