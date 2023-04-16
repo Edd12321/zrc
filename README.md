@@ -16,15 +16,14 @@ Zrc is almost half of 1mb in size because its implementation is to the point and
 	- [X] Function arguments
 		- [X] `$argv(...)`
 		- [X] `$argc`
-	- [X] Rich return values
 - [X] Globbing
 	- [X] Tilde expansion
 	- [X] Wildcards
 - [X] Pipelines
-- [ ] Full redirection
+- [X] Full redirection
 	- [X] Basic redirection (`>>`, `>`, `<`)
     - [X] Here(documents/strings) (`<<< STR`, `<< EOF[...]EOF`)
-	- [ ] Sometimes, fd syntax is broken (`>(2=1)`, `>(2=)`, `>(2)`)
+	~~- [X] Sometimes, fd syntax is broken (`>(2=1)`, `>(2=)`, `>(2)`)~~
 - [X] Non-I/O shell operators
 	- [X] `&&`
 	- [X] `||`
@@ -41,7 +40,7 @@ Zrc is almost half of 1mb in size because its implementation is to the point and
 		- [X] Scalars, arrays/hashes (`$`)
 		- [X] Separate envvar namespace (`$E:`)
 	- [X] Command substitution
-		- [X] Output (`$(...)`)
+		- [X] Output (`` `{...} ``)
 		- [X] Return value (`[...]`)
 - [X] Built-in commands (like `expr`, `jobs`, etc. but there are too many to list. View `dispatch.hpp`)
 - [X] Conditional logic/flow control with full C arithmetic operator set

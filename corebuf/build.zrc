@@ -2,10 +2,10 @@
 mkdir -p bin
 touch bin/true
 chmod +x bin/true
-set uname_out = $(uname -s | tr -d '\n')
+set uname_out = `{uname -s | tr -d '\n'}
 
 foreach file *.c {
-	set filename = $(basename $file '.c' | tr -d '\n')
+	set filename = `{basename $file '.c' | tr -d '\n'}
 	if {![string cmp $uname_out "MINGW"]\
 	||  ![string cmp $uname_out "CYGWIN"]} {
 		set filename = [string cat $filename '.exe']
