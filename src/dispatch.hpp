@@ -35,6 +35,35 @@ typedef std::string Path;
 DispatchTable<FunctionName, CodeBlock> funcs;
 DispatchTable<AliasName, WordList> aliases;
 
+#define SIGEXIT 0
+const DispatchTable<FunctionName, int> txt2sig = {
+	{ "sighup"  , SIGHUP   }, { "sigint"   , SIGINT    }, { "sigquit", SIGQUIT },
+	{ "sigill"  , SIGILL   }, { "sigtrap"  , SIGTRAP   }, { "sigabrt", SIGABRT },
+	{ "sigbus"  , SIGBUS   }, { "sigfpe"   , SIGFPE    }, { "sigkill", SIGKILL },
+	{ "sigusr1" , SIGUSR1  }, { "sigsegv"  , SIGSEGV   }, { "sigusr2", SIGUSR2 },
+	{ "sigpipe" , SIGPIPE  }, { "sigalrm"  , SIGALRM   }, { "sigterm", SIGTERM },
+	/* #16: unused         */ { "sigchld"  , SIGCHLD   }, { "sigcont", SIGCONT },
+	{ "sigstop" , SIGSTOP  }, { "sigtstp"  , SIGTSTP   }, { "sigttin", SIGTTIN },
+	{ "sigttou" , SIGTTOU  }, { "sigurg"   , SIGURG    }, { "sigxcpu", SIGXCPU },
+	{ "sigxfsz" , SIGXFSZ  }, { "sigvtalrm", SIGVTALRM }, { "sigprof", SIGPROF },
+	{ "sigwinch", SIGWINCH }, { "sigio"    , SIGPOLL   }, { "sigpoll", SIGPOLL },
+	                          // (both SIGIO and SIGPOLL are the same)
+	{ "sigsys"  , SIGSYS   },
+
+
+#ifdef SIGPWR
+	{ "sigpwr"  , SIGPWR   },
+#endif
+#ifdef SIGRTMIN
+	{ "sigrtmin", SIGRTMIN },
+#endif
+#ifdef SIGRTMAX
+	{ "sigrtmax", SIGRTMAX },
+#endif
+	{ "sigexit" , SIGEXIT }
+	//Special zrc "pseudo-signal"
+};
+
 static inline void
 prints(std::stack<Path> sp)
 {
@@ -193,16 +222,59 @@ Command(fn) {
 	if (+FOUND_FN(1))
 		other_error("Function exists", 2);
 	funcs[argv[1]] = argv[2];
+	if (txt2sig.find(argv[1]) != txt2sig.end()) {
+		if (!strcmp(argv[1], "sigexit")) {
+			atexit([](){eval(funcs["sigexit"]);});
+		} else {
+			signal2(txt2sig.at(argv[1]), [](int sig){
+				// We have to re-traverse the hashmap, because lambdas can't be passed as
+				// function pointers if they capture argv[]...
+				for (auto const& it : txt2sig)
+					if (it.second == sig)
+						eval(it.first);
+			});
+		}
+	}
 	return "0";
 }
 
 /** Undefines a function**/
 Command(nf) {
-	if (argc != 2)
-		syntax_error("<name>");
-	if (!FOUND_FN(1))
-		other_error("Function not found", 2);
-	funcs.erase(argv[1]);
+	bool ok=0;
+	if ((argc != 2 && argc != 3) || (argc == 3 && strcmp(argv[1], "-s")))
+		syntax_error("[-s] <name>");
+	if (argc == 3) {
+		++argv, --argc;
+		ok = 1;
+	}
+	if (!FOUND_FN(1)) {
+		if (!ok)
+			other_error("Function not found", 2);
+	} else {
+		funcs.erase(argv[1]);
+	}
+
+	if (txt2sig.find(argv[1]) != txt2sig.end()) {
+		// We have default handlers for these:
+		if (!strcmp(argv[1], "sigchld"))
+			signal2(SIGCHLD, sigchld_handler);
+		else if (!strcmp(argv[1], "sigint" ))
+			signal2(SIGINT,   sigint_handler);
+		else if (!strcmp(argv[1], "sigtstp"))
+			signal2(SIGTSTP, sigtstp_handler);
+
+		// These sigs are ignored:
+		else if (!strcmp(argv[1], "sigttin") || !strcmp(argv[1], "sigttou"))
+			signal2(txt2sig.at(argv[1]), SIG_IGN);
+	
+		// This is the `SIGEXIT` pseudosig:
+		else if (!strcmp(argv[1], "sigexit"))
+			atexit([](){});
+
+		// These sigs use the default handler:
+		else
+			signal2(txt2sig.at(argv[1]), SIG_DFL);
+	}
 	return "0";
 }
 
@@ -240,6 +312,7 @@ Command(fork) {
 		other_error("fork() failed", 2);
 
 	if (pid == 0) {
+		atexit([](){});
 		strcpy(message, eval(argv[1]).data());
 		exit(0);
 	

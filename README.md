@@ -19,6 +19,8 @@ Zrc is almost half of 1mb in size because its implementation is to the point and
 - [X] Globbing
 	- [X] Tilde expansion
 	- [X] Wildcards
+- [X] Signal trapping (via `fn`, `nf`)
+- [X] Directory stack
 - [X] Pipelines
 - [X] Full redirection
 	- [X] Basic redirection (`>>`, `>`, `<`)

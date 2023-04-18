@@ -3,8 +3,14 @@
 nf \- Undefine a function
 .SH SYNOPSIS
 .B nf
-<name>
+[-s] <name>
 .SH DESCRIPTION
 The
 .I nf
 utility deletes a function specified by the first argument, making space for it to be redefined.
+.PP
+If the function is a signal handler, after its deletion, the original 'sigaction' gets restored...
+.SH OPTIONS
+.TP
+.BR s
+Silent mode: Don't throw an error if the function doesn't exist.

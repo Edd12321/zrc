@@ -6,8 +6,13 @@ fn \- Define a new function
 <name> <block>
 .SH DESCRIPTION
 This builtin creates a new function with the specified name, that, when called, executes the statements provided by the second argument, replacing $argv(...) with its own arguments.
-.SH EXAMPLE
+.PP
+Alternatively, you can trap a signal by defining a function with the name of that signal. The artificial "signal" SIGEXIT occurs as Zrc is about to exit.
+.SH EXAMPLES
 .EX
+	##############################################
+	# A function to test if a number is a prime. #
+	##############################################
 	fn is_prime {
 		if {$argv(1) < 2} {
 			return 0
@@ -27,5 +32,12 @@ This builtin creates a new function with the specified name, that, when called, 
 				return $ok
 			}
 		}
+	}
+
+	##################
+	# Trap SIGWINCH. #
+	##################
+	fn sigwinch {
+		echo Window resized!
 	}
 .EE

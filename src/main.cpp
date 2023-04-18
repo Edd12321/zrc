@@ -123,6 +123,9 @@ class WordList;
   void                      sigtstp_handler(int                       );
   void                      sigquit_handler(int                       );
   extern std::string        bg_fg          (int, char**               );
+  
+  typedef void Handle(int);
+  Handle*                   signal2        (int, Handle*              );
   // SIGHANDLER.HPP
 
   static std::string        get_var        (std::string_view          );

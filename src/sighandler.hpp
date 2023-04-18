@@ -257,7 +257,7 @@ sigquit_handler(int signum)
  * @param {int}signum,{void (*)(int)}h
  * @return void
  */
-typedef void Handle(int);
+//typedef void Handle(int);
 Handle*
 signal2(int signum, Handle *h)
 {
