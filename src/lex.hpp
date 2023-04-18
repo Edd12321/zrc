@@ -80,7 +80,7 @@ tokenize(std::string line, std::istream& in)
 				tmp.pop_back();
 				wl.add_token(tmp);
 				tmp += "`{";
-			} else if (q != '(') {
+			} else if (q == '{') {
 				wl.add_token(tmp);
 			}
 
@@ -99,7 +99,7 @@ tokenize(std::string line, std::istream& in)
 			}
 			
 			wl.make_not_bare();
-			if (q != '(')
+			if (q == '{')
 				wl.add_token(tmp);
 			break;
 

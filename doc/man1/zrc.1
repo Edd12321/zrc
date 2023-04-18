@@ -112,7 +112,7 @@ is the PID of the last command (if it forked off).
 .B $argv
 is an array that stores all arguments passed to the current function (or to the script, if running in a global scope).
 .PP
-.B COMMAND OUTPUT SUBSTITUTION:
+.B COMMAND OUTPUT ("BACKQUOTE") SUBSTITUTION:
 Any sequence of the type
 .B `{...}
 treats everything inside braces as a command and returns the standard output it produces. Implicitly, it erases the ending newline character for convenience's sake, but this behavior can be bypassed using quotes. Note that you can nest these:

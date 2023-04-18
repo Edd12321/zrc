@@ -33,7 +33,7 @@ Zrc is almost half of 1mb in size because its implementation is to the point and
 - [X] Word splitting via `{*}`
 - [X] Quoting
 	- [X] Brace quoting (`{}`)
-	- [X] Regular quoting (`` ` ``, `'`, `"`)
+	- [X] Regular quoting (`'`, `"`)
 - [ ] Escape sequences
 	- [X] Basic support (every other esc. code)
 	- [ ] Full support (`\uhhh`, `\xhh`)
