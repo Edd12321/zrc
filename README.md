@@ -23,7 +23,7 @@ Zrc is almost half of 1mb in size because its implementation is to the point and
 - [X] Full redirection
 	- [X] Basic redirection (`>>`, `>`, `<`)
     - [X] Here(documents/strings) (`<<< STR`, `<< EOF[...]EOF`)
-	~~- [X] Sometimes, fd syntax is broken (`>(2=1)`, `>(2=)`, `>(2)`)~~
+	- [X] ~~Sometimes, fd syntax is broken (`>(2=1)`, `>(2=)`, `>(2)`)~~
 - [X] Non-I/O shell operators
 	- [X] `&&`
 	- [X] `||`

@@ -1,0 +1,30 @@
+.TH PUSHD 1
+.SH NAME
+PUSHD \- Command used to work with the CLI directory stack
+.SH SYNOPSIS
+.B pushd
+[<dir>]
+.SH DESCRIPTION
+This builtin implicitly adds the current working directory to the directory stack if it's empty. When called with a filepath as an argument, it places it at the top of the
+.B directory stack.
+and changes the current directory to it. If it cannot be stat'd, the program returns 
+.IR 2 .
+If it is not a directory , it returns exit code
+.IR 3 .
+.PP
+If it is called with no arguments, it swaps the first two elements of the dir stack. If it only has one element, it returns exit code
+.IR 4 .
+.PP
+Regardless of which mode it was called in, the builtin prints the directory stack to stdout.
+.SH EXAMPLES
+.EX
+	pushd ~ 
+	pushd /
+	pushd /tmp
+	pushd ~/.local/share
+
+	# The dir stack is now:
+	# ~/.local/share /tmp / ~
+	# The CWD is now:
+	# ~/.local/share
+.EE

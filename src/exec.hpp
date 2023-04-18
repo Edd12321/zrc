@@ -153,7 +153,6 @@ io_cap(std::string frag)
 	pid = fork();
 	if (pid == 0) {
 		dup2(pd[1], STDOUT_FILENO);
-		o_out = dup(STDOUT_FILENO);
 		close(pd[0]);
 		close(pd[1]);
 		eval(frag);

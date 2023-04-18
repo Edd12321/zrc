@@ -17,6 +17,10 @@
 	std::cerr << errmsg << "(" << argv[0] << ") " << X << '\n';\
 	return "1";\
 }
+#define other_error(X, C) do {\
+	std::cerr << argv[0] << ": " << X << "!\n";\
+	return #C;\
+} while(0)
 
 #define MakeOp(X)\
 	else if (!strcmp(argv[i], X "="))\
@@ -25,10 +29,23 @@
 typedef std::string FunctionName;
 typedef std::string CodeBlock;
 typedef std::string AliasName;
+typedef std::string Path;
 #define DispatchTable std::map
 
 DispatchTable<FunctionName, CodeBlock> funcs;
 DispatchTable<AliasName, WordList> aliases;
+
+static inline void
+prints(std::stack<Path> sp)
+{
+	if (!sp.empty())
+		chdir(sp.top().c_str());
+	while (!sp.empty()) {
+		std::cout << sp.top() << ' ';
+		sp.pop();
+	}
+	std::cout << std::endl;
+}
 
 /** Closes the Zrc session **/
 Command(exit)   { exit(EXIT_SUCCESS); }
@@ -174,7 +191,7 @@ Command(fn) {
 	if (argc != 3)
 		syntax_error("<name> <block>");
 	if (+FOUND_FN(1))
-		syntax_error("Function exists");
+		other_error("Function exists", 2);
 	funcs[argv[1]] = argv[2];
 	return "0";
 }
@@ -184,7 +201,7 @@ Command(nf) {
 	if (argc != 2)
 		syntax_error("<name>");
 	if (!FOUND_FN(1))
-		syntax_error("Function not found");
+		other_error("Function not found", 2);
 	funcs.erase(argv[1]);
 	return "0";
 }
@@ -220,7 +237,7 @@ Command(fork) {
 			PROT_READ|PROT_WRITE,
 			MAP_SHARED|MAP_ANONYMOUS, -1, 0);
 	if ((pid = fork()) < 0)
-		die("fork()");
+		other_error("fork() failed", 2);
 
 	if (pid == 0) {
 		strcpy(message, eval(argv[1]).data());
@@ -391,7 +408,7 @@ Command(unalias) {
 	if (argc != 2)
 		syntax_error("<name>");
 	if (aliases.find(argv[1]) == aliases.end())
-		syntax_error("Alias not found");
+		other_error("Alias not found", 2);
 	aliases.erase(argv[1]);
 	return "0";
 }
@@ -453,9 +470,50 @@ Command(not) {
 	NoReturn;
 }
 
-/* Job control */
+/** Job control **/
 Command(bg) { return bg_fg(argc, argv); }
 Command(fg) { return bg_fg(argc, argv); }
+
+/** Manipulate the directory stack **/
+std::stack<Path> pstack;
+Command(pushd) {
+	struct stat strat;
+	char wd[PATH_MAX];
+	if (argc > 2)
+		syntax_error("[<dir>]");
+	if (pstack.empty()) {
+		char wd[PATH_MAX];
+		getcwd(wd, sizeof wd);
+		pstack.push(wd);
+	}
+	if (argc == 2) {
+		if (stat(argv[1], &strat) != 0)
+			other_error("Could not stat "<<argv[1], 2);
+		if (!S_ISDIR(strat.st_mode))
+			other_error(argv[1]<<" is not a directory", 3);
+		pstack.push(argv[1]);
+	
+	} else {
+		if (pstack.size() == 1)
+			other_error("No other directory", 4);
+		Path p = pstack.top();
+		pstack.pop();
+		std::swap(p, pstack.top());
+		pstack.push(p);
+	}
+	prints(pstack);
+	return "0";
+}
+
+Command(popd) {
+	if (argc > 1)
+		syntax_error("");
+	if (pstack.empty())
+		other_error("Directory stack empty", 2);
+	pstack.pop();
+	prints(pstack);
+	return "0";
+}
 
 Command(help);
 
@@ -465,7 +523,7 @@ DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_tab
 	de(while), de(for),    de(foreach), de(do),    de(switch), de(set),   de(inc),
 	de(array), de(string), de(read),    de(chr),   de(ord),    de(alias), de(unalias),
 	de(let),   de(until),  de(source),  de(unset), de(help),   ce(!,not), de(bg),
-	de(fg)
+	de(fg),    de(pushd),  de(popd)
 };
 
 /** Show a list of all BuiltIns **/

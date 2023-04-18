@@ -1,0 +1,19 @@
+.TH POPD 1
+.SH NAME
+POPD \- Command used to work with the CLI directory stack
+.SH SYNOPSIS
+.B popd
+.SH DESCRIPTION
+This builtin pops the top of the directory stack, and chdir's to the first remaining element. If the stack is empty when the builtin is called, it returns exit status
+.IR 2 .
+.SH EXAMPLES
+.EX
+	# Let's consider the initial working directory to be ~:
+	pushd ~/.dots/work
+	pushd ~/.config
+	pushd /proc
+	popd
+	popd
+	popd
+	# CWD is now also the only element left in the dir stack, ~.
+.EE

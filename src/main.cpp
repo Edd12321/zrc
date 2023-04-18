@@ -23,6 +23,7 @@
 #include <iostream>
 #include <istream>
 #include <iomanip>
+#include <limits.h>
 #include <map>
 //#include <regex>
 #include <sstream>
