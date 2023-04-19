@@ -1,4 +1,4 @@
-<img src="zrc.png" width=100 height=auto />
+<img src="img/zrc.svg" width=100 height=auto />
 
 Zrc is a small scripting language for Linux,BSD,etc. written in C++. It is a shell with syntax similar to Tcl/TK ([EIAS](https://wiki.tcl-lang.org/page/everything+is+a+string)).
 

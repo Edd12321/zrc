@@ -275,6 +275,7 @@ zlineedit(std::string& buf)
 		case KEY_RETURN:
 			std::cout << std::endl;
 			W(buf);
+			std::cin.clear();
 			return true;
 
 		case KEY_BACKSPACE: /* FALLTHROUGH */
