@@ -5,16 +5,33 @@ Content-type: text/html
 
 <!DOCTYPE HTML>
 <html>
-<head></head>
+<head><style>
+	h2 { font-size: 150%; }
+	h1 { font-size: 130%; }
+</style></head>
 <body>
+<meta name="viewport" content="width=device,width,
+initial-scale=1,maximum-scale=0.80,minimum-scale=0.80,
+user-scalable=no,minimal-ui"/>
+
+<a href=man.cgi?all>HOME</a>|
+<a href=man.cgi?1>SECTION 1</a>|
+<a href=man.cgi?2>SECTION 2</a>|
+<a href=man.cgi?3>SECTION 3</a><hr/>
+<a href=man.cgi?zrc>
+	<b>Zrc</b>
+</a>
+built-ins:
 EOF
 #-----END HEREDOC-----
-set E:MANPATH = /usr/lib/zrc/doc:$E:MANPATH
 
-echo "<a href=man.cgi?all>HOME</a>|"
-echo "<a href=man.cgi?1>SECTION 1</a>|"
-echo "<a href=man.cgi?2>SECTION 2</a>|"
-echo "<a href=man.cgi?3>SECTION 3</a><hr/>"
+set E:MANPATH = /usr/lib/zrc/doc:$E:MANPATH
+set E:PATH    = /usr/lib/plan9:$E:PATH
+
+help | awk { BEGIN { RS = " "; FS = "\n"; } {
+	print "<a href=man.cgi?" $1 ">" $1 "</a>";
+}}
+echo "<hr />"
 set q = $E:QUERY_STRING
 set pat = {{
 	print "<a href=man.cgi?" $1 ">" $1 "</a>";
@@ -25,14 +42,15 @@ set pat = {{
 # Just show all manpages
 if {![string cmp $q ''] || ![string cmp $q all]} {
 	echo "<pre>"
-	man -k . | awk $pat
+	man -k . | recode ..html | awk $pat
 	echo "</pre>"
 } else {
 	# Show a specific list of manpages
 	set n = [ord [string index $q 0]]
 	if {$n >= [ord '0'] && $n <= [ord '9']} {
 		echo "<pre>"
-		man -k . | grep '($q)' | awk $pat
+		man -k . | grep '($q)' | recode ..html | awk $pat
+		echo "</pre>"
 	
 	# Display the manpage (compressed or not)
 	} else {
@@ -41,18 +59,22 @@ if {![string cmp $q ''] || ![string cmp $q all]} {
 			echo "<h3><font color=red>No manual page for $W1!!</font></h3>"
 		} else {
 			set file = `{man -w $W1}
+			set extn = `{echo $file | sed {s/.*\.//}}
+			echo "<title>$W1</title>"
+			echo "<center><h2>$W1\($extn)</h2></center>"
 			if [gzip -t $file] {
-				cat $file | groff -mandoc -Thtml
+				cat $file | pandoc --from man --to html
 			} else {
-				zcat $file | groff -mandoc -Thtml
+				zcat $file | pandoc --from man --to html
 			}
 		}
 	}
 }
 
+echo "<hr/>\[Server time is: `{date}]"
 #-----BEGIN HEREDOC-----
 cat << EOF
-<hr/>
-</body></html>
+</body>
+</html>
 EOF
 #-----END HEREDOC-----
