@@ -62,6 +62,10 @@ Zrc is almost half of 1mb in size because its implementation is to the point and
 	- [X] Job manipulation
 	- [X] Don't separate jobs by pipe
 	- [X] Background and foreground processes with `&`
+- [ ] Usable regular expressions
+    - [X] Basic built-in regex support (`regexp`)
+    - [ ] More commandline options
+    - [ ] `regcomp`
 - [ ] Pleasant interactive shell
 	- [X] History file
 	- [X] Line editor

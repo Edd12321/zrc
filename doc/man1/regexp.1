@@ -16,5 +16,6 @@ and stores the matches in the variables named by the rest of the arguments. If l
 .BR regex (7)
 .SH EXAMPLE
 .EX
-	
+	regexp {c((.*)g)(.*)} abcdefghi
+	echo $m
 .EE
