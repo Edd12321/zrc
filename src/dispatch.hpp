@@ -187,18 +187,30 @@ Command(switch) {
 	WordList         args;
 	std::ifstream    fin("/dev/null");
 	if (argc != 3)
-		syntax_error("<value> {<case <c> cmd|default...>}");
+		syntax_error("<value> {<case <c> cmd|reg <r>|<default> <block>...}");
 	
 	args = tokenize(argv[2], fin);
 	fin.close();
 	std::for_each(args.wl.begin(), args.wl.end(), &str_subst);
 	for (int i = 0, argc = args.size(); i < argc; i += 3) {
 		if (args.wl[i] == "case") {
+			if (i >= argc-2)
+				syntax_error("`case` ends too early");
 			if (args.wl[i+1] == argv[1]) {
 				eval(args.wl[i+2]);
 				NoReturn;
 			}
+		} else if (args.wl[i] == "reg") {
+			if (i >= argc-2)
+				syntax_error("`reg` ends too early");
+			std::regex sr(args.wl[i+1]);
+			if (std::regex_search(argv[1], sr)) {
+				eval(args.wl[i+2]);
+				NoReturn;
+			}
 		} else if (args.wl[i] == "default") {
+			if (i >= argc-1)
+				syntax_error("`default` ends too early");
 			def_cmd = args.wl[1+i--];
 		} else {
 			syntax_error("Expected `case`/`default`");
@@ -588,6 +600,25 @@ Command(popd) {
 	return "0";
 }
 
+Command(regexp) {
+	if (argc < 4)
+		syntax_error("<reg> <txt> <var1> <var2...>");
+	int  k = 3;
+	std::regex  rexp(argv[1]);
+	std::smatch res;
+	std::string txt = argv[2];
+	std::string::const_iterator it(txt.cbegin());
+	ret_val = "2";
+	while (std::regex_search(it, txt.cend(), res, rexp)) {
+		ret_val = "0";
+		if (k >= argc)
+			NoReturn;
+		setvar(argv[k++], res[0]);
+		it = res.suffix().first;
+	}
+	NoReturn;
+}
+
 Command(help);
 
 DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
@@ -596,7 +627,7 @@ DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_tab
 	de(while), de(for),    de(foreach), de(do),    de(switch), de(set),   de(inc),
 	de(array), de(string), de(read),    de(chr),   de(ord),    de(alias), de(unalias),
 	de(let),   de(until),  de(source),  de(unset), de(help),   ce(!,not), de(bg),
-	de(fg),    de(pushd),  de(popd)
+	de(fg),    de(pushd),  de(popd),    de(regexp)
 };
 
 /** Show a list of all BuiltIns **/

@@ -3,7 +3,7 @@
 switch \- Evaluate one of several scripts, depending on the value given as a first argument.
 .SH SYNOPSIS
 .B switch
-<value> {case <c> <cmd>|default...>}
+<value> {<case <c> cmd|reg <r>|<default> <block>...}
 .SH DESCRIPTION
 The
 .I switch
@@ -16,6 +16,10 @@ followed only by a compound block.
 If the word is
 .BR case ,
 then the utility checks if the word right next to it is the same as the first argument given to the procedure. If it is, it short-circuits, executes the block next to the word, and closes the command, preserving the return value of the block.
+.PP
+If the word is
+.BR reg ,
+then the utility verifies the given string against the regular expression next to 'reg'. If it matches, it executes the code block.
 .PP
 If the word is
 .BR default ,

@@ -25,7 +25,7 @@
 #include <iomanip>
 #include <limits.h>
 #include <map>
-//#include <regex>
+#include <regex>
 #include <sstream>
 #include <stack>
 #include <string>

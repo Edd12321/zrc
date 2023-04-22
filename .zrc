@@ -102,10 +102,38 @@ fn rot13 {
 
 # Go up N Times
 fn up { 
-	for {set i = 0} {$i < $argv(1)} {inc i}\
-		cd\ ..
+	for {set i = 0} {$i < $argv(1)} {inc i} ..
 }
 
+# Extract an archive
+# (because it's hard to memorize tar commands)
+fn extract {
+	if [test -f $argv(1)] {
+		echo '$argv(1): file not found!' >(1=2)
+		return 1
+	} else {
+		let s {
+			set s = $argv(1)
+			switch $s {
+				reg {.\.tar.bz2$} { tar xjf    $s }
+				reg {.\.tar.gz$}  { tar xzf    $s }
+				reg {.\.bz2$}     { bunzip2    $s }
+				reg {.\.rar$}     { unrar e    $s }
+				reg {.\.gz$}      { gunzip     $s }
+				reg {.\.tar$}     { tar xf     $s }
+				reg {.\.tbz2$}    { tar xjf    $s }
+				reg {.\.tgz$}     { tar xzf    $s }
+				reg {.\.zip$}     { unzip      $s }
+				reg {.\.Z$}       { uncompress $s }
+				reg {.\.7z$}      { 7z x       $s }
+				default {
+					echo '$s could not be extracted!' >(1=2)
+					return 1
+				}
+			}
+		}
+	}
+}
 
 # Custom tools
 # https://github.com/Edd12321/{cstop,evct,zrc}

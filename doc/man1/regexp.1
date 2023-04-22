@@ -1,0 +1,20 @@
+.TH REGEXP 1
+.SH NAME
+regexp \- Check regular expressions
+.SH SYNOPSIS
+.B regexp
+<reg> <txt> <var1> <var2...>
+.SH DESCRIPTION
+This builin checks 
+.I txt
+against the POSIX regular expression
+.IR reg ,
+and stores the matches in the variables named by the rest of the arguments. If less than 3 args are given to the command, it returns 1. If no matches are found, it returns 2, otherwise it returns 0.
+.SH SEE ALSO
+.BR grep (1) ,
+.BR sed (1) ,
+.BR regex (7)
+.SH EXAMPLE
+.EX
+	
+.EE

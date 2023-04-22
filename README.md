@@ -67,6 +67,7 @@ Zrc is almost half of 1mb in size because its implementation is to the point and
 	- [X] Line editor
 	- [X] Tab completion
 	- [ ] Syntax highlighting
+
 ## Inspirations:
 
 * [Tcl](https://www.tcl.tk)
