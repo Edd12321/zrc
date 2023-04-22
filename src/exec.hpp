@@ -47,7 +47,7 @@ exec(int argc, char *argv[])
 	sigprocmask(SIG_BLOCK, &mask, NULL);
 
 	// Nothing happens...
-	if (!argc) return;
+	if (!argc) goto _skip;
 	if (!builtin_check(argc, argv)) {
 		if (w) {
 		/**********************
@@ -117,6 +117,7 @@ exec(int argc, char *argv[])
 			}
 		}
 	}
+_skip:
 	// Reset all FDs
 	dup2(o_in, STDIN_FILENO);
 	dup2(o_out, STDOUT_FILENO);

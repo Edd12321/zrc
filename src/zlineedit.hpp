@@ -222,6 +222,13 @@ namespace zlineshort
 	}
 }
 
+static inline void
+clearcin()
+{
+	std::cin.clear();
+	fflush(stdin);
+}
+
 static inline bool
 zrawch(char& ch)
 {
@@ -248,6 +255,7 @@ zlineedit(std::string& buf)
 	dp_list = cursor_pos = 0;
 	R();
 	buf.clear();
+	clearcin();
 	while (zrawch(c)) {
 		switch (c) {
 		/* The line editing part */
@@ -275,7 +283,7 @@ zlineedit(std::string& buf)
 		case KEY_RETURN:
 			std::cout << std::endl;
 			W(buf);
-			std::cin.clear();
+			clearcin();
 			return true;
 
 		case KEY_BACKSPACE: /* FALLTHROUGH */
@@ -301,7 +309,7 @@ zlineedit(std::string& buf)
 			insert(buf, c);
 		}
 	}
-	std::cin.clear();
+	clearcin();
 	return true;
 }
 

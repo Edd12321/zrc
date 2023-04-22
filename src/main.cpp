@@ -335,7 +335,7 @@ main(int argc, char *argv[])
 	std::ios_base::sync_with_stdio(false);
 	
 	// original file descriptors
-	o_in = dup(STDIN_FILENO);
+	o_in  = dup(STDIN_FILENO);
 	o_out = dup(STDOUT_FILENO);
 	
 	// signal handlers
