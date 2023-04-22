@@ -331,19 +331,16 @@ main(int argc, char *argv[])
 	std::ifstream fp;
 	struct passwd *pw;
 
-	// make faster I/O
+	// make faster&unbuffered I/O
 	std::ios_base::sync_with_stdio(false);
-	
-	// original file descriptors
-	o_in  = dup(STDIN_FILENO);
-	o_out = dup(STDOUT_FILENO);
-	
+	setvbuf(stdout, NULL, _IONBF, 0);
+
 	// signal handlers
 	signal2(SIGCHLD, sigchld_handler);
 	signal2(SIGINT,   sigint_handler);
 	signal2(SIGTSTP, sigtstp_handler);
 	signal2(SIGQUIT, sigquit_handler);
-	
+
 	// signal ignore
 	signal2(SIGTTIN, SIG_IGN);
 	signal2(SIGTTOU, SIG_IGN);

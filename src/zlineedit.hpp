@@ -226,7 +226,7 @@ static inline void
 clearcin()
 {
 	std::cin.clear();
-	fflush(stdin);
+	//fflush(stdin);
 }
 
 static inline bool
@@ -255,6 +255,7 @@ zlineedit(std::string& buf)
 	dp_list = cursor_pos = 0;
 	R();
 	buf.clear();
+
 	clearcin();
 	while (zrawch(c)) {
 		switch (c) {
