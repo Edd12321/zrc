@@ -187,7 +187,7 @@ Command(switch) {
 	WordList         args;
 	std::ifstream    fin("/dev/null");
 	if (argc != 3)
-		syntax_error("<value> {<case <c> cmd|reg <r>|<default> <block>...}");
+		syntax_error("<value> {<case <c> cmd|reg <r>|default <block>...}");
 	
 	args = tokenize(argv[2], fin);
 	fin.close();
@@ -463,11 +463,17 @@ Command(set) {
 
 /** PHP chr/ord **/
 Command(chr) { 
+	if (argc != 2)
+		syntax_error("o");
 	std::string t;
 	t += (char)std::stoi(expr(combine(argc, argv, 1)));
 	return t;
 }
-Command(ord) { return std::to_string((int)argv[1][0]); }
+Command(ord) { 
+	if (argc != 2)
+		syntax_error("c");
+	return std::to_string((int)argv[1][0]);
+}
 
 /** Add/remove alias **/
 Command(alias) {
@@ -622,12 +628,12 @@ Command(regexp) {
 Command(help);
 
 DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
-	de(exit),  de(return), de(fn),      de(nf),    de(jobs),   de(wait),  de(cd),
-	de(die),   ce(@,fork), de(echo),    de(expr),  de(eval),   de(if),    de(unless),
-	de(while), de(for),    de(foreach), de(do),    de(switch), de(set),   de(inc),
-	de(array), de(string), de(read),    de(chr),   de(ord),    de(alias), de(unalias),
-	de(let),   de(until),  de(source),  de(unset), de(help),   ce(!,not), de(bg),
-	de(fg),    de(pushd),  de(popd),    de(regexp)
+	de(exit),  de(return), de(fn),      de(nf),     de(jobs),    de(wait),  de(cd),
+	de(die),   ce(@,fork), de(echo),    de(expr),   de(eval),    de(if),    de(unless),
+	de(while), de(for),    de(foreach), de(do),     de(switch),  de(set),   de(inc),
+	de(array), de(string), de(read),    de(chr),    de(ord),     de(alias), de(unalias),
+	de(let),   de(until),  de(source),  de(unset),  de(help),    ce(!,not), de(bg),
+	de(fg),    de(pushd),  de(popd),    de(regexp), ce(.,source)
 };
 
 /** Show a list of all BuiltIns **/

@@ -2,8 +2,7 @@
 .SH NAME
 @ \- Fork a subshell
 .SH SYNOPSIS
-.B @
-<block>
+.BI "@ " <block>
 .SH DESCRIPTION
 .I @
 must be followed by a string, representing a code block to be eval'ed. The utility forks off a new child process, executes the code inside of the block, and returns the last exit code from that block.

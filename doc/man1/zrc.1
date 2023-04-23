@@ -2,14 +2,7 @@
 .SH NAME
 zrc - command language
 .SH SYNOPSIS
-.B zrc
-[
-.B --version
-|
-.B --help
-][
-.B <file>
-]
+.BI "zrc [" --version | --help | "-c <cmds>" "] [" "<file> " [ <args...> ]]
 .SH DESCRIPTION
 .I Zrc
 is a UNIX shell and scripting language, influenced by Plan 9's rc, csh and the
@@ -77,7 +70,7 @@ are separated by whitespace. A word is a sequence of characters that can have su
 .PP
 The substitutions present in zrc are:
 .PP
-.B VARIABLE EXPANSION/SUBSTITUTION:
+.SS Variable substitution
 Inside a word, any sequence of characters beginning with a dollar sign and followed by alphanumeric characters, underscores, colons or even other variable substitutions (recursively handled) gets replaced with the value of the variable of the same name. There are some special cases, however:
 .EX
 	echo $scalar;
@@ -105,14 +98,22 @@ every array is a so-called "associative array" (hashmap), much like in Tcl. You 
 .EE
 .I Zrc
 also supports special variables:
+.PP
 .B $?
-is the return value of the last command, and
+is the return value of the last command, if it was not part of a background job.
+.PP
 .B $!
 is the PID of the last command (if it forked off).
+.PP
 .B $argv
 is an array that stores all arguments passed to the current function (or to the script, if running in a global scope).
 .PP
-.B COMMAND OUTPUT ("BACKQUOTE") SUBSTITUTION:
+.B $argc
+stores a number representing the amount of elements in $argv. This variable is also scoped to the current function, when applicable.
+.PP
+.B $PS1
+stores the prompt displayed every time before the line editor is loaded to input a command, in interactive mode.
+.SS Backquote (output) substitution
 Any sequence of the type
 .B `{...}
 treats everything inside braces as a command and returns the standard output it produces. Implicitly, it erases the ending newline character for convenience's sake, but this behavior can be bypassed using quotes. Note that you can nest these:
@@ -126,8 +127,7 @@ treats everything inside braces as a command and returns the standard output it 
 	echo "`{basename `{basename a/b/c}}"
 	# Displays 'c\\n'
 .EE
-.PP
-.B COMMAND RETURN VALUE SUBSTITUTION:
+.SS Return value substitution
 As opposed to traditional shells, Zrc supports 
 .B rich return values
 , which means that functions and builtins (but not external programs) can return values other than the classic "status numbers" 0-255 (they can be any string). You can access the return value of a command by using square brackets:
@@ -137,15 +137,13 @@ As opposed to traditional shells, Zrc supports
 	echo [[[]]] #echo's 127
 	echo $?
 .EE
-.PP
-.B ESCAPE SEQUENCES:
+.SS Escape sequences
 Currently,
 .I zrc
 supports all C escape sequences, with the exception of \\u... and \\x... If a character is escaped that is not part of an actual escape sequence, the backslash just dissapears.
-.PP
-.B PARENTHESES:
+.SS Parentheses
 Use them with 'expr' to avoid clobbering files by confusing operators such as ">" (greater-than) with redirection and to access array indices with spaces. Paren grouping is useful, but it can be escaped if it does not prove to be useful in a situation.
-.PP
+.SS Quoting
 The quoting rules present in
 .I zrc
 are simpler than the substitutions: You can group together words ­using normal quotes anywhere in a script. If you do this, substitutions may occur. Example:
@@ -208,7 +206,7 @@ and the basic builtins available.
 	}
 	echo $errno
 .EE
-.PP
+.SS Word splitting
 .B The expansion construct {*}
 splits a word into multiple words, using 
 .I zrc's
@@ -217,7 +215,7 @@ grammar rules. This can theoretically be used to simulate lists.
 	# 'a''b''c'
 	printf '%s%s%s\\n' {*}"'a'  'b' 'c'"
 .EE
-.PP
+.SS Globbing
 Tilde expansion and filename globbing is done on all "barewords" (aka, all words that don't have substitutions/expansions done on them).
 .EX
 	ls *
@@ -231,6 +229,162 @@ Tilde expansion and filename globbing is done on all "barewords" (aka, all words
 Each command has its own manpage, detailing its use and giving examples.
 .I Zrc
 builtins can do actions ranging from creating and deleting functions, modifying arrays, forking subshells, making aliases and much more.
+.HP
+.BI "! [" <cmd> ]
+.br
+Invert a command's return value.
+.HP
+.BI "@ " <block>
+.br
+Fork a child process.
+.HP
+.BI "alias [" "<name> <val>" ]
+.br
+Display aliases or set a new one.
+.HP
+.BI "array [" OPTION ]
+.br
+Work with arrays. See `man array` for more info.
+.HP
+.BI "bg " <pid> | <%jid>
+.br
+Move a job to the background.
+.HP
+.BI "cd [" <dir> ]
+.br
+Change directory.
+.HP
+.BI "chr " <o>
+.br
+Get a char's ASCII code.
+.HP
+.BI "die [" "<w1> <w2>... <wn>" ]
+.br
+Exit Zrc (with a message).
+.HP
+.BI "do " "<block> " "while " <expr>
+.br
+Looping construct #1.
+.HP
+.BI "echo [" -n "] [" "<w1> <w2>... <wn>" ]
+.br
+Write a message.
+.HP
+.BI "eval " "<w1> <w2>... <wn>"
+.br
+Concatenate args and evaluate them as one script.
+.HP
+.B exit
+.br
+Exit Zrc.
+.HP
+.BI "expr [" EXPRESSION ]
+.br
+Evaluate arithmetic expressions.
+.HP
+.BI "fg " <pid> | <%jid>
+.br
+Move a job to the foreground.
+.HP
+.BI "fn " "<name> <block>"
+.br
+Define a function.
+.HP
+.BI "for " "<cmd> <expr> <cmd> <block>"
+.br
+Looping construct #2.
+.HP
+.BI "foreach " "<var> <w1> <w2>... <wn> <block>"
+.br
+Looping construct #3.
+.HP
+.B help
+.br
+List all commands.
+.HP
+.BI "if " "<expr> <block>" " [elsif " "<expr> <block>..." "|else " <block> ]
+.br
+Conditional statement #1.
+.HP
+.BI "inc " "<var> " [ <val> ]
+.br
+Increment variables.
+.HP
+.B jobs
+.br
+Display the job table.
+.HP
+.BI "let " "<var list> <block>"
+.br
+Lexical scoping.
+.HP
+.BI "nf [" -s "] " <name>
+.br
+Undefine a function.
+.HP
+.BI "ord " <c>
+.br
+Get a char's ASCII value.
+.HP
+.B popd
+.br
+Pop the directory stack.
+.HP
+.BI "pushd [" <dir> ]
+.br
+Push to the directory stack/swap the first two directories.
+.HP
+.BI "read [" "-p <prompt>" "] [" "-d <delim>" "] [" -q "] [" -w "] " str | "char <n>" | line
+.br
+Get input.
+.HP
+.BI "regexp " "<reg> <txt> <var1> <var2...>"
+.br
+Match against regex.
+.HP
+.BI "return " "<w1> <w2>... <wn>"
+.br
+Return a value.
+.HP
+.BI "set " "<var> " [ +-*/%|^&: ][ ** ][ || ][ && ][ // ][ << ][ >> ] "= <val>..."
+.br
+Set variables' values.
+.HP
+.BI "source|. [" <file...> ]
+.br
+Execute commands inside of a file.
+.HP
+.BI "string [" OPTION ]
+.br
+Work with text strings. See `man string` for more info.
+.HP
+.BI "switch " "<value> " "{case " <c> "|reg " <r> "|default " <block>... }
+.br
+Conditional statement #2.
+.HP
+.BI "unalias " <name>
+.br
+Delete an alias.
+.HP
+.BI "unless " "<expr> <block>"
+.br
+Conditional statement #3.
+.HP
+.BI "unset " <name>
+.br
+Delete a variable.
+.HP
+.BI "until " "<expr> <block>"
+.br
+Looping construct #4.
+.HP
+.B wait
+.br
+Wait for background procs to finish.
+.HP
+.BI "while " "<expr> <block>"
+.br
+Looping construct #5.
 .SH OPTIONS
 .TP
 .BR help
@@ -238,3 +392,6 @@ Displays usage info
 .TP
 .BR version
 Displays the interpreter's version
+.TP
+.BI "c " <cmds>
+Interpret the given argument as a script.

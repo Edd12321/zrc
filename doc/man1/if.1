@@ -2,8 +2,7 @@
 .SH NAME
 if \- Execute script body if a condition is met
 .SH SYNOPSIS
-.B if
-<expr> <block> [elsif <expr> <block>...|else <block>]
+.BI "if " "<expr> <block>" " [elsif " "<expr> <block>..." "|else " <block> ]
 .SH DESCRIPTION
 The
 .I if
@@ -11,7 +10,7 @@ command evaluates its first argument as an 'expr' expression and executes the se
 .BR elsif ,
 it evaluates the argument next to it as an expression and executes another function body, otherwise if it is
 .BR else
-if evaluates the argument next to it regardless of an expression. This can repeat for as many times as necessary.
+ii evaluates the argument next to it regardless of an expression. This can repeat for as many times as necessary.
 .SH EXAMPLE
 .EX
 	set i = 0

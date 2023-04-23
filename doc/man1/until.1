@@ -2,8 +2,7 @@
 .SH NAME
 until \- Repeatedly execute script body until a condition is not met
 .SH SYNOPSIS
-.B until
-<expr> <block>
+.BI "until " "<expr> <block>"
 .SH DESCRIPTION
 The
 .I until
@@ -12,7 +11,7 @@ command repeteadly evaluates its first argument as an 'expr' expression and exec
 .EX
 	set i = 10
 	until {!$i} {
-		printf %d\n $i
+		printf %d\\n $i
 		set i -= 1
 	}
 .EE
