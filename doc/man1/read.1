@@ -2,38 +2,24 @@
 .SH NAME
 read \- Read text from standard input
 .SH SYNOPSIS
-.BI "read [" "-p <prompt>" "] [" "-d <delim>" "] [" -q "] [" -w "] " str | "char <n>" | line
+.BI "read [" "-d <delim>" | "-n <nchars>" "] [" "<var1> <var2>..." ]
 .SH DESCRIPTION
 .I Read
 is a command used to do various methods of text input. It can be used in conjunction with
 .I stty
-for more sophisticated reasons like formatted I/O functions, REPLs, and so on. This command has multiple modes:
-.BR str ,
-used for reading words from stdin,
-.BR char ,
-used for reading a set amount of characters, and
-.BR line .
+for more sophisticated reasons like formatted I/O functions, REPLs, and so on. This command can either read 'n' chars or a string separated by an IFS, and it can output to the stdout/set multiple variables' values.
 .SH OPTIONS
 .TP
-.B p <prompt>
-Display a prompt
-.TP
 .B d <delim>
-Choose which delimiter to use (for line mode)
+Choose which delimiter to use (IFS)
 .TP
-.BR q
-Support std::quoted
-.TP
-.BR w
-Support std::noskipws
+.B n <nchars>
+Read n characters
 .SH EXAMPLES
 .EX
 	read str
-	read str -w -p '> '
-	read line
-	read line -q
-
 	stty raw
-	read char 5
+	read -n 3
 	stty cooked
+	read txt -d ' '
 .EE

@@ -18,7 +18,7 @@ fn Fibonacci {
 
 fn main {
 	echo -n "k="
-	set k = `{read line}
+	read k
 
 	# Fibonacci sequence
 	Fibonacci 0 1 $k;

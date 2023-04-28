@@ -355,65 +355,45 @@ Command(echo) {
 
 /** Reads from stdin **/
 Command(read) {
-	const char* se = "[-p <prompt>][-d <delim>][-q][-w] str|char <n>|line";
-	
+#define GET_INPUT \
+	buf.clear();\
+	if (n == -1) {\
+		if (!getline(std::cin, buf, d))\
+			return "1";\
+	} else for (i = 0; i < n; ++i) {\
+		if (!(std::cin >> std::noskipws >> t))\
+			return "1";\
+		buf += t;\
+	}
+	std::string buf;
+	char t, d = '\n';
 	int opt;
-	bool q = false, w = false;
-	char d = '\n';
-
-	optind = 1;
-	while ((opt = getopt(argc, argv, "p:d:qw")) != -1) {
+	long i, n = -1;
+	optind = 0;
+	while ((opt = getopt(argc, argv, "d:n:")) != -1) {
 		switch (opt) {
-		case 'p':
-			std::cout << optarg << std::flush;
+		case 'd':
+			if (n != -1)
+				syntax_error("Expected only one opt");
+			d = optarg[0];
 			break;
-		case 'd': d = optarg[0]; break;
-		case 'q': q = true;      break;
-		case 'w': w = true;      break;
+		case 'n':
+			if (d != '\n')
+				syntax_error("Expected only one opt");
+			n = std::stoi(optarg);
+			break;
 		case '?':
-			//optind = -1;
-			break;
+			syntax_error("[-d <delim>|-n <nchars>] [<var1> <var2>...]");
 		}
 	}
-	if (optind >= argc)
-		syntax_error(se);
-	if (!strcmp(argv[optind], "str")) {
-		if (optind != argc-1)
-			syntax_error(se);
-		std::string str;
-		if (q) {
-			if (!(std::cin >> std::quoted(str)))
-				return "1";
-		} else {
-			if (!(std::cin >> str))
-				return "1";
-		}
-		std::cout << str;
-		
-	} else if (!strcmp(argv[optind], "line")) {
-		if (optind != argc-1)
-			syntax_error(se);
-		std::string str;
-		if (!std::getline(std::cin, str, d))
-			return "1";
-		std::cout << str;
-		
-	} else if (!strcmp(argv[optind], "char")) {
-		if (optind != argc-2)
-			syntax_error(se);
-		char ch;
-		if (w) {
-			if (!(std::cin >> std::noskipws >> ch))
-				return "1";
-		} else {
-			if (!(std::cin >> ch))
-				return "1";
-		}
-		std::cout << ch;
-	} else {
-		syntax_error(se);
+	if (optind >= argc) {
+		GET_INPUT;
+		std::cout << buf << std::endl;
 	}
-	std::cout << std::endl;
+	for (; optind < argc; ++optind) {
+		GET_INPUT;
+		setvar(argv[optind], buf);
+	}
 	return "0";
 }
 

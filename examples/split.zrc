@@ -1,0 +1,13 @@
+#!../bin/zrc
+echo -n 'Type a line: '
+read line
+
+echo -n 'What separator to use? '
+read sep
+
+echo 'Split line:'
+echo $line | while {![read -d $sep x]} {
+	if [string length $x] {
+		echo $x
+	}
+}

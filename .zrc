@@ -11,6 +11,9 @@ set RBOLD =`{/bin/echo -ne {\e[1;31m}}
 set GREEN =`{/bin/echo -ne {\e[0;32m}}
 set RESET =`{/bin/echo -ne {\e[0m}}
 
+#Other vars
+set ZRC = /usr/lib/zrc
+
 fn __git_ps1 {
 	git tag >(2=) > /dev/null
 	if {$? == 0} {

@@ -2,7 +2,7 @@
 set E:PATH = /bin/:$E:PATH
 
 printf "n="
-set n = `{read line}
+read n
 
 echo "Check file.out !!"
 echo -n > "file.out"

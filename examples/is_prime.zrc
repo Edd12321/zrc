@@ -21,7 +21,7 @@ fn este_prim {
 }
 
 fn main {
-	printf "x="; set x = `{read str};
+	printf "x="; read x;
 	
 	while {$x} {
 		if [este_prim $x] {

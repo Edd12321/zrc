@@ -88,7 +88,9 @@ tokenize(std::string line, std::istream& in)
 				CHK_LINE;
 				if (line[i] == '\\'
 				&& (line[i+1] == q || line[i+1] == p)) {
+					tmp += "\\";
 					tmp += line[i+1];
+					i += 2;
 					continue;
 				}
 				if (line[i] == q) ++cmpnd;

@@ -262,11 +262,11 @@ eval_stream(std::istream& in)
 				/*!*/if (*it == "&" || *it == ";") { sword = 1; RC(1); }
 				/*!*/else if (*it == "&&")         { sword = 1; RC(ret_val=="0"); }
 				/*!*/else if (*it == "||")         { sword = 1; RC(ret_val!="0"); }
-				/*!*/else if (*it == "<<" ) { sword = 1; io_hedoc(*(++it), in, 0); continue; }
-				/*!*/else if (*it == "<<<") { sword = 1; io_hedoc(*(++it), in, 1); continue; }
-				/*!*/else if (*it == "<"  ) { sword = 1; io_left (*(++it)       ); continue; }
-				/*!*/else if (*it == ">"  ) { sword = 1; io_right(*(++it), 0 , 1); continue; }
-				/*!*/else if (*it == ">>" ) { sword = 1; io_right(*(++it), 1 , 1); continue; }
+				/*!*/else if (*it == "<<" )        { sword = 1; io_hedoc(*(++it), in, 0); continue; }
+				/*!*/else if (*it == "<<<")        { sword = 1; io_hedoc(*(++it), in, 1); continue; }
+				/*!*/else if (*it == "<"  )        { sword = 1; io_left (*(++it)       ); continue; }
+				/*!*/else if (*it == ">"  )        { sword = 1; io_right(*(++it), 0 , 1); continue; }
+				/*!*/else if (*it == ">>" )        { sword = 1; io_right(*(++it), 1 , 1); continue; }
 				/*!*/else if (*it == "|"  ) {
 					sword = 1;
 					if (!can_runcmd)

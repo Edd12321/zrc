@@ -6,12 +6,12 @@ set max = -1
 fn fin {
 	let i {
 	for {set i = 1} {$i < $argc} {inc i} {
-		set $argv($i) = `{read str}
+		read $argv($i)
 	}}
 }
 
 fn main {
-	set n = `{read str}
+	read n
 	while {$n>0} {
 		fin x1 y1 x2 y2
 		set num = [expr abs(($x1-$x2)/($y1-$y2))]

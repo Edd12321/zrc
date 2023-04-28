@@ -100,7 +100,7 @@ fn remo {
 
 fn main {
 	echo -n "Please enter log filename: "
-	set LOG_FILE =`{read line}
+	read LOG_FILE
 
 	$E:BROWSER http://localhost:8080\
 		> /dev/null &
