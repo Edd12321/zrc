@@ -4,7 +4,7 @@ Zrc is a small scripting language for Linux,BSD,etc. written in C++. It is a she
 
 It was created because the old shell languages that I used weren't "programmable" like Tcl or Lisp, didn't have builtin expression evaluator, and were very basic. It is hard to write simple scripts in these usual shells because of the compilcated grammar rules. Zrc makes it easy to write even small programs, being a full programming language.
 
-Zrc is almost half of 1mb in size because its implementation is to the point and simple. The language doesn't even need a Backus -- Naur form (BNF). You can compile with -Os to make it even smaller, at the expense of performance !
+Zrc is just 1.3mb in size because its implementation is to the point and simple. The language doesn't even need a Backus -- Naur form (BNF). You can compile with -Os to make it even smaller, at the expense of performance !
 
 ## Features left to implement:
 

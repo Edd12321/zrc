@@ -2,9 +2,13 @@
 .SH NAME
 expr \- Evaluate expressions
 .SH SYNOPSIS
-.BI "expr [" EXPRESSION ]
+.BI "expr [" -r "] [" EXPRESSION ]
 .SH DESCRIPTION
-This builtin concatenates all of its arguments into one arithmetic expression, evaluates it and returns its value. All of these functions/operators can also be found in other languages, such as C or Python.
+This builtin concatenates all of its arguments into one arithmetic expression, evaluates it and returns its value. All of these functions/operators can also be found in other languages, such as C or Python. Remember to escape certain symbols when necessary, so they don't conflict with Zrc constructs (globbing, tilde expansion, redirection, etc.)
+.PP
+Note that this command actually returns a value, as opposted to POSIX
+.I expr
+which writes to stdout, so square brackets should be used to access it.
 .SS Precedence level 0
 .RB ( , ) ;
 .SS Precedence level 1 (ternary operator)
@@ -38,10 +42,25 @@ This builtin concatenates all of its arguments into one arithmetic expression, e
 .RB nan , false , true ;
 .SS Unary operators
 .RB - , + , ~ .
+.SH OPTIONS
+.TP
+.BR r
+Evaluate args as a
+.B reverse polish notation
+expression (RPN), instead of an
+.B infix notation
+expression. NOTE that in this mode, whitespace is required, so if you use bit manipulation operators, remember to
+.I brace your expr-essions
+to not clobber files. (and other obvious reasons, like double substitution. See the Tcler's Wiki, it all applies to Zrc too :-) )
 .SH EXAMPLES
 .EX
 	echo [expr 1+2/(100**3+log(4))//2+sin 2+cos(floor(ceil(-8.7)))]
 	echo [expr 1&&2||(1?2:0)+5&(3<<1)]
 	echo [expr 1    +  2/ 3 +     4]
+
+	# RPN expression
+	echo [expr -r {1 2 + 3 '*' 2 '<<'}]
+	echo [expr {((1+2)*3)<<2}]
+	
 	# And so on and so forth...
 .EE

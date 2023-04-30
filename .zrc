@@ -140,15 +140,15 @@ fn extract {
 
 # Function from Xmodulo
 fn kernelgraph {
-	 lsmod | perl -e {
-		  print "digraph \"lsmod\" {";
-		  <>;
-		  while(<>){
-				@_=split/\s+/;
-				print "\"$_[0]\" -> \"$_\"\n" for split/,/,$_[3]
-		  }
-		  print "}"
-	 } | dot -Tpng | display -;
+	lsmod | perl -e {
+		print "digraph \"lsmod\" {";
+		<>;
+		while(<>){
+			@_=split/\s+/;
+			print "\"$_[0]\" -> \"$_\"\n" for split/,/,$_[3]
+		}
+		print "}"
+	} | dot -Tpng | display -;
 }
 
 # Custom tools

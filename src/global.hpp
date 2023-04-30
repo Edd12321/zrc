@@ -7,4 +7,12 @@
 #define NONE        3
 
 #define ld long double
+
+// Special variables
+#define $PID    "pid"
+#define $RETURN "?"
+#define $LPID   "!"
+#define $ARGV   "argv"
+#define $ARGC   "argc"
+
 extern bool w, cin_eq_in;

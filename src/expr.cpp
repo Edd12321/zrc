@@ -42,6 +42,11 @@ std::unordered_map<char, short> prio = {
 	//{ implicit  0 }
 };
 
+enum ExprType {
+	INFIX,
+	RPN
+};
+
 /** Check left-associative operators.
  *
  * @param {char}op
@@ -102,7 +107,7 @@ ldtoa(ld x)
  * @return void
  */
 char *
-expr(std::string e)
+expr(std::string e, ExprType mode)
 {
 	std::string old = e;
 	str_subst(e);
@@ -158,15 +163,6 @@ expr(std::string e)
 	REP("false", "0");
 	REP("true" , "1");
 
-	e.erase(
-		remove_if(
-			e.begin(),
-			e.end(),
-			[](char x){return isspace(x);}
-		),
-		e.end()
-	);
-
 	std::stack<char> ops;
 	std::stack<ld>   nums;
 	std::string      rpn;
@@ -174,49 +170,61 @@ expr(std::string e)
 	char *tok, *endptr;
 	ld val;
 
-	for (int i = 0, len = e.length(); i < len; ++i) {
-		//=====number=====
-		if (isnum(e[i])) {
-			rpn += e[i];
-			if (i+1 >= len || !isnum(e[i+1]))
-				rpn += ' ';
+	if (mode == RPN) {
+		rpn = e;
+	} else {
+		e.erase(
+			remove_if(
+				e.begin(),
+				e.end(),
+				[](char x){return isspace(x);}
+			),
+			e.end()
+		);
 
-		//=====opening paren=====
-		} else if (e[i] == '(') {
-			ops.push('(');
-
-		//=====closing paren=====
-		} else if (e[i] == ')') {
-			while (!ops.empty() && ops.top() != '(') {
-				rpn += ops.top();
-				rpn += ' ';
-				ops.pop();
+		for (int i = 0, len = e.length(); i < len; ++i) {
+			//=====number=====
+			if (isnum(e[i])) {
+				rpn += e[i];
+				if (i+1 >= len || !isnum(e[i+1]))
+					rpn += ' ';
+	
+			//=====opening paren=====
+			} else if (e[i] == '(') {
+				ops.push('(');
+	
+			//=====closing paren=====
+			} else if (e[i] == ')') {
+				while (!ops.empty() && ops.top() != '(') {
+					rpn += ops.top();
+					rpn += ' ';
+					ops.pop();
+				}
+				if (!ops.empty())
+					ops.pop();
+	
+			//=====other=====
+			} else {
+				if (!i || !isnum(e[i-1]) && e[i-1] != ')') {
+					if (e[i] == '+') e[i] = 'p';
+					if (e[i] == '-') e[i] = 'm';
+				}
+				while (!ops.empty()
+				&&     prio[e[i]] <= prio[ops.top()]
+				&&     lassoc(e[i])) {
+					rpn += ops.top();
+					rpn += ' ';
+					ops.pop();
+				}
+				ops.push(e[i]);
 			}
-			if (!ops.empty())
-				ops.pop();
-
-		//=====other=====
-		} else {
-			if (!i || !isnum(e[i-1]) && e[i-1] != ')') {
-				if (e[i] == '+') e[i] = 'p';
-				if (e[i] == '-') e[i] = 'm';
-			}
-			while (!ops.empty()
-			&&     prio[e[i]] <= prio[ops.top()]
-			&&     lassoc(e[i])) {
-				rpn += ops.top();
-				rpn += ' ';
-				ops.pop();
-			}
-			ops.push(e[i]);
+		}
+		while (!ops.empty()) {
+			rpn += ops.top();
+			rpn += ' ';
+			ops.pop();
 		}
 	}
-	while (!ops.empty()) {
-		rpn += ops.top();
-		rpn += ' ';
-		ops.pop();
-	}
-
 	tok = strtok(&rpn[0], " ");
 	while (tok != NULL) {
 		val = strtold(tok, &endptr);
@@ -268,3 +276,7 @@ expr(std::string e)
 	else
 		return (char*)"nan";
 }
+
+// Default action
+char *expr(std::string e)
+	{ return expr(e, ExprType::INFIX); }

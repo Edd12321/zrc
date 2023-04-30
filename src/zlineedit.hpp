@@ -1,11 +1,3 @@
-#include <sys/ioctl.h>
-#include <filesystem>
-#include <iostream>
-#include <istream>
-#include <libgen.h>
-#include <termios.h>
-#include <string>
-
 #define KEY_ESC 27
 #define KEY_BACKSPACE 127
 #define KEY_ALTBSPACE 8

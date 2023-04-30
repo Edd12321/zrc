@@ -37,4 +37,5 @@ fn sieve {
 
 fn main {
 	sieve 900
+	return 0
 }; main

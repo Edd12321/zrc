@@ -2,13 +2,10 @@
 #define ARRAY_HPP
 
 extern char **envp;
-#define ARR_CLONE(X, Y) { \
-    for (int i = 0; i < Y; ++i)                       \
-        a_hm[#X].set(std::to_string(i), X[i]);        \
-}
 #define INIT_ZRC_ARGS {                               \
-    ARR_CLONE(argv, argc);                            \
-    setvar("argc", itoa(argc));                       \
+    for (int i = 0; i < argc; ++i)                    \
+        a_hm[$ARGV].set(std::to_string(i), argv[i]);  \
+    setvar($ARGC, itoa(argc));                        \
 }
 
 

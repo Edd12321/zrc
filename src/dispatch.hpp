@@ -30,7 +30,6 @@ typedef std::string FunctionName;
 typedef std::string CodeBlock;
 typedef std::string AliasName;
 typedef std::string Path;
-#define DispatchTable std::map
 
 DispatchTable<FunctionName, CodeBlock> funcs;
 DispatchTable<AliasName, WordList> aliases;
@@ -84,13 +83,20 @@ Command(jobs)   { jobs(); return "0"; }
 Command(wait)   { while (wait(NULL) > 0){} return "0"; }
 /** Closes with an error message **/
 Command(die)    { die(argv[1]); return "1"; }
-/** Evaluates an arithmetic expression **/
-Command(expr)   { return expr(combine(argc, argv, 1)); }
 /** Evalues its arguments as a script **/
 Command(eval)   { return eval(combine(argc, argv, 1)); }
 /** Variable type commands **/
 Command(array)  { return array(argc, argv); }
 Command(string) { return string(argc, argv); }
+
+/** Evaluates an arithmetic expression **/
+Command(expr) {
+	ExprType et = INFIX;
+	if (argc > 1 && !strcmp(argv[1], "-r"))
+		et = RPN,
+		--argc, ++argv;
+	return expr(combine(argc, argv, 1), et);
+}
 
 /** Executes a block if an expression evaluates non-zero **/
 Command(if) {
@@ -242,7 +248,7 @@ Command(fn) {
 				// We have to re-traverse the hashmap, because lambdas can't be passed as
 				// function pointers if they capture argv[]...
 				for (auto const& it : txt2sig)
-					if (it.second == sig)
+					if (it.second == sig && funcs.find(it.first) != funcs.end())
 						eval(it.first);
 			});
 		}
@@ -325,6 +331,7 @@ Command(fork) {
 
 	if (pid == 0) {
 		atexit([](){});
+		setvar($PID, std::to_string(getpid()));
 		strcpy(message, eval(argv[1]).data());
 		exit(0);
 	
@@ -537,7 +544,7 @@ Command(not) {
 		argv[i] = NULL;
 	argv = NULL;
 	ret_val = (ret_val=="0")?"1":"0";
-	setvar("?", ret_val);
+	setvar($RETURN, ret_val);
 	NoReturn;
 }
 

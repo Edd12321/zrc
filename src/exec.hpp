@@ -125,7 +125,7 @@ _skip:
 		dup2(it.first, it.second);
 	baks.clear();
 
-	setvar("?", ret_val);
+	setvar($RETURN, ret_val);
 	
 	cleanup_memory();
 	for (i = 0; i < argc; ++i)

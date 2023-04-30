@@ -208,7 +208,7 @@ sigchld_handler(int signum)
 				deljob(index);
 				ret_val = itoa(WEXITSTATUS(cs));
 			}
-			setvar("!", itoa(pid));
+			setvar($LPID, itoa(pid));
 		}
 	}
 }

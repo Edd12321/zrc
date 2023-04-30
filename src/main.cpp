@@ -1,4 +1,5 @@
 #pragma GCC optimize("Ofast")
+#include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -10,20 +11,23 @@
 #ifndef GLOB_TILDE
 	#define GLOB_TILDE 0x0800
 #endif
+#include <libgen.h>
+#include <limits.h>
 #include <math.h>
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iomanip>
 #include <iostream>
 #include <istream>
 #include <iomanip>
-#include <limits.h>
 #include <map>
 #include <regex>
 #include <sstream>
@@ -81,6 +85,7 @@
     }
 
 typedef int Jid;
+#define DispatchTable std::map
 /***** GLOBAL VARIABLES BEGIN *****/
   extern char **environ;
 
@@ -166,11 +171,11 @@ class WordList;
   #include "lex.hpp"
   #include "array.hpp"
   #include "string.hpp"
+  #include "expr.hpp"
+  #include "expr.cpp"
   #include "dispatch.hpp"
   #include "sighandler.hpp"
   #include "subst.hpp"
-  #include "expr.hpp"
-  #include "expr.cpp"
   #include "exec.hpp"
   #include "zlineedit.hpp"
   #include "fd.hpp"
@@ -347,6 +352,9 @@ main(int argc, char *argv[])
 	
 	// $argv(0), $argv(1), $argv(2), ..., $argv([expr $argc-1])
 	INIT_ZRC_ARGS;
+
+	// $pid
+	setvar($PID, std::to_string(getpid()));
 
 	if (argc == 1) {
 		//load user config file
