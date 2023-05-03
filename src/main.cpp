@@ -57,6 +57,7 @@
 #define RC(X) do {                                \
     make_new_jobs = true;                         \
     args[k] = NULL;                               \
+	std::cin.clear();                             \
     if (can_runcmd) {                             \
         exec(k, args);                            \
         if (!bg_or_fg.empty())                    \
@@ -84,6 +85,13 @@
         continue;                                 \
     }
 
+class Array;
+class WordList;
+
+typedef std::string FunctionName;
+typedef std::string CodeBlock;
+typedef std::string AliasName;
+typedef std::string Path;
 typedef int Jid;
 #define DispatchTable std::map
 /***** GLOBAL VARIABLES BEGIN *****/
@@ -95,11 +103,12 @@ typedef int Jid;
   std::string ret_val;
   std::deque<bool> bg_or_fg;
   std::vector<std::pair<int, int>> baks;
+
+  DispatchTable<CodeBlock, WordList> zwlcache;
+  long ch_mode;
   #include "global.hpp"
   #include "config.hpp"
 /***** GLOBAL VARIABLES END *****/
-
-class WordList;
 
 /***** FUNCTIONDECLS BEGIN *****/
   static bool               die            (std::string_view          );
@@ -384,7 +393,7 @@ main(int argc, char *argv[])
 			goto _err;
 		}
 	}
-_suc: return is_number(ret_val)
+_suc: return (is_number(ret_val) && !ret_val.empty())
 		  ? std::stoi(ret_val)
 		  : EXIT_SUCCESS;
 _err: return EXIT_FAILURE;

@@ -1,70 +1,69 @@
 #!../bin/zrc
+# Ported to Zrc from:
+# https://wiki.tcl-lang.org/page/A+Little+CIDR+Calculator
 
-###########################
-# Converts decimal2binary #
-###########################
-fn to_bin {
-	set val = $argv(1)
-	set k   = 0
-	set res = ""
-	while {$val} {
-		set res = "[expr $val&1]$res"
-		set val =  [expr ($val >> 1)]
-		inc k
+fn ip2int {
+	let {i ip res} {
+		set ip  = $argv(1)
+		set res = 0
+		echo -n $ip | while {![read -d '.' i]} {
+			set res = [expr {$res<<8 | $i}]
+		}
+		return $res
 	}
-	# Add leading zeroes
-	for {set n = $k} {$n < 8} {inc n} {
-		set res = "0$res"
-	}
-	return $res
 }
 
-################
-# Help message #
-################
-fn usage {
-	die "usage: ip_tool.zrc <ip1.ip2.ip3.ip4> <mask>"
+fn bits {
+	let {i j n res} {
+		set n   = $argv(1)
+		set res = 0
+		eval {
+			for {set i = 0} {$i < [expr {00+$n}]} {inc i} { echo -n 1 }
+			for {set i = 0} {$i < [expr {32-$n}]} {inc i} { echo -n 0 }
+		} | while {![read -n 1 j]} {
+			set res = [expr {$res<<1 | $j}]
+		}
+		return $res
+	}
 }
 
-################
-# Main routine #
-################
-fn main {
-	# IP address
-	for {set i = 1} {$i <= 4} {inc i} {
-		set ip($i) = `{echo -n $argv(1) | cut -d. -f$i}
-		set ip = "$ip[to_bin $ip($i)]"
+fn maskmatch {
+	let {ip1 width ip2} {
+		set ip1   = $argv(1)
+		set width = $argv(2)
+		set ip2   = $argv(3)
+		expr {([ip2int $ip1] & [bits $width]) == ([ip2int $ip2] & [bits $width])}
 	}
+}
+
+fn maskmatch2 {
+	let {c i ip ip0 len mask ok width} {
+		set mask = $argv(1)
+		set ip   = $argv(2)
+		set ok   = 0
+		for {set i = 0 len = [string length $mask]} {$i <= $len} {inc i} {
+			set c = [string index $mask $i]
+			if {![string cmp $c '/']} {
+				set ok = 1
+			} else {
+				switch $ok {
+					case 0 { set ip0   = [string cat $ip0   $c] }
+					case 1 { set width = [string cat $width $c] }
+				}
+			}
+		}
+		if {![string cmp $width '']} {
+			! string cmp $mask $ip
+		} else {
+			maskmatch $ip0 $width $ip
+		}
+	}
+}
+
+if 1 { # Examples:
+	echo [maskmatch2 10.10.1.32/27  10.10.1.44]
+	# Expected result: 1
 	
-	# SubNet mask
-	for {set i = 1} {$i <= $argv(2)} {inc i} {
-		set mask = "$mask\1"
-	}
-	for {set i = $argv(2)} {$i < 32} {inc i} {
-		set mask = "$mask\0"
-	}
-	
-	echo $ip
-	echo $mask
-	echo --------------------------------
-
-	echo -n ">>> Network address (base2):   "
-	for {set i = 0} {$i < 32} {inc i} {
-		set c1 = [string index $ip   $i]
-		set c2 = [string index $mask $i]
-		set fin = "$fin[expr ($c1 & $c2)]"
-	}
-	printf "%b%s%b\n" {\e[0;32m} $fin {\e[0m}
-	set fin = ""
-
-	echo -n ">>> Broadcast address (base2): "
-	for {set i = 0} {$i < 32} {inc i} {
-		set c1 = [string index $ip   $i]
-		set c2 = [string index $mask $i]
-		set fin = "$fin[expr ($c1 | !($c2))]"
-	}
-	printf "%b%s%b\n" {\e[0;32m} $fin {\e[0m}
+	echo [maskmatch2 10.10.1.32/27  10.10.1.90]
+	# Expected result: 0
 }
-
-if {$argc != 4} usage
-main $argv(2) $argv(3)

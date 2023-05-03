@@ -3,7 +3,7 @@ set E:PATH = /bin/:$E:PATH
 
 fn sieve {
 	set n = $argv(1)
-	set x = [expr sqrt($n)]
+	set x = [expr {sqrt($n)}]
 
 	# Assume every number is prime.
 	for {set i = 1} {$i <= $n} {inc i} {
@@ -13,7 +13,7 @@ fn sieve {
 	# Sieve of Eratosthenes.
 	for {set p = 2} {$p <= $x} {inc p} {
 		if {$prime($p)} {
-			for {set i = [expr $p*$p]} {$i <= $n} {inc i $p} {
+			for {set i = [expr {$p*$p}]} {$i <= $n} {inc i $p} {
 				set prime($i) = 0
 			}
 		}

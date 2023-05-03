@@ -26,11 +26,6 @@
 	else if (!strcmp(argv[i], X "="))\
 		setvar(argv[i-1], expr((std::string)"("+getvar(argv[i-1])+")" X "("+argv[i+1]+")"))
 
-typedef std::string FunctionName;
-typedef std::string CodeBlock;
-typedef std::string AliasName;
-typedef std::string Path;
-
 DispatchTable<FunctionName, CodeBlock> funcs;
 DispatchTable<AliasName, WordList> aliases;
 

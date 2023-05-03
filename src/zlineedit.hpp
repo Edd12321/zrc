@@ -214,13 +214,6 @@ namespace zlineshort
 	}
 }
 
-static inline void
-clearcin()
-{
-	std::cin.clear();
-	//fflush(stdin);
-}
-
 static inline bool
 zrawch(char& ch)
 {
@@ -248,7 +241,6 @@ zlineedit(std::string& buf)
 	R();
 	buf.clear();
 
-	clearcin();
 	while (zrawch(c)) {
 		switch (c) {
 		/* The line editing part */
@@ -276,7 +268,7 @@ zlineedit(std::string& buf)
 		case KEY_RETURN:
 			std::cout << std::endl;
 			W(buf);
-			clearcin();
+			std::cin.clear();
 			return true;
 
 		case KEY_BACKSPACE: /* FALLTHROUGH */
@@ -302,13 +294,14 @@ zlineedit(std::string& buf)
 			insert(buf, c);
 		}
 	}
-	clearcin();
+	std::cin.clear();
 	return true;
 }
 
 template<typename T> inline bool
 zrc_read_line(std::istream& in, std::string& buf, T const& prompt)
 {
+	//std::cin.clear();
 	if (TERMINAL) {
 		std::cout << prompt << std::flush;
 		return zlineedit(buf);
@@ -320,6 +313,7 @@ zrc_read_line(std::istream& in, std::string& buf, T const& prompt)
 inline bool
 zrc_read_line(std::istream& in, std::string& buf)
 {
+	//std::cin.clear();
 	if (TERMINAL) {
 		SHOW_PROMPT;
 		return zlineedit(buf);

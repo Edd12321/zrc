@@ -10,7 +10,7 @@ fn Fill {
 		if {$i>=1 && $i<=$n && $j>=1 && $j<=$m && ![string cmp $A($i,$j) 0]} {
 			set A($i,$j) = $v
 			for {set k = 0} {$k < 4} {inc k} {
-				Fill [expr $i+$d_lin($k)] [expr $j+$d_col($k)] $v
+				Fill [expr {$i+$d_lin($k)}] [expr {$j+$d_col($k)}] $v
 			}
 		}
 	}

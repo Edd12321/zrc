@@ -3,8 +3,8 @@
 fn MagicSquare {
 	set n = $argv(1)
 	
-	set i = [expr floor($n/2)]
-	set j = [expr $n-1]
+	set i = [expr {floor($n/2)}]
+	set j = [expr {$n-1}]
 
 	# Initialize the 2D table
 	reading
@@ -12,13 +12,13 @@ fn MagicSquare {
 	# Put all vals one by one
 	for {set num = 1} {$num <= $n*$n} {} {
 		if {$i == -1 && $j == $n} {
-			set j = [expr $n-2] i = 0
+			set j = [expr {$n-2}] i = 0
 		} else {
 			if {$j == $n} { set j = 0 }
-			if {$i < 0}   { set i = [expr $n-1] }
+			if {$i < 0}   { set i = [expr {$n-1}] }
 		}
 		if {$squ($i,$j)} {
-			set j = [expr $j-2]
+			set j = [expr {$j-2}]
 			inc i
 		} else {
 			set squ($i,$j) = $num
