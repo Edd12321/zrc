@@ -1,0 +1,24 @@
+<!DOCTYPE HTML>
+<html>
+<head></head>
+<body>
+<?
+	# Templating engine test!
+	echo 'Hello from Zrc!'
+	for {set i = 1} {$i <= 100} {inc i} {
+		echo -n $i ' ';
+	}
+?>
+<table>
+	<tr>
+		<td>test1</td>
+		<td>test2</td>
+		<td>test3</td>
+	</tr>
+</table>
+<?
+	echo 'Random number of the day:'
+	shuf -i 1-100 -n 1
+?>
+</body>
+</html>
