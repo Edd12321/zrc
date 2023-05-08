@@ -71,7 +71,7 @@ prints(std::stack<Path> sp)
 }
 
 /** Closes the Zrc session **/
-Command(exit)   { exit(EXIT_SUCCESS); }
+Command(exit)   { if (chk_exit) _Exit(EXIT_SUCCESS); else exit(EXIT_SUCCESS); }
 /** Displays a job table **/
 Command(jobs)   { jobs(); return "0"; }
 /** Waits for child processes to finish **/
@@ -325,10 +325,11 @@ Command(fork) {
 		other_error("fork() failed", 2);
 
 	if (pid == 0) {
+		chk_exit = true;
 		atexit([](){});
 		setvar($PID, std::to_string(getpid()));
 		strcpy(message, eval(argv[1]).data());
-		exit(0);
+		_Exit(0);
 	
 	} else {
 		waitpid(pid, NULL, 0);

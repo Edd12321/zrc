@@ -14,5 +14,6 @@
 #define $LPID   "!"
 #define $ARGV   "argv"
 #define $ARGC   "argc"
+#define $PS1    "PS1"
 
 extern bool w, cin_eq_in;

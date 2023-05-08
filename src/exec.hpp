@@ -2,9 +2,9 @@
     int rv = execvp(argv[0], argv); \
     if (rv < 0) {                   \
         perror(argv[0]);            \
-        exit(127);                  \
+        _Exit(127);                 \
     } else {                        \
-        exit(rv);                   \
+        _Exit(rv);                  \
     }                               \
 }
 
@@ -103,7 +103,7 @@ exec(int argc, char *argv[])
 				} else {
 					RUNCMD;
 				}
-				exit(0);
+				_Exit(0);
 			
 			} else {
 				if (make_new_jobs) {
@@ -153,11 +153,13 @@ io_cap(std::string frag)
 	pipe(pd);
 	pid = fork();
 	if (pid == 0) {
+		atexit([](){});
+		chk_exit = true;
 		dup2(pd[1], STDOUT_FILENO);
 		close(pd[0]);
 		close(pd[1]);
 		eval(frag);
-		exit(0);
+		_Exit(0);
 	} else {
 		close(pd[1]);
 		do {

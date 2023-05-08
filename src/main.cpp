@@ -98,7 +98,7 @@ typedef int Jid;
   extern char **environ;
 
   int o_in, o_out; 
-  bool cin_eq_in, w, make_new_jobs = true;
+  bool cin_eq_in, w, make_new_jobs = true, chk_exit;
   pid_t zrcpid = getpid();
   std::string ret_val;
   std::deque<bool> bg_or_fg;

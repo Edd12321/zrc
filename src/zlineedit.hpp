@@ -11,10 +11,10 @@
 #define CURSOR_BWD(X) std::cout << "\033[" << X << "D"
 
 #define SHOW_PROMPT \
-	if (s_hm.find("PS1") != s_hm.end()) {\
+	if (s_hm.find($PS1) != s_hm.end()) {\
 		char *argv[2];\
 		argv[0] = strdup("@");\
-		argv[1] = strdup(((std::string)"echo -n "+getvar("PS1")).c_str());\
+		argv[1] = strdup(((std::string)"echo -n "+getvar($PS1)).c_str());\
 		exec(2, argv);\
 	} else {\
 		std::cout << default_prompt << std::flush;\
