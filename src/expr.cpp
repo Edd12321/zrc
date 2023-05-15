@@ -19,7 +19,7 @@ extern inline bool
 is_expr(std::string str)
 {
 	return str.find_first_not_of(
-		".0123456789 \t\n"
+		".0123456789 \t\n\r\v\f"
 		"<=>+-*/%^~!?:()<>&|"
 		"qwertyuiopasdfghjklzxcvbnm"
 	) == std::string::npos;

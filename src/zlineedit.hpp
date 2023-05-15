@@ -183,7 +183,7 @@ namespace zlineshort
 	}
 	sub cmd(std::string& buf)
 	{
-		std::istringstream iss(getenv("PATH"));
+		std::istringstream iss(getvar($PATH));
 		std::string tmp;
 		std::vector<std::string> vec;
 		while (getline(iss, tmp, ':')) {

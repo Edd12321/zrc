@@ -114,12 +114,15 @@ tokenize(std::string line, std::istream& in)
 			break;
 
 		case '#':
-			i = len;
+			for (++i; i < len && line[i] != '\n'; ++i)
+				;
 			[[fallthrough]];
 		case  ' ':
 		case '\t':
 		case '\n':
 		case '\r':
+		case '\v':
+		case '\f':
 			wl.add_token(tmp);
 			break;
 
