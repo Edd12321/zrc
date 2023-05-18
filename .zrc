@@ -69,7 +69,7 @@ alias mkdir   "mkdir -pv"
 alias pacman  "\$E:AUTH pacman"
 alias calc    "bc -ql"
 alias emacs   "emacs -nw"
-alias history "eval cat ~/.zrc_history | \$E:PAGER"
+alias history "eval \$E:PAGER < ~/.zrc_history"
 alias da      "date '+%Y-%m-%d %A %T %Z'"
 
 # Modify original cmds

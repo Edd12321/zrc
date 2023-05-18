@@ -174,18 +174,49 @@ io_cap(std::string frag)
 	return res;
 }
 
+/** Substitute (and optionally glob) a word for use in redirects.
+ * 
+ * @param {string&}str
+ * @return bool
+ */
+static bool
+str_subst_expect1(std::string& str)
+{
+	WordList gbzwl;
+	std::string str1;
+
+	str1 = str;
+	str_subst(str);
+	if (str1 == str) {
+		gbzwl = glob(str);
+		if (gbzwl.size() == 1) {
+			str = gbzwl.wl[0];
+		} else {
+			std::cerr << errmsg << "ambiguous redir\n";
+			return 0;
+		} 
+	}
+	return 1;
+}
+
 /** Redirects standard input.
  *
  * @param {string}fn
  * @return void
  */
-void
+bool
 io_left(std::string fn)
 {
-	str_subst(fn);
+	if (!str_subst_expect1(fn))
+		return 0;
+	if (access(fn.c_str(), F_OK)) {
+		perror(fn.c_str());
+		return 0;
+	}
 	int fd = open(fn.data(), O_RDONLY);
 	dup2(fd, STDIN_FILENO);
 	close(fd);
+	return 1;
 }
 
 /** Redirects Fd #n (can also append to a file).
@@ -193,18 +224,19 @@ io_left(std::string fn)
  * @param {string}fn,{bool}app,{int}n
  * @return void
  */
-void
+bool
 io_right(std::string fn, bool app, int n)
 {
 	int fd;
-
-	str_subst(fn);
+	if (!str_subst_expect1(fn))
+		return 0;
 	if (app)
 		fd = open(fn.data(), O_CREAT|O_APPEND|O_WRONLY, 0644);
 	else
 		fd = open(fn.data(), O_WRONLY|O_TRUNC|O_CREAT,  0600);
 	dup2(fd, n);
 	close(fd);
+	return 1;
 }
 
 /** Converts stdout to stdin.
@@ -231,11 +263,11 @@ io_pipe(int argc, char *argv[])
  * @param {string}hs,{istream&}in,bool mode
  * @return void
  */
-void
+bool
 io_hedoc(std::string hs, std::istream& in, bool mode)
 {
 	char *temp = strdup("/tmp/zhereXXXXXX");
-	std::string line;
+	std::string line, hs1;
 	int fd;
 
 	str_subst(hs);
@@ -243,19 +275,24 @@ io_hedoc(std::string hs, std::istream& in, bool mode)
 	if (mode) {
 		/* HERESTRING */
 		hs += "\n";
-		if (write(fd, hs.data(), hs.length()) == -1)
-			die("herestring: write(3) failed");
+		if (write(fd, hs.data(), hs.length()) == -1) {
+			std::cerr << "herestring: write(3) failed\n";
+			return 0;
+		}
 	} else {
 		/* HEREDOC */
 		while (zrc_read_line(in, line, '>')) {
 			if (line == hs)
 				break;
-			else if (write(fd, (line+"\n").data(), line.length()+1) == -1)
-				die("heredoc: write(3) failed");
+			else if (write(fd, (line+"\n").data(), line.length()+1) == -1) {
+				std::cerr << "heredoc: write(3) failed\n";
+				return 0;
+			}
 		}
 	}
 	close(fd);
 	io_left(temp);
 	unlink(temp);
 	free(temp);
+	return 1;
 }

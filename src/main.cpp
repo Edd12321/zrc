@@ -42,6 +42,8 @@
 #define CIND std::distance(zwl.wl.begin(), it)
 #define sub static inline void
 
+#define FAIL or (can_runcmd=0);
+
 #define CHK_ESC {                                 \
     len = line.length(); ltmp = "";               \
     while (!line.empty() && line.back() == '\\') {\
@@ -157,8 +159,10 @@ typedef int Jid;
   template<typename T> std::string  combine(int          , T, int     );
   extern void               exec           (int          , char**     );
   std::string               io_cap         (std::string               );
-  void                      io_left        (std::string               );
-  void                      io_right       (std::string  , bool       );
+  bool                     str_subst_expect(std::string  , std::istream&,bool);
+  bool                      io_left        (std::string               );
+  bool                      io_right       (std::string  , bool, int  );
+  bool                      io_hedoc       (std::string  , std::istream&,bool);
   void                      io_pipe        (int          , char**     );
   // EXEC.HPP
   
@@ -273,14 +277,20 @@ eval_stream(std::istream& in)
 		for (auto it = zwl.wl.begin(); it != zwl.wl.end(); ++it) {
 			sword = glb = 0;
 			if (zwl.is_bare(CIND)) {
+				/**
+				 * Separators *
+				             **/
 				/*!*/if (*it == "&" || *it == ";") { sword = 1; RC(1); }
 				/*!*/else if (*it == "&&")         { sword = 1; RC(ret_val=="0"); }
 				/*!*/else if (*it == "||")         { sword = 1; RC(ret_val!="0"); }
-				/*!*/else if (*it == "<<" )        { sword = 1; io_hedoc(*(++it), in, 0); continue; }
-				/*!*/else if (*it == "<<<")        { sword = 1; io_hedoc(*(++it), in, 1); continue; }
-				/*!*/else if (*it == "<"  )        { sword = 1; io_left (*(++it)       ); continue; }
-				/*!*/else if (*it == ">"  )        { sword = 1; io_right(*(++it), 0 , 1); continue; }
-				/*!*/else if (*it == ">>" )        { sword = 1; io_right(*(++it), 1 , 1); continue; }
+				/**
+				 * I/O redirection *
+				                  **/
+				/*!*/else if (*it == "<<" )        { sword = 1; io_hedoc(*(++it), in, 0) FAIL continue; }
+				/*!*/else if (*it == "<<<")        { sword = 1; io_hedoc(*(++it), in, 1) FAIL continue; }
+				/*!*/else if (*it == "<"  )        { sword = 1; io_left (*(++it)       ) FAIL continue; }
+				/*!*/else if (*it == ">"  )        { sword = 1; io_right(*(++it), 0 , 1) FAIL continue; }
+				/*!*/else if (*it == ">>" )        { sword = 1; io_right(*(++it), 1 , 1) FAIL continue; }
 				/*!*/else if (*it == "|"  ) {
 					sword = 1;
 					if (!can_runcmd)
