@@ -6,6 +6,8 @@
 #define ST          2
 #define NONE        3
 
+#define HTMP "/tmp/zhere-XXXXXX"
+
 #define ld long double
 
 // Special variables

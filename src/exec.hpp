@@ -266,9 +266,19 @@ io_pipe(int argc, char *argv[])
 bool
 io_hedoc(std::string hs, std::istream& in, bool mode)
 {
-	char *temp = strdup("/tmp/zhereXXXXXX");
+	char *temp;
 	std::string line, hs1;
 	int fd;
+
+#ifdef __ANDROID__
+	if (geteuid() != 0)
+		/*not rooted (assume Termux) */
+		temp = strdup("/data/data/com.termux/files/usr" HTMP);
+	else
+		temp = strdup(HTMP);
+#else
+	temp = strdup(HTMP);
+#endif
 
 	str_subst(hs);
 	fd = mkstemp(temp);
