@@ -167,9 +167,8 @@ namespace zlineshort
 	sub tab(std::string& buf)
 	{
 		WordList wlist, globbed;
-		std::ifstream fin("/dev/null");
+		NullFin;
 		wlist = tokenize(buf, fin);
-		fin.close();
 		globbed = glob(wlist.back()+"*");
 		if (globbed.size() == 1) {
 			wlist.wl[wlist.size()-1] = globbed.wl[0];

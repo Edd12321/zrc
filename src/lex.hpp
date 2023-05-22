@@ -43,6 +43,7 @@ public:
 			if (tok == ";") bg_or_fg.push_back(FG);
 			if (tok == "&") bg_or_fg.push_back(BG);
 			tok.clear();
+			tok.reserve(DEFAULT_TOKSIZ);
 			++len;
 		}
 	}
@@ -64,6 +65,7 @@ tokenize(std::string line, std::istream& in)
 	long cmpnd;
 	size_t i, len2, len = line.length();
 
+	tmp.reserve(DEFAULT_TOKSIZ);
 	for (i = len2 = 0; i < len; ++i) {
 		switch(line[i]) {
 		// Brace quoting

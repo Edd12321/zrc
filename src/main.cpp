@@ -87,15 +87,26 @@
         continue;                                 \
     }
 
+#define NullFin \
+	NullIOSink ns;\
+	std::istream fin(&ns)
+
 class Array;
 class WordList;
+class NullIOSink;
+
+class NullIOSink : public std::streambuf
+{
+public:
+	int overflow(int x) { return x; }
+};
 
 typedef std::string FunctionName;
 typedef std::string CodeBlock;
 typedef std::string AliasName;
 typedef std::string Path;
 typedef int Jid;
-#define DispatchTable std::map
+#define DispatchTable std::unordered_map
 /***** GLOBAL VARIABLES BEGIN *****/
   extern char **environ;
 

@@ -31,7 +31,6 @@ array(int argc, char *argv[])
 {
 	int i;
 	WordList args;
-	std::ifstream fin;
 
 	if (argc < 2)
 		USAGE2;
@@ -63,9 +62,8 @@ array(int argc, char *argv[])
 	if (!strcmp(argv[1], "set")) {
 		if (argc < 5 || strcmp(argv[3], "="))
 			USAGE2;
-		fin.open("/dev/null", std::ios::in);
+		NullFin;
 		args = tokenize(argv[4], fin);
-		fin.close();
 		a_hm.erase(argv[2]);
 		std::for_each(args.wl.begin(), args.wl.end(), &str_subst);
 		for (i = 0, argc = args.size(); i < argc; ++i)
@@ -77,9 +75,8 @@ array(int argc, char *argv[])
 		if (argc < 5 || strcmp(argv[3], "="))
 			USAGE2;
 
-		fin.open("/dev/null", std::ios::in);
+		NullFin;
 		args = tokenize(argv[4], fin);
-		fin.close();
 		a_hm.erase(argv[2]);
 		std::for_each(args.wl.begin(), args.wl.end(), &str_subst);
 		argc = args.size();

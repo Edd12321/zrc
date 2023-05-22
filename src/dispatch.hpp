@@ -184,14 +184,16 @@ Command(do) {
 
 /** Switch statement implementation **/
 Command(switch) {
-	std::string      def_cmd;
-	WordList         args;
-	std::ifstream    fin("/dev/null");
+	std::string def_cmd;
+	WordList args;
+
 	if (argc != 3)
 		syntax_error("<value> {<case <c> cmd|reg <r>|default <block>...}");
 	
-	args = tokenize(argv[2], fin);
-	fin.close();
+	/* empty */ {
+		NullFin;
+		args = tokenize(argv[2], fin);
+	}
 	std::for_each(args.wl.begin(), args.wl.end(), &str_subst);
 	for (int i = 0, argc = args.size(); i < argc; i += 3) {
 		if (args.wl[i] == "case") {
@@ -461,10 +463,9 @@ Command(ord) {
 /** Add/remove alias **/
 Command(alias) {
 	if (argc == 3) {
-		std::ifstream fin("/dev/null");
+		NullFin;
 		aliases[argv[1]] = tokenize(argv[2], fin);
 		std::for_each(aliases[argv[1]].wl.begin(), aliases[argv[1]].wl.end(), &str_subst);
-		fin.close();
 	} else if (argc == 1) {
 		for (auto const& it : aliases) {
 			std::cout << "alias " << it.first << " {";
@@ -494,10 +495,10 @@ Command(let) {
 
 	WordList vars;
 	std::map<std::string, Variable> hm;
-
-	std::ifstream fin("/dev/null");
-	vars = tokenize(argv[1], fin);
-	fin.close();
+	/* empty */ {
+		NullFin;
+		vars = tokenize(argv[1], fin);
+	}
 	for (std::string const& str : vars.wl)
 		hm[str] = getvar(str);
 	eval(argv[2]);
@@ -515,7 +516,6 @@ Command(source) {
 		if (access(argv[i], F_OK) == 0) {
 			std::ifstream fin(argv[i]);
 			eval_stream(fin);
-			fin.close();
 		} else {
 			perror(argv[1]);
 			return "1";
@@ -610,13 +610,24 @@ Command(regexp) {
 
 Command(help);
 
-DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
-	de(exit),  de(return), de(fn),      de(nf),     de(jobs),    de(wait),  de(cd),
-	de(die),   ce(@,fork), de(echo),    de(expr),   de(eval),    de(if),    de(unless),
-	de(while), de(for),    de(foreach), de(do),     de(switch),  de(set),   de(inc),
-	de(array), de(string), de(read),    de(chr),    de(ord),     de(alias), de(unalias),
-	de(let),   de(until),  de(source),  de(unset),  de(help),    ce(!,not), de(bg),
-	de(fg),    de(pushd),  de(popd),    de(regexp), ce(.,source)
+const DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
+	/* Aliased commands */
+	ce(!,not) , ce(.,source), ce(@,fork),
+
+	/* Normal cmds */
+	de(alias) , de(array)   , de(bg),
+	de(cd)    , de(chr)     , de(die),
+	de(do)    , de(echo)    , de(eval),
+	de(exit)  , de(expr)    , de(fg),
+	de(fn)    , de(for)     , de(foreach),
+	de(help)  , de(if)      , de(inc),
+	de(jobs)  , de(let)     , de(nf),
+	de(ord)   , de(popd)    , de(pushd),
+	de(read)  , de(regexp)  , de(return),
+	de(set)   , de(source)  , de(string),
+	de(switch), de(unalias) , de(unless),
+	de(unset) , de(until)   , de(wait),
+	de(while)
 };
 
 /** Show a list of all BuiltIns **/
