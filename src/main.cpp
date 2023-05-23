@@ -106,7 +106,7 @@ typedef std::string CodeBlock;
 typedef std::string AliasName;
 typedef std::string Path;
 typedef int Jid;
-#define DispatchTable std::unordered_map
+#define DispatchTable std::map
 /***** GLOBAL VARIABLES BEGIN *****/
   extern char **environ;
 
