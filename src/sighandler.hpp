@@ -204,7 +204,7 @@ sigchld_handler(int signum)
 			}
 			if (WIFEXITED(cs)) {
 				if (TERMINAL && mode == BG)
-					std::cerr << FMT << strsignal(WEXITSTATUS(cs)) << '\n';
+					std::cerr << FMT << "Done\n";
 				deljob(index);
 				ret_val = itoa(WEXITSTATUS(cs));
 			}

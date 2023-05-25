@@ -89,6 +89,14 @@ alias 666     "chmod 666"
 alias 755     "chmod 755"
 alias 777     "chmod 777"
 
+alias str string
+alias strcmp 'string cmp'
+alias strcat 'string cat'
+alias strlen 'string length'
+alias sizeof 'array length'
+
+alias arr array
+
 fn mkcd { mkdir $argv(1) && cd $argv(1); }
 fn lcd  { cd $argv(1) && l }
 

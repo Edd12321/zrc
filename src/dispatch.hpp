@@ -465,7 +465,6 @@ Command(alias) {
 	if (argc == 3) {
 		NullFin;
 		aliases[argv[1]] = tokenize(argv[2], fin);
-		std::for_each(aliases[argv[1]].wl.begin(), aliases[argv[1]].wl.end(), &str_subst);
 	} else if (argc == 1) {
 		for (auto const& it : aliases) {
 			std::cout << "alias " << it.first << " {";
