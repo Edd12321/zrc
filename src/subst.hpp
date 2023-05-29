@@ -117,13 +117,13 @@ str_subst(std::string& str)
 					tmp1 += str[i];
 					if (str[i] == '(') {
 						ITERATE_PAREN('(',')');
-						str_subst(tmp2);
 						tmp1 += tmp2+")";
 						arr_ok = true;
 						break;
 					}
 				}
-				str_subst(tmp1);
+				if (!arr_ok)
+					str_subst(tmp1);
 				res += get_var(tmp1);
 				if (!arr_ok)
 					--i;

@@ -6,15 +6,18 @@ let \- Use a lexical scoping block
 .SH DESCRIPTION
 The first argument of
 .I let
-must be a list representing the variables that will return to their original value after executing the second argument, which is a "code block".
+must be a list representing the variables that will return to their original value after executing the second argument, which is a "code block". If a variable's name begins with `A,...`, then the utility stores a backup of the associative array of the same name.
 .SH EXAMPLE
 .EX
 	set var1 = value
 	set var2 = value
-	let {var1 var2} {
+	set arr(1) = x
+	set arr(2) = y
+	let {var1 var2 A,arr} {
+		array delete arr
 		set var1 = a
 		set var2 = b
 	}
 	#The original values were preserved!
-	echo $var1 $var2
+	echo $var1 $var2 $arr(1)
 .EE

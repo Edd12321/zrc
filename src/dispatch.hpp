@@ -493,18 +493,30 @@ Command(let) {
 		syntax_error("<var list> <block>");
 
 	WordList vars;
-	std::map<std::string, Variable> hm;
+	std::map<std::string, Array> a_hm_bak;
+	std::map<std::string, Scalar> s_hm_bak;
 	/* empty */ {
 		NullFin;
 		vars = tokenize(argv[1], fin);
 	}
-	for (std::string const& str : vars.wl)
-		hm[str] = getvar(str);
+	for (std::string str : vars.wl) {
+		if (str[0] == 'A' && str[1] == ',') {
+			str.erase(0, 2);
+			a_hm_bak[str] = a_hm[str];
+		} else {
+			s_hm_bak[str] = getvar(str);
+		}
+	}
 	eval(argv[2]);
-	for (std::string const& str : vars.wl)
-		setvar(str, hm[str]);
+	for (std::string& str : vars.wl) {
+		if (str[0] == 'A' && str[1] == ',') {
+			str.erase(0, 2);
+			a_hm[str] = a_hm_bak[str];
+		} else {
+			setvar(str, s_hm_bak[str]);
+		}
+	}
 	NoReturn;
-	
 }
 
 /** Sourcing scripts into current session **/

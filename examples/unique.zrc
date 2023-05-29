@@ -1,0 +1,29 @@
+#!/usr/lib/zrc/bin/zrc
+alias str string
+
+fn unique {
+	let {count line A,map} {
+		set count = 0
+		until {[read line]} {
+			switch $map($line) {
+				case '' {
+					inc count
+					set map($line) = 1
+				}
+				case 1 {
+					inc count -1
+					set map($line) = 2
+				}	
+			}
+		}
+		echo $count
+	}
+}
+
+if {$argc == 2} {
+	unique
+} else {
+	for {set i = 2} {$i < $argc} {inc i} {
+		unique < $argv($i)
+	}
+}
