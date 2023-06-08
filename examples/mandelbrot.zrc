@@ -8,28 +8,24 @@ set ymax = 4915
 
 set maxiter = 32
 
-set dx = [expr floor(($xmax-$xmin) / 79)]
-set dy = [expr floor(($ymax-$ymin) / 24)]
+set dx = [expr {($xmax-$xmin)//79}]
+set dy = [expr {($ymax-$ymin)//24}]
 
 set cy = $ymin
 while {$cy <= $ymax} {
 	set cx = $xmin
 	while {$cx <= $xmax} {
-		set x    = 0
-		set y    = 0
-		set x2   = 0
-		set y2   = 0
-		set iter = 0
+		set x = 0 y = 0 x2 = 0 y2 = 0 iter = 0
 		while {$iter < $maxiter && $x2+$y2 <= 16384} {
-			set y  = [expr (($x*$y)>>11)+$cy]
-			set x  = [expr $x2-$y2+$cx]
-			set x2 = [expr ($x**2)>>12]
-			set y2 = [expr ($y**2)>>12]
+			set y = [expr {(($x*$y)>>11)+$cy}]
+			set x = [expr {$x2-$y2+$cx}]
+			set x2 = [expr {($x**2)>>12}]
+			set y2 = [expr {($y**2)>>12}]
 			inc iter
 		}
-		printf "%c" [chr [ord ' ']+$iter]
+		echo -n [chr [ord ' ']+$iter]
 		inc cx $dx
 	}
-	printf "%c" '\n'
+	echo
 	inc cy $dy
 }

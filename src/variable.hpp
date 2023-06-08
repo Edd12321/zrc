@@ -11,23 +11,27 @@ typedef std::string Variable;
 /** Associative array objects **/
 class Array
 {
-private:
+public:
+//private:
 	std::unordered_map<std::string,
 		std::string> hm;
-public:
+//public:
 	size_t size;
 
 	std::string
 	get(std::string key)
 	{
-		return hm[key];
+		return (hm.find(key) != hm.end())
+			? hm.at(key)
+			: "";
 	}
 
 	void
 	set(std::string key, std::string value)
 	{
+		if (hm.find(key) == hm.end())
+			++size;
 		hm[key] = value;
-		++size;
 	}
 
 	void

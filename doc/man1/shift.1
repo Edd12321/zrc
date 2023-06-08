@@ -1,0 +1,9 @@
+.TH SHIFT 1
+.SH NAME
+shift \- Shift argv to the left
+.SH SYNOPSIS
+.BI "shift [" <n> ]
+.SH DESCRIPTION
+The
+.I shift
+utility shifts the argv array and decrements argc by `n` (if given). If only one argument is given to the command, it automatically shifts argv by the default value of 1. The utility returns the argument count after shifting.

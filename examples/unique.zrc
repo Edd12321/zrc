@@ -1,5 +1,4 @@
 #!/usr/lib/zrc/bin/zrc
-alias str string
 
 fn unique {
 	let {count line A,map} {

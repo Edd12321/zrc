@@ -277,6 +277,10 @@ Write a message.
 .br
 Concatenate args and evaluate them as one script.
 .HP
+.BI "exec [" "cmd " [ <args>... ]]
+.br
+Replace the current shell process.
+.HP
 .B exit
 .br
 Exit Zrc.
@@ -352,6 +356,10 @@ Return a value.
 .BI "set " "<var> " [ +-*/%|^&: ][ ** ][ || ][ && ][ // ][ << ][ >> ] "= <val>..."
 .br
 Set variables' values.
+.HP
+.BI "shift [" <n> ]
+.br
+Shift argv.
 .HP
 .BI "source|. [" <file...> ]
 .br

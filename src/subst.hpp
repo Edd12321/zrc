@@ -122,11 +122,11 @@ str_subst(std::string& str)
 						break;
 					}
 				}
-				if (!arr_ok)
+				if (!arr_ok) {
 					str_subst(tmp1);
-				res += get_var(tmp1);
-				if (!arr_ok)
 					--i;
+				}
+				res += get_var(tmp1);
 			}
 			break;
 

@@ -449,14 +449,14 @@ Command(set) {
 /** PHP chr/ord **/
 Command(chr) { 
 	if (argc != 2)
-		syntax_error("o");
+		syntax_error("<o>");
 	std::string t;
 	t += (char)std::stoi(expr(combine(argc, argv, 1)));
 	return t;
 }
 Command(ord) { 
 	if (argc != 2)
-		syntax_error("c");
+		syntax_error("<c>");
 	return std::to_string((int)argv[1][0]);
 }
 
@@ -600,6 +600,7 @@ Command(popd) {
 	return "0";
 }
 
+/** regex **/
 Command(regexp) {
 	if (argc < 4)
 		syntax_error("<reg> <txt> <var1> <var2...>");
@@ -619,6 +620,39 @@ Command(regexp) {
 	NoReturn;
 }
 
+/** Shift argv **/
+Command(shift) {
+	if (argc > 2)
+		syntax_error("[<n>]");
+	size_t len = a_hm[$ARGV].size;
+	size_t howmuch = 1;
+	
+	if (argc > 2)
+		syntax_error("[<n>]");
+	if (argc == 2)
+		howmuch = atoi(argv[1]);
+	if (len) {
+		len -= howmuch;
+		for (size_t i = 0; i < len-howmuch; ++i) {
+			a_hm[$ARGV].set(
+				std::to_string(i),
+				a_hm[$ARGV].get(std::to_string(i+howmuch))
+			);
+		}
+		for (size_t i = len-howmuch; i < len; ++i)
+			a_hm[$ARGV].destroy(std::to_string(i));
+	}
+	return std::to_string(len);
+}
+
+/** Replace proc **/
+Command(exec) {
+	++argv;
+	if (argc > 1)
+		execvp(*argv, argv);
+	NoReturn;
+}
+
 Command(help);
 
 const DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
@@ -626,19 +660,19 @@ const DispatchTable<std::string, std::function<std::string(int, char**)>> dispat
 	ce(!,not) , ce(.,source), ce(@,fork),
 
 	/* Normal cmds */
-	de(alias) , de(array)   , de(bg),
-	de(cd)    , de(chr)     , de(die),
-	de(do)    , de(echo)    , de(eval),
-	de(exit)  , de(expr)    , de(fg),
-	de(fn)    , de(for)     , de(foreach),
-	de(help)  , de(if)      , de(inc),
-	de(jobs)  , de(let)     , de(nf),
-	de(ord)   , de(popd)    , de(pushd),
-	de(read)  , de(regexp)  , de(return),
-	de(set)   , de(source)  , de(string),
-	de(switch), de(unalias) , de(unless),
-	de(unset) , de(until)   , de(wait),
-	de(while)
+	de(alias)   , de(array)  , de(bg),
+	de(cd)      , de(chr)    , de(die),
+	de(do)      , de(echo)   , de(eval),
+	de(exec)    , de(exit)   , de(expr),
+	de(fg)      , de(fn)     , de(for),
+	de(foreach) , de(help)   , de(if),
+	de(inc)     , de(jobs)   , de(let),
+	de(nf)      , de(ord)    , de(popd),
+	de(pushd)   , de(read)   , de(regexp),
+	de(return)  , de(set)    , de(shift),
+	de(source)  , de(string) , de(switch),
+	de(unalias) , de(unless) , de(unset),
+	de(until)   , de(wait)   , de(while)
 };
 
 /** Show a list of all BuiltIns **/
