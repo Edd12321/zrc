@@ -25,14 +25,14 @@ built-ins:
 EOF
 #-----END HEREDOC-----
 
-set E:MANPATH = /usr/lib/zrc/doc:$E:MANPATH
-set E:PATH    = /usr/lib/plan9:$E:PATH
+set env('MANPATH') = /usr/lib/zrc/doc:$env('MANPATH')
+set env('PATH')    = /usr/lib/plan9:$env('PATH')
 
 help | awk { BEGIN { RS = " "; FS = "\n"; } {
 	print "<a href=man.cgi?" $1 ">" $1 "</a>";
 }}
 echo "<hr />"
-set q = $E:QUERY_STRING
+set q = $env('QUERY_STRING')
 set pat = {{
 	print "<a href=man.cgi?" $1 ">" $1 "</a>";
 	$1 = "";

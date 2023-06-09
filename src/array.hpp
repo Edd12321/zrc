@@ -1,13 +1,24 @@
 #ifndef ARRAY_HPP
 #define ARRAY_HPP
 
-extern char **envp;
 #define INIT_ZRC_ARGS {                               \
     for (int i = 0; i < argc; ++i)                    \
         a_hm[$ARGV].set(std::to_string(i), argv[i]);  \
     setvar($ARGC, itoa(argc));                        \
 }
 
+extern char **environ;
+#define INIT_ZRC_ENVVARS {                            \
+	char **s = environ;                                 \
+  for (; *s; ++s) {                                   \
+    std::string ss = *s;                              \
+    auto x = ss.find("=");                            \
+    a_hm[$ENV].set(                                   \
+        ss.substr(0, x),                              \
+        ss.substr(x+1)                                \
+    );                                                \
+  }                                                   \
+}
 
 #define USAGE2 {usage2();return "";}
 static inline void
@@ -18,7 +29,7 @@ usage2()
 	          << "             [delete <a>                           ]\n"
 	          << "             [set    <a> = {<v1> <v2...>}          ]\n"
 	          << "             [setkey <a> = {<k1> <v1> <k2> <v2>...}]\n"
-			  << "             [unset  <a> <k1> <k2...>              ]\n";
+			      << "             [unset  <a> <k1> <k2...>              ]\n";
 }
 
 /** `array` command

@@ -382,6 +382,9 @@ main(int argc, char *argv[])
 	
 	// $argv(0), $argv(1), $argv(2), ..., $argv([expr $argc-1])
 	INIT_ZRC_ARGS;
+	
+	// $env(...)
+	INIT_ZRC_ENVVARS;
 
 	// $pid
 	setvar($PID, std::to_string(getpid()));

@@ -4,14 +4,14 @@
 # To be used with a CGI-compatible webserver...
 
 fn main {
-	set E:templ = 0
+	set env(templ) = 0
 	while {![read -n 1 c]} {
-		switch $E:templ {
+		switch $env(templ) {
 			case 0 {
 				if {![string cmp $c '<']} {
 					read -n 1 c
 					if {![string cmp $c '?']} {
-						set E:templ = 1
+						set env(templ) = 1
 					} else {
 						echo -n "<$c";
 					}
@@ -23,14 +23,14 @@ fn main {
 				if {![string cmp $c '?']} {
 					read -n 1 c
 					if {![string cmp $c '>']} {
-						@ $E:t
-						unset E:t
-						set E:templ = 0
+						@ $env(t)
+						unset env(t)
+						set env(templ) = 0
 					} else {
-						set E:t = "$E:t?$c"
+						set env(t) = "$env(t)?$c"
 					}
 				} else {
-					set E:t = [string cat $E:t $c]
+					set env(t) = [string cat $env(t) $c]
 				}
 			}
 		}

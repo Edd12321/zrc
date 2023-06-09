@@ -18,5 +18,6 @@
 #define $ARGC   "argc"
 #define $PS1    "PS1"
 #define $PATH   "E:PATH"
+#define $ENV    "env"
 
 extern bool w, cin_eq_in;

@@ -84,9 +84,9 @@ Inside a word, any sequence of characters beginning with a dollar sign and follo
 	echo $arr(key);
 	# We have accessed a hashmap's key.
 
-	echo $E:TERMINAL;
+	echo $env(TERMINAL);
 	# We have accessed an environment variable.
-	# Similar to Tcl's env(TERMINAL)
+	# Similar to Tcl
 .EE
 Note that in
 .I zrc
@@ -98,6 +98,9 @@ every array is a so-called "associative array" (hashmap), much like in Tcl. You 
 .EE
 .I Zrc
 also supports special variables:
+.PP
+.B $env
+is a special array that stores all environment variables.
 .PP
 .B $?
 is the return value of the last command, if it was not part of a background job.

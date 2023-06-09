@@ -69,38 +69,26 @@ variable_magic(std::string a1, std::string a2, Mode mode)
 		case GET:
 			return a_hm[nam].get(key);
 		case SET:
+			if (nam == $ENV)
+				setenv(key.data(), a2.data(), 1);
 			a_hm[nam].set(key, a2);
 			break;
 		case UNSET:
+			if (nam == $ENV)
+				unsetenv(key.data());
 			a_hm[nam].destroy(key);
 		}
 
-
 	// Scalar
 	} else {
-		if (a1[0] == 'E' && a1[1] == ':') {
-			a1.erase(0, 2);
-			switch(mode) {
-			case GET:
-				if (getenv(a1.data()))
-					return getenv(a1.data());
-				break;
-			case SET:
-				setenv(a1.data(), a2.data(), 1);
-				break;
-			case UNSET:
-				unsetenv(a1.data());
-			}
-		} else {
-			switch(mode) {
-			case GET:
-				return s_hm[a1];
-			case SET:
-				s_hm[a1] = a2;
-				break;
-			case UNSET:
-				s_hm.erase(a1);
-			}
+		switch(mode) {
+		case GET:
+			return s_hm[a1];
+		case SET:
+			s_hm[a1] = a2;
+			break;
+		case UNSET:
+			s_hm.erase(a1);
 		}
 	}
 	return "";

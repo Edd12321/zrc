@@ -31,7 +31,7 @@ fn __status_ps1 {
 
 fn prompt_cmd {
 	set status = $?
-	set PWD = `{pwd | sed 's|^$E:HOME|~|'};
+	set PWD = `{pwd | sed 's|^$env(HOME)|~|'};
 	title "(zrc) $PWD" > /dev/tty
 	return {}
 }
@@ -64,12 +64,12 @@ alias ....    "cd ../../.."
 alias .....   "cd ../../../.."
 alias sha1    "openssl sha1"
 alias ports   "netstat -tulanp"
-alias net     "\$E:AUTH systemctl restart NetworkManager"
+alias net     "\$env(AUTH) systemctl restart NetworkManager"
 alias mkdir   "mkdir -pv"
-alias pacman  "\$E:AUTH pacman"
+alias pacman  "\$env(AUTH) pacman"
 alias calc    "bc -ql"
 alias emacs   "emacs -nw"
-alias history "eval \$E:PAGER < ~/.zrc_history"
+alias history "eval \$env(PAGER) ~/.zrc_history"
 alias da      "date '+%Y-%m-%d %A %T %Z'"
 
 # Modify original cmds
@@ -164,19 +164,19 @@ fn kernelgraph {
 alias top+ 'cstop;reset'
 alias vi+  'evct'
 
-set E:PATH = /usr/lib/zrc/corebuf/bin:$E:PATH
-set E:MANPATH = /usr/lib/zrc/doc:$E:MANPATH
+set env('PATH') = /usr/lib/zrc/corebuf/bin:$env('PATH')
+set env('MANPATH') = /usr/lib/zrc/doc:$env('MANPATH')
 
 # Default programs
-set E:AUTH     = "doas"
-set E:EDITOR   = "emacs"
-set E:VISUAL   = "emacs"
-set E:TERMINAL = "xfce4-terminal"
-set E:MANPAGER = "most"
-set E:AS       = "fasm"
-set E:CXX      = "g++"
-set E:CC       = "gcc"
-set E:BROWSER  = "firefox"
-if {[string cmp $E:TERM "linux"]} {
-	set E:TERM = "xterm-256color"
+set env('AUTH')     = "doas"
+set env('EDITOR')   = "emacs"
+set env('VISUAL')   = "emacs"
+set env('TERMINAL') = "xfce4-terminal"
+set env('MANPAGER') = "most"
+set env('AS')       = "fasm"
+set env('CXX')      = "g++"
+set env('CC')       = "gcc"
+set env('BROWSER')  = "firefox"
+if {[string cmp $env('TERM') "linux"]} {
+	set env('TERM') = "xterm-256color"
 }

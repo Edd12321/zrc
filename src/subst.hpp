@@ -1,5 +1,5 @@
 #define SCALAR "1234567890"\
-               "$:_("\
+               "$_("\
                "QWERTYUIOPASDFGHJKLZXCVBNM"\
                "qwertyuiopasdfghjklzxcvbnm"
 

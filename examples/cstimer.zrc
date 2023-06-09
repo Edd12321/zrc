@@ -9,5 +9,5 @@ test -d $CSTIMER_PATH || mkdir -p $CSTIMER_PATH
 cd $CSTIMER_PATH
 test -d cstimer || git clone https://github.com/cs0x7f/cstimer
 cd cstimer/src
-$E:BROWSER $IP_ADDR &
+$env('BROWSER') $IP_ADDR &
 php -t . -S $IP_ADDR
