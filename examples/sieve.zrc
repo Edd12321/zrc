@@ -1,5 +1,5 @@
 #!../bin/zrc
-set E:PATH = /bin/:$E:PATH
+set env('PATH') = /bin/:$env('PATH')
 
 fn sieve {
 	set n = $argv(1)

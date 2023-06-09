@@ -102,7 +102,7 @@ fn main {
 	echo -n "Please enter log filename: "
 	read LOG_FILE
 
-	$E:BROWSER http://localhost:8080\
+	$env('BROWSER') http://localhost:8080\
 		> /dev/null &
 
 	if {[test -f $LOG_FILE] == 0} {

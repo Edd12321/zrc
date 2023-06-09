@@ -40,7 +40,7 @@ Zrc is just 1.3mb in size because its implementation is to the point and simple.
 - [X] Word substitution
 	- [X] Variable expansion
 		- [X] Scalars, arrays/hashes (`$`)
-		- [X] Separate envvar namespace (`$E:`)
+		- [X] Separate envvar array (`$env(...)`)
 	- [X] Command substitution
 		- [X] Output (`` `{...} ``)
 		- [X] Return value (`[...]`)

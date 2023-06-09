@@ -1,7 +1,7 @@
 #!/usr/bin/env zrc
 echo 'Welcome to Zrc!'
 echo 'The time is: `{date}'
-set E:SHELL = 'zrc'
+set env('SHELL') = 'zrc'
 #echo "Disk usage:";
 #df -h;
 # Prompt variables
