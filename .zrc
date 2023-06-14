@@ -14,6 +14,9 @@ set RESET =`{/bin/echo -ne {\e[0m}}
 #Other vars
 set ZRC = /usr/lib/zrc
 
+# Load standard library
+eval . $ZRC/stdlib/*
+
 fn __git_ps1 {
 	git tag >(2=) > /dev/null
 	if {$? == 0} {
@@ -88,14 +91,6 @@ alias 644     "chmod 644"
 alias 666     "chmod 666"
 alias 755     "chmod 755"
 alias 777     "chmod 777"
-
-alias str string
-alias strcmp 'string cmp'
-alias strcat 'string cat'
-alias strlen 'string length'
-alias sizeof 'array length'
-
-alias arr array
 
 fn mkcd { mkdir $argv(1) && cd $argv(1); }
 fn lcd  { cd $argv(1) && l }

@@ -1,0 +1,58 @@
+#!/usr/lib/zrc/bin/zrc
+# cfuncs.zrc
+#
+# This code is licensed under the BSD license (see LICENSE for details).
+# This library adds common C-style aliases to functions
+
+####################
+# String functions #
+####################
+alias str string
+alias strran { string range }
+alias strrep { string replace }
+alias strcmp { string cmp }
+alias strlen { string length }
+alias strcat { string cat }
+alias strind { string index }
+
+###################
+# Array functions #
+###################
+alias arr array
+alias sizeof { array length }
+
+#########
+# Other #
+#########
+alias puts { echo }
+alias fork { @ }
+alias new  { malloc char } 
+
+########################################
+# "Allocate" memory to a string buffer #
+#                                      #
+# @param 2                             #
+# @return string                       #
+########################################
+fn malloc {
+	if {$argc != 3} {
+		echo >(2=1) 'Expected 2 args!'
+		return 1
+	} else {
+		let {i j A,types res} {
+			array setkey types = {
+				{char}      1
+				{short}     2
+				{int}       4
+				{long}      4
+				{long long} 8
+			}
+			for {set i = 0} {$i < $argv(2)} {inc i} {
+				for {set j = 0} {$j < $types($argv(1))} {inc j} {
+					set res = "$res "
+				}
+			}
+			return $res
+		}
+	}
+}

@@ -1,0 +1,53 @@
+#!/usr/lib/zrc/bin/zrc
+# mathop.zrc
+#
+# This code is licensed under the BSD license (see LICENSE for details).
+# This library adds operator commands to zrc
+
+###############################
+# Helper to generate funcs    #
+#                             #
+# @param  2                   #
+# @return expr                #
+###############################
+fn __MakeMathOp {
+	fn $argv(1) {
+		if {$argc != 3} {
+			echo 'Expected 2 operands!' >(2=1)
+			return nan
+		} else {
+			expr {$argv(1) $argv(0) $argv(2)}
+		}
+	}
+}
+
+# Operators
+__MakeMathOp  '+'; __MakeMathOp  '<<'
+__MakeMathOp  '-'; __MakeMathOp  '>>'
+__MakeMathOp  '*'; __MakeMathOp '<=>'
+__MakeMathOp  '/'; __MakeMathOp  '<'
+__MakeMathOp  '%'; __MakeMathOp  '<='
+__MakeMathOp  '|'; __MakeMathOp  '=='
+__MakeMathOp  '^'; __MakeMathOp  '!='
+__MakeMathOp  '&'; __MakeMathOp  '>='
+__MakeMathOp '//'; __MakeMathOp  '>'
+__MakeMathOp '**'
+__MakeMathOp '&&'
+__MakeMathOp '||'
+
+# Alt operators
+__MakeMathOp 'and'
+__MakeMathOp 'or'
+
+nf -s __MakeMathOp
+
+alias log10 { expr log10 }
+alias log2  { expr log2 }
+alias log   { expr log }
+alias sin   { expr sin }
+alias cos   { expr cos }
+alias ctg   { expr ctg }
+alias tg    { expr tg }
+alias floor { expr floor }
+alias ceil  { expr ceil }
+alias abs   { expr abs }

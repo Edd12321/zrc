@@ -8,7 +8,7 @@ Zrc is just 1.3mb in size because its implementation is to the point and simple.
 
 ## Features left to implement:
 
-- [ ] Standard library soon?
+- [X] Standard library soon?
 - [X] Home directory config file (`~/.zrc`)
 - [X] Aliases
 - [X] **Rich return values** (not just 0-255, but any string)
@@ -71,6 +71,8 @@ Zrc is just 1.3mb in size because its implementation is to the point and simple.
 	- [X] Line editor
 	- [X] Tab completion
 	- [ ] Syntax highlighting
+
+As mentioned on [the Oil wiki's Alternative Shells list](https://github.com/oilshell/oil/wiki/Alternative-Shells).
 
 ## Inspirations:
 

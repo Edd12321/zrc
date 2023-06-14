@@ -22,10 +22,6 @@
 	return #C;\
 } while(0)
 
-#define MakeOp(X)\
-	else if (!strcmp(argv[i], X "="))\
-		setvar(argv[i-1], expr((std::string)"("+getvar(argv[i-1])+")" X "("+argv[i+1]+")"))
-
 DispatchTable<FunctionName, CodeBlock> funcs;
 DispatchTable<AliasName, WordList> aliases;
 
@@ -431,17 +427,20 @@ Command(set) {
 		} else if (!strcmp(argv[i], ":=")) {
 			setvar(argv[i-1], argv[i+1]);
 			ret_val = argv[i+1];
+		} else {
+			size_t len = strlen(argv[i]);
+			if (argv[i][len-1] == '=') {
+				argv[i][len-1] = '\0';
+				setvar(argv[i-1], expr(
+								(std::string)"("
+									+ getvar(argv[i-1])
+									+ ")"
+									+ argv[i]
+									+ "("
+									+ argv[i+1]
+									+ ")"));
+			} else syntax_error(se);
 		}
-		// expr shortcuts
-		MakeOp("+"); MakeOp("<<");
-		MakeOp("-"); MakeOp(">>");
-		MakeOp("*"); MakeOp("**");
-		MakeOp("/"); MakeOp("&&");
-		MakeOp("%"); MakeOp("||");
-		MakeOp("|"); MakeOp("//");
-		MakeOp("^");
-		MakeOp("&");
-		else syntax_error(se);
 	}
 	NoReturn;
 }
