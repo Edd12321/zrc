@@ -5,9 +5,11 @@
             CHK_LINE;                             \
             if (line[i] == X) break;              \
             tmp += line[i];                       \
-            if (i < (len-1) && line[i]   == '\\'  \
-                            && line[i+1] == X )   \
+            if (i < (len-1) && line[i] == '\\')   \
+              if (line[i+1] == X)                 \
                 tmp += line[++i];                 \
+              else if (line[i+1] == '\\')         \
+                tmp += '\\', ++i;                 \
         }                                         \
         tmp += X;                                 \
     }                                             \

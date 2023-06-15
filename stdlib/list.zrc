@@ -1,0 +1,86 @@
+#!/usr/lib/zrc/bin/zrc
+# cfuncs.zrc
+#
+# This code is licensed under the BSD license (see LICENSE for details).
+# This library adds lists to Zrc.
+
+if {![string cmp $__LIST_ZRC_INCLUDED {}]} {
+set __LIST_ZRC_INCLUDED = 1
+
+%include cfuncs
+
+##########################################
+# Returns a list created from given args #
+#                                        #
+# @param any                             #
+# @return list                           #
+##########################################
+fn list {
+	let {i j len ch res} {
+		for {set i = 1} {$i < $argc} {inc i} {
+			set len = [strlen $argv($i)]
+		
+			set res = "$res'"
+			for {set j = 0} {$j < $len} {inc j} {
+				set ch = [strind $argv($i) $j]
+				if {![chrcmp $ch '\[']
+				||  ![chrcmp $ch '\'']
+				||  ![chrcmp $ch '\"']
+				||  ![chrcmp $ch '\$']
+				||  ![chrcmp $ch '\`']} {
+					set res = "$res\\"
+				}
+				set res = [strcat $res $ch]
+			}
+			set res = "$res' "
+		}
+		return $res
+	}
+}
+
+###############################
+# Finds nth element in a list #
+#                             #
+# @param 1                    #
+# @return string              #
+###############################
+fn lindex {
+	if {$argc != 3} {
+		echo >(2=1) 'Expected 2 args!'
+		return {}
+	} else {
+		let {tmp k res} {
+			set k = 0
+			foreach tmp {*}$argv(1) {
+				if {![strcmp $k $argv(2)]} {
+					set res = $tmp
+				}
+				inc k
+			}
+			return $res
+		}
+	}
+}
+
+#########################
+# Finds a list's length #
+#                       #
+# @param 1              #
+# @return int           #
+#########################
+fn llength {
+	if {$argc != 2} {
+		echo >(2=1) 'Expected 1 arg!'
+		return {}
+	} else {
+		let {tmp k} {
+			set k = 0
+			foreach tmp {*}$argv(1) {
+				inc k
+			}
+			return $k
+		}
+	}
+}
+
+}

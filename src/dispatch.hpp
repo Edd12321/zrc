@@ -528,10 +528,26 @@ Command(source) {
 			eval_stream(fin);
 		} else {
 			perror(argv[1]);
-			return "1";
+			return "2";
 		}
 	}
 	return "0";
+}
+
+/** Shorthand for including headers **/
+Command(include) {
+	if (argc != 2)
+		syntax_error("<library>");
+	char **path = new char *[2];
+	path[1] = new char[PATH_MAX];
+	sprintf(path[1], LIBPATH "/%s", argv[1]);
+	if (!strstr(argv[1], LIBEXT))
+		strcat(path[1], LIBEXT);
+
+	auto ret = zrc_builtin_source(2, path);
+	delete [] path[1];
+	delete [] path;
+	return ret;
 }
 
 /**Unset a var **/
@@ -623,22 +639,22 @@ Command(regexp) {
 Command(shift) {
 	if (argc > 2)
 		syntax_error("[<n>]");
-	size_t len = a_hm[$ARGV].size;
-	size_t howmuch = 1;
-	
+	long len = a_hm[$ARGV].size;
+	long howmuch = 1;
+
 	if (argc > 2)
 		syntax_error("[<n>]");
 	if (argc == 2)
 		howmuch = atoi(argv[1]);
 	if (len) {
 		len -= howmuch;
-		for (size_t i = 0; i < len-howmuch; ++i) {
+		for (auto i = 0; i < len-howmuch; ++i) {
 			a_hm[$ARGV].set(
 				std::to_string(i),
 				a_hm[$ARGV].get(std::to_string(i+howmuch))
 			);
 		}
-		for (size_t i = len-howmuch; i < len; ++i)
+		for (auto i = len-howmuch; i < len; ++i)
 			a_hm[$ARGV].destroy(std::to_string(i));
 	}
 	return std::to_string(len);
@@ -656,7 +672,8 @@ Command(help);
 
 const DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
 	/* Aliased commands */
-	ce(!,not) , ce(.,source), ce(@,fork),
+	ce(!,not)   , ce(.,source), ce(@,fork),
+	ce(%include , include),
 
 	/* Normal cmds */
 	de(alias)   , de(array)  , de(bg),

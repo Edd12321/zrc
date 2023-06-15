@@ -7,6 +7,11 @@
     for (++i, cmpnd = 1; i < len; ++i) {       \
         if (i == len-1 && str[i] != Y)         \
             die("Unmatched paren");            \
+        if (str[i] == '\\') {                  \
+          tmp2 += '\\';                        \
+          tmp2 += str[++i];                    \
+          continue;                            \
+        }                                      \
         if (str[i] == X) ++cmpnd;              \
         if (str[i] == Y) --cmpnd;              \
         if (!cmpnd)                            \

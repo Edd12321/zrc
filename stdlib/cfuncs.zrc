@@ -4,6 +4,9 @@
 # This code is licensed under the BSD license (see LICENSE for details).
 # This library adds common C-style aliases to functions
 
+if {![string cmp $__CFUNCS_ZRC_INCLUDED {}]} {
+set __CFUNCS_ZRC_INCLUDED = 1
+
 ####################
 # String functions #
 ####################
@@ -55,4 +58,21 @@ fn malloc {
 			return $res
 		}
 	}
+}
+
+#####################
+# Compare two chars #
+#                   #
+# @param 2          #
+# @return -1, 0, 1  #
+#####################
+fn chrcmp {
+	if {$argc != 3} {
+		echo >(2=1) 'Expected 2 args!'
+		return 1
+	} else {
+		expr {[ord $argv(1)] <=> [ord $argv(2)]}
+	}
+}
+
 }

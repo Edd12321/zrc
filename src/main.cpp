@@ -48,12 +48,16 @@
     len = line.length(); ltmp = "";               \
     while (!line.empty() && line.back() == '\\') {\
         line.pop_back();                          \
-        if (zrc_read_line(in, ltmp, '>'))         \
-                line += ltmp,                     \
-                len  += ltmp.length()-1;          \
-            else                                  \
-                break;                            \
+        if (line.back() == '\\') {                \
+            line += "\\\\";                       \
+            break;                                \
+        } else if (zrc_read_line(in, ltmp, '>')) {\
+             line += ltmp;                        \
+             len  += ltmp.length()-1;             \
+        } else {                                  \
+             break;                               \
         }                                         \
+    }                                             \
 }
 
 #define RC(X) do {                                \

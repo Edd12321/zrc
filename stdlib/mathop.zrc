@@ -4,6 +4,9 @@
 # This code is licensed under the BSD license (see LICENSE for details).
 # This library adds operator commands to zrc
 
+if {![string cmp $__MATHOP_ZRC_INCLUDED {}]} {
+set __MATHOP_ZRC_INCLUDED = 1
+
 ###############################
 # Helper to generate funcs    #
 #                             #
@@ -51,3 +54,5 @@ alias tg    { expr tg }
 alias floor { expr floor }
 alias ceil  { expr ceil }
 alias abs   { expr abs }
+
+}
