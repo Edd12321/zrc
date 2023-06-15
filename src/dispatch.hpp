@@ -432,13 +432,13 @@ Command(set) {
 			if (argv[i][len-1] == '=') {
 				argv[i][len-1] = '\0';
 				setvar(argv[i-1], expr(
-								(std::string)"("
-									+ getvar(argv[i-1])
-									+ ")"
-									+ argv[i]
-									+ "("
-									+ argv[i+1]
-									+ ")"));
+					(std::string)"("
+					 + getvar(argv[i-1])
+					 + ")"
+					 + argv[i]
+					 + "("
+					 + argv[i+1]
+					 + ")"));
 			} else syntax_error(se);
 		}
 	}
