@@ -1,0 +1,94 @@
+Have a non-directory at the top, so creating directory top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./LICENSE to top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./Makefile to top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./README.md to top_dir
+Creating filelist for bin
+Creating filelist for corebuf
+Creating filelist for doc
+Creating filelist for examples
+Creating filelist for img
+Adding /home/edward/.dots/work/etc/zrc.git/./sloccount.txt to top_dir
+Creating filelist for stdlib
+Have a non-directory at the top, so creating directory src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/array.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/config.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/dispatch.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/exec.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/expr.cpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/expr.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/fd.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/global.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/lex.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/main.cpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/sighandler.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/string.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/subst.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/variable.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/zlineedit.hpp to src_top_dir
+Categorizing files.
+Finding a working MD5 command....
+Found a working MD5 command.
+WARNING! File /home/edward/.dots/work/etc/zrc.git/corebuf/build.zrc has unknown start: #!/usr/bin/env zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/99bottles.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/bdproc.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/cstimer.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/fib.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/flood_fill.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/gameoflife.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/gui_zenity.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/hanoi.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/ip_tool.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/is_prime.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/lexical_scoping.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/man.cgi.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/mandelbrot.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/mgcsquare.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/oji_arhitect.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/sleep_sort.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/split.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/sum_fn.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/templating.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/trig.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/truth_machine.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/unique.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/whereis.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/windowmgrmgr.zrc has unknown start: #!/usr/bin/env zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/server.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/sieve.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/mathop.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/cfuncs.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
+Computing results.
+
+
+SLOC	Directory	SLOC-by-Language (Sorted)
+2386    src_top_dir     cpp=2386
+552     corebuf         ansic=552
+0       bin             (none)
+0       doc             (none)
+0       examples        (none)
+0       img             (none)
+0       stdlib          (none)
+0       top_dir         (none)
+
+
+Totals grouped by language (dominant language first):
+cpp:           2386 (81.21%)
+ansic:          552 (18.79%)
+
+
+
+
+Total Physical Source Lines of Code (SLOC)                = 2,938
+Development Effort Estimate, Person-Years (Person-Months) = 0.62 (7.44)
+ (Basic COCOMO model, Person-Months = 2.4 * (KSLOC**1.05))
+Schedule Estimate, Years (Months)                         = 0.45 (5.36)
+ (Basic COCOMO model, Months = 2.5 * (person-months**0.38))
+Estimated Average Number of Developers (Effort/Schedule)  = 1.39
+Total Estimated Cost to Develop                           = $ 83,771
+ (average salary = $56,286/year, overhead = 2.40).
+SLOCCount, Copyright (C) 2001-2004 David A. Wheeler
+SLOCCount is Open Source Software/Free Software, licensed under the GNU GPL.
+SLOCCount comes with ABSOLUTELY NO WARRANTY, and you are welcome to
+redistribute it under certain conditions as specified by the GNU GPL license;
+see the documentation for details.
+Please credit this data as "generated using David A. Wheeler's 'SLOCCount'."

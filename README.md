@@ -1,6 +1,6 @@
 <img src="img/zrc.svg" width=100 height=auto />
 
-Zrc is a small scripting language for Linux,BSD,etc. written in C++. It is a shell with syntax similar to Tcl/TK ([EIAS](https://wiki.tcl-lang.org/page/everything+is+a+string)).
+Zrc is a small scripting language for Linux,BSD,etc. written in C++ (core interpreter in a very minimalist ~2000SLOC). It is a shell with syntax similar to Tcl/TK ([EIAS](https://wiki.tcl-lang.org/page/everything+is+a+string)).
 
 It was created because the old shell languages that I used weren't "programmable" like Tcl or Lisp, didn't have builtin expression evaluator, and were very basic. It is hard to write simple scripts in these usual shells because of the compilcated grammar rules. Zrc makes it easy to write even small programs, being a full programming language.
 
