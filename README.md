@@ -8,7 +8,7 @@ Zrc is just 1.3mb in size because its implementation is to the point and simple.
 
 ## Features left to implement:
 
-- [X] Standard library soon?
+- [X] Standard library
 - [X] Home directory config file (`~/.zrc`)
 - [X] Aliases
 - [X] **Rich return values** (not just 0-255, but any string)

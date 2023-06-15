@@ -668,6 +668,15 @@ Command(exec) {
 	NoReturn;
 }
 
+/** Perform substitutions **/
+Command(subst) {
+	if (argc != 2)
+		syntax_error("<str>");
+	std::string t{argv[1]};
+	str_subst(t);
+	return t;
+}
+
 Command(help);
 
 const DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
@@ -688,7 +697,8 @@ const DispatchTable<std::string, std::function<std::string(int, char**)>> dispat
 	de(return)  , de(set)    , de(shift),
 	de(source)  , de(string) , de(switch),
 	de(unalias) , de(unless) , de(unset),
-	de(until)   , de(wait)   , de(while)
+	de(until)   , de(wait)   , de(while),
+	de(subst)
 };
 
 /** Show a list of all BuiltIns **/
