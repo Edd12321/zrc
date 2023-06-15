@@ -71,7 +71,7 @@ fn lindex {
 fn llength {
 	if {$argc != 2} {
 		echo >(2=1) 'Expected 1 arg!'
-		return {}
+		return -1
 	} else {
 		let {tmp k} {
 			set k = 0

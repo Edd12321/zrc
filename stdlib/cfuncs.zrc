@@ -60,16 +60,16 @@ fn malloc {
 	}
 }
 
-#####################
-# Compare two chars #
-#                   #
-# @param 2          #
-# @return -1, 0, 1  #
-#####################
+#########################
+# Compare two chars     #
+#                       #
+# @param 2              #
+# @return -1, 0, 1, {}  #
+#########################
 fn chrcmp {
 	if {$argc != 3} {
 		echo >(2=1) 'Expected 2 args!'
-		return 1
+		return {}
 	} else {
 		expr {[ord $argv(1)] <=> [ord $argv(2)]}
 	}
