@@ -256,6 +256,10 @@ Work with arrays. See `man array` for more info.
 .br
 Move a job to the background.
 .HP
+.BI break
+.br
+Exit a loop structure.
+.HP
 .BI "cd [" <dir> ]
 .br
 Change directory.
@@ -263,6 +267,10 @@ Change directory.
 .BI "chr " <o>
 .br
 Get a char's ASCII code.
+.HP
+.BI continue
+.br
+Skip a step in a loop.
 .HP
 .BI "die [" "<w1> <w2>... <wn>" ]
 .br
@@ -315,6 +323,10 @@ List all commands.
 .BI "if " "<expr> <block>" " [elsif " "<expr> <block>..." "|else " <block> ]
 .br
 Conditional statement #1.
+.HP
+.BI "%include " <library>
+.br
+Source headers.
 .HP
 .BI "inc " "<var> " [ <val> ]
 .br
@@ -371,6 +383,10 @@ Execute commands inside of a file.
 .BI "string [" OPTION ]
 .br
 Work with text strings. See `man string` for more info.
+.HP
+.BI "subst " <str>
+.br
+Use Zrc's subtitution engine.
 .HP
 .BI "switch " "<value> " "{case " <c> "|reg " <r> "|default " <block>... }
 .br
