@@ -54,6 +54,45 @@ const DispatchTable<FunctionName, int> txt2sig = {
 	//Special zrc "pseudo-signal"
 };
 
+#define ExceptionClass(X) \
+	class Zrc##X##Handler   \
+	{                       \
+	public:                 \
+		virtual const char *  \
+		what() const throw()  \
+		{                     \
+			return "Caught " #X;\
+		}                     \
+	}
+ExceptionClass(Return);
+ExceptionClass(Break);
+ExceptionClass(Continue);
+
+/****
+ * Check if we can break/continue
+ ****/
+bool in_loop = false;
+bool in_func = false;
+
+class BlockHandler
+{
+private:
+	bool ok = false, *ref = &in_loop;
+public:
+	BlockHandler(bool *ref)
+	{
+		this->ref = ref;
+		if (!*ref)
+			ok = true;
+		*ref = true;
+	}
+	~BlockHandler()
+	{
+		if (ok)
+			*ref = false;
+	}
+};
+
 static inline void
 prints(std::stack<Path> sp)
 {
@@ -123,12 +162,32 @@ Command(unless) {
 	NoReturn;
 }
 
+/** Exception handling **/
+Command(break) {
+	if (!in_loop)
+		other_error("Cannot break, not in a loop", 1);
+	throw ZrcBreakHandler();
+}
+Command(continue) {
+	if (!in_loop)
+		other_error("Cannot continue, not in a loop", 1);
+	throw ZrcContinueHandler();
+}
+
 /** Executes a block while an expression evaluates zero **/
 Command(while) {
 	if (argc != 3)
 		syntax_error("<expr> <block>");
-	while (OK(argv[1]))
-		eval(argv[2]);
+	BlockHandler lh(&in_loop);
+	try {
+		while (OK(argv[1]))
+			eval(argv[2]);
+	} catch (ZrcBreakHandler ex) {
+	} catch (ZrcContinueHandler ex) {
+		//just do again
+		while (OK(argv[1]))
+			eval(argv[2]);
+	}
 	NoReturn;
 }
 
@@ -136,8 +195,15 @@ Command(while) {
 Command(until) {
 	if (argc != 3)
 		syntax_error("<expr> <block>");
-	until(OK(argv[1]))
-		eval(argv[2]);
+	BlockHandler lh(&in_loop);
+	try {
+		until(OK(argv[1]))
+			eval(argv[2]);
+	} catch (ZrcBreakHandler ex) {
+	} catch (ZrcContinueHandler ex) {
+		until(OK(argv[1]))
+			eval(argv[2]);
+	}
 	NoReturn;
 }
 
@@ -145,8 +211,15 @@ Command(until) {
 Command(for) {
 	if (argc != 5)
 		syntax_error("<block> <expr> <block> <block>");
-	for (eval(argv[1]); OK(argv[2]); eval(argv[3]))
-		eval(argv[4]);
+	BlockHandler lh(&in_loop);
+	try {
+		for (eval(argv[1]); OK(argv[2]); eval(argv[3]))
+			eval(argv[4]);
+	} catch (ZrcBreakHandler ex) {
+	} catch (ZrcContinueHandler ex) {
+		for (eval(argv[3]); OK(argv[2]); eval(argv[3]))
+			eval(argv[4]);
+	}
 	NoReturn;
 }
 
@@ -154,9 +227,19 @@ Command(for) {
 Command(foreach) {
 	if (argc < 4)
 		syntax_error("<var> <list1> <list2...> <block>");
-	for (int i = 2; i < argc-1; ++i) {
-		setvar(argv[1], argv[i]);
-		eval(argv[argc-1]);
+	BlockHandler lh(&in_loop);
+	int i = 2;
+	try {
+		for (; i < argc-1; ++i) {
+			setvar(argv[1], argv[i]);
+			eval(argv[argc-1]);
+		}
+	} catch (ZrcBreakHandler ex) {
+	} catch (ZrcContinueHandler ex) {
+		for (++i; i < argc-1; ++i) {
+			setvar(argv[1], argv[i]);
+			eval(argv[argc-1]);
+		}
 	}
 	NoReturn;
 }
@@ -169,12 +252,24 @@ Command(do) {
 	if (argc != 4 || (!w && !u))
 		syntax_error("<block> while|until <expr>");
 
-	if (w)
-		do eval(argv[1]);
-		while (OK(argv[3]));
-	else
-		do eval(argv[1]);
+	BlockHandler lh(&in_loop);
+	try {
+		if (w)
+			do eval(argv[1]);
+			while (OK(argv[3]));
+		else
+			do eval(argv[1]);
+			until(OK(argv[3]));
+	} catch (ZrcBreakHandler ex) {
+	} catch (ZrcContinueHandler ex) {
+		//same thing again
+		if (w)
+			do eval(argv[1]);
+			while (OK(argv[3]));
+		else
+			do eval(argv[1]);
 		until(OK(argv[3]));
+	}
 	NoReturn;
 }
 
@@ -221,9 +316,14 @@ Command(switch) {
 
 /** Returns a value **/
 Command(return) {
-	if (argc < 2)
-		syntax_error("<val>");
-	return combine(argc, argv, 1);
+	if (argc > 2)
+		syntax_error("[<val>]");
+	ret_val = (argc == 2)
+		? combine(argc, argv, 1)
+		: "0";
+	if (in_func)
+		throw ZrcReturnHandler();
+	NoReturn;
 }
 
 /** Defines a new function **/
@@ -698,7 +798,7 @@ const DispatchTable<std::string, std::function<std::string(int, char**)>> dispat
 	de(source)  , de(string) , de(switch),
 	de(unalias) , de(unless) , de(unset),
 	de(until)   , de(wait)   , de(while),
-	de(subst)
+	de(subst)   , de(break)  , de(continue)
 };
 
 /** Show a list of all BuiltIns **/

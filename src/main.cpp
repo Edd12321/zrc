@@ -98,6 +98,10 @@
 class Array;
 class WordList;
 class NullIOSink;
+class ZrcReturnHandler;
+class ZrcBreakHandler;
+class ZrcContinueHandler;
+class BlockHandler;
 
 class NullIOSink : public std::streambuf
 {
@@ -179,7 +183,8 @@ typedef int Jid;
   bool                      io_right       (std::string  , bool, int  );
   bool                      io_hedoc       (std::string  , std::istream&,bool);
   void                      io_pipe        (int          , char**     );
-  // EXEC.HPP
+  static inline void        run_function   (std::string const&        );
+	// EXEC.HPP
   
   std::string               getvar         (std::string               );
   void                      setvar         (std::string  , std::string);
@@ -292,20 +297,16 @@ eval_stream(std::istream& in)
 		for (auto it = zwl.wl.begin(); it != zwl.wl.end(); ++it) {
 			sword = glb = 0;
 			if (zwl.is_bare(CIND)) {
-				/**
-				 * Separators *
-				             **/
+				/** Separators **/
 				/*!*/if (*it == "&" || *it == ";") { sword = 1; RC(1); }
 				/*!*/else if (*it == "&&")         { sword = 1; RC(ret_val=="0"); }
 				/*!*/else if (*it == "||")         { sword = 1; RC(ret_val!="0"); }
-				/**
-				 * I/O redirection *
-				                  **/
-				/*!*/else if (*it == "<<" )        { sword = 1; io_hedoc(*(++it), in, 0) FAIL continue; }
-				/*!*/else if (*it == "<<<")        { sword = 1; io_hedoc(*(++it), in, 1) FAIL continue; }
-				/*!*/else if (*it == "<"  )        { sword = 1; io_left (*(++it)       ) FAIL continue; }
-				/*!*/else if (*it == ">"  )        { sword = 1; io_right(*(++it), 0 , 1) FAIL continue; }
-				/*!*/else if (*it == ">>" )        { sword = 1; io_right(*(++it), 1 , 1) FAIL continue; }
+				/** I/O redirection **/
+				/*!*/else if (*it == "<<" ) { sword = 1; io_hedoc(*(++it), in, 0) FAIL continue; }
+				/*!*/else if (*it == "<<<") { sword = 1; io_hedoc(*(++it), in, 1) FAIL continue; }
+				/*!*/else if (*it == "<"  ) { sword = 1; io_left (*(++it)       ) FAIL continue; }
+				/*!*/else if (*it == ">"  ) { sword = 1; io_right(*(++it), 0 , 1) FAIL continue; }
+				/*!*/else if (*it == ">>" ) { sword = 1; io_right(*(++it), 1 , 1) FAIL continue; }
 				/*!*/else if (*it == "|"  ) {
 					sword = 1;
 					if (!can_runcmd)

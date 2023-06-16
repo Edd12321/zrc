@@ -1,0 +1,26 @@
+.TH CONTINUE 1
+.SH NAME
+CONTINUE \- Continue iterating inside a loop 
+.SH SYNOPSIS
+.B continue
+.SH DESCRIPTION
+The
+.I continue
+utility shall skip an interation in the current loop upon being called (ie: repeats the loop for
+.I while
+and
+.IR until ,
+and executes the 3rd argument in
+.I for
+loops).
+.PP If not currently in a loop, the utility displays a corresponding message to the user ...
+.SH EXAMPLES
+.EX
+	set j = 1
+	while {$j != 20} {
+		if {$j == 13} {
+			continue
+		}
+		set j += 2
+	}
+.EE

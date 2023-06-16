@@ -1,0 +1,17 @@
+#!../bin/zrc
+for {set i = 0} {$i < 5} {inc i} {
+	for {set j = 0} {$j < 100} {inc j} {
+		if {$j == 5} break
+		echo $i $j
+	}
+}
+
+# break
+# continue
+
+set i = 0
+do {
+	inc i
+	if {$i == 3} continue
+	echo $i
+} until {$i == 10}

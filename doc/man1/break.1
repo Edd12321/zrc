@@ -1,0 +1,23 @@
+.TH BREAK 1
+.SH NAME
+break \- Exit the (currently) most nested loop 
+.SH SYNOPSIS
+.B break
+.SH DESCRIPTION
+The
+.I break
+utility shall exit the current loop immediately upon being called. If not currently in a loop, the utility displays a corresponding message to the user ...
+.SH EXAMPLES
+.EX
+	for {set i = 0} {$i < 100} {inc i} {
+		if {$i == 10} break
+		echo $i
+	}
+
+	set x = 1
+	do {
+		if {$x == 5} break
+		echo $x
+		inc x
+	} until {$x == 10}
+.EE

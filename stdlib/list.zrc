@@ -54,6 +54,7 @@ fn lindex {
 			foreach tmp {*}$argv(1) {
 				if {![strcmp $k $argv(2)]} {
 					set res = $tmp
+					break
 				}
 				inc k
 			}

@@ -2,8 +2,8 @@
 .SH NAME
 return \- Return a value
 .SH SYNOPSIS
-.BI "return " "<w1> <w2>... <wn>"
+.BI "return [" "<w1> <w2>... <wn>" ]
 .SH DESCRIPTION
 The
 .I return
-utility concatenates its args and returns the obtained string.
+utility concatenates its args and returns the obtained string. If called inside of a function scope, the utility shall break out of the function.

@@ -56,6 +56,9 @@ Zrc is just 1.3mb in size because its implementation is to the point and simple.
 	- [X] Lexial scoping (`let`)
 	- [X] Until
 	- [X] Eval
+    - [X] Return
+    - [X] Continue
+    - [X] Break
 - [X] Full job control
 	- [X] Job table support
 	- [X] Job listing command

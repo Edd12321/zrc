@@ -44,6 +44,7 @@ str_subst(std::string& str)
 	size_t i, len, pos, cmpnd;
 	std::string tmp1, tmp2, res = "";
 	std::map<char, bool> quote;
+	bool orig_f = false;
 
 	len = str.length();
 
@@ -97,7 +98,10 @@ str_subst(std::string& str)
 				// Remove trailing newline unless specified otherwise
 				if (tmp2.front() == '{' && tmp2.back() == '}')
 					rq(tmp2);
+				orig_f = in_func;
+				in_func = false;
 				std::string out = io_cap(tmp2);
+				in_func = orig_f;
 				if (NO_QUOTES && !out.empty() && out.back() == '\n')
 					out.pop_back();
 				res += out;
@@ -142,7 +146,12 @@ str_subst(std::string& str)
 		case '[':
 			tmp2.clear();
 			ITERATE_PAREN('[',']');
+
+			orig_f = in_func;
+			in_func = false;
 			res += eval(tmp2);
+			in_func = orig_f;
+
 			break;
 		default:
 			res += str[i];

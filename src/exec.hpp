@@ -25,6 +25,21 @@ combine(int c, T v, int i)
     return buf;
 }
 
+/** Execute a proc/function with a `return` handler.
+ *
+ * @param {string_view}cmd
+ * @return void
+ */
+static inline void
+run_function(std::string const& cmd)
+{
+	BlockHandler fh(&in_func);
+	try {
+		eval(funcs[cmd]);
+	} catch (ZrcReturnHandler ex)
+		{}
+}
+
 /** Executes a list of words.
  *
  * @param {int}argc,{char**}argv
@@ -60,9 +75,8 @@ exec(int argc, char *argv[])
 				// Copy original argv
 				Array bak = a_hm["argv"];
 				a_hm.erase("argv");
-
 				INIT_ZRC_ARGS;
-				eval(funcs[argv[0]]);
+				run_function(*argv);
 				setvar("argc", oa);
 				a_hm["argv"] = bak;
 			
@@ -99,7 +113,7 @@ exec(int argc, char *argv[])
 				if (FOUND_FN(0)) {
 					a_hm.erase("argv");
 					INIT_ZRC_ARGS;
-					eval(funcs[argv[0]]);
+					run_function(*argv);
 				} else {
 					RUNCMD;
 				}

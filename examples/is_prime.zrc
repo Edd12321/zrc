@@ -1,23 +1,18 @@
 #!../bin/zrc
 
 fn este_prim {
-	set x = $argv(1)
-	if {$x < 2} {
-		return 0
-	} elsif {$x == 2} {
-		return 1
-	} elsif {$x % 2 == 0} {
-		return 0
-	} else {
-		set ok = 1
+	let {x i} {
+		set x = $argv(1)
+		if {$x < 2} {return 0}
+		if {$x == 2} {return 1}
+		if {$x % 2 == 0} {return 0}
 		for {set i = 3} {$i <= ($x>>1)} {inc i 2} {
 			if {$x % $i == 0} {
-				set ok = 0
-				set i = $x
+				return 0
 			}
 		}
-		return $ok
 	}
+	return 1
 }
 
 fn main {
