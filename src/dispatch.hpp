@@ -606,7 +606,11 @@ Command(let) {
 			s_hm_bak[str] = getvar(str);
 		}
 	}
-	eval(argv[2]);
+	try {
+		//BlockHandler xh(&in_func);
+		eval(argv[2]);
+	} catch (ZrcReturnHandler ex)
+		{}
 	for (std::string& str : vars.wl) {
 		if (str[0] == 'A' && str[1] == ',') {
 			str.erase(0, 2);

@@ -159,8 +159,8 @@ fn kernelgraph {
 alias top+ 'cstop;reset'
 alias vi+  'evct'
 
-set env('PATH') = /usr/lib/zrc/corebuf/bin:$env('PATH')
-set env('MANPATH') = /usr/lib/zrc/doc:$env('MANPATH')
+set env('PATH') = $ZRC/corebuf/bin:$env('PATH')
+set env('MANPATH') = $ZRC/doc:$env('MANPATH')
 
 # Default programs
 set env('AUTH')     = "doas"

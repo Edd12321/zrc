@@ -17,9 +17,9 @@ set __LIST_ZRC_INCLUDED = 1
 ##########################################
 fn list {
 	let {i j len ch res} {
+		set res = ""
 		for {set i = 1} {$i < $argc} {inc i} {
 			set len = [strlen $argv($i)]
-		
 			set res = "$res'"
 			for {set j = 0} {$j < $len} {inc j} {
 				set ch = [strind $argv($i) $j]
@@ -53,7 +53,7 @@ fn lindex {
 			set k = 0
 			foreach tmp {*}$argv(1) {
 				if {![strcmp $k $argv(2)]} {
-					set res = $tmp
+					set res = [subst $tmp]
 					break
 				}
 				inc k
@@ -81,6 +81,70 @@ fn llength {
 			}
 			return $k
 		}
+	}
+}
+
+##################################
+# Remove a list element by index #
+#                                #
+# @param 2                       #
+# @return list                   #
+##################################
+fn lremove {
+	if {$argc != 3} {
+		echo >(2=1) 'Expected 2 args!'
+		return {}
+	} else {
+		let {tmp k cmd} {
+			set k = 0
+			foreach tmp {*}$argv(1) {
+				if {$k != $argv(2)} {
+					set cmd = "$cmd $tmp"
+				}
+				inc k
+			}
+			return [eval list $cmd]
+		}
+	}
+}
+
+##########################
+# Insert at a list index #
+#                        #
+# @param 3               #
+# @return list           #
+##########################
+fn linsert {
+	if {$argc != 4} {
+		echo >(2=1) 'Expected 3 args!'
+		return {}
+	} else {
+		let {tmp k cmd} {
+			set k = 0
+			foreach tmp {*}$argv(1) {
+				if {$k == $argv(2)} {
+					set cmd = "$cmd $argv(3)"
+				}
+				set cmd = "$cmd $tmp"
+				inc k
+			}
+			return [eval list $cmd]
+		}
+	}
+}
+
+####################
+# Append to a list #
+#                  #
+# @param 2         #
+# @return list     #
+####################
+fn lappend {
+	if {$argc != 3} {
+		echo >(2=1) 'Expected 2 args!'
+		return {}
+	} else {
+		return [list {*}$argv(1) $argv(2)]
 	}
 }
 
