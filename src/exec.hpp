@@ -61,9 +61,7 @@ exec(int argc, char *argv[])
 	sigaddset(&mask, SIGCHLD);\
 	sigprocmask(SIG_BLOCK, &mask, NULL);
 
-	// Nothing happens...
-	if (!argc) goto _skip;
-	if (!builtin_check(argc, argv)) {
+	if (argc > 0) {
 		if (w) {
 		/**********************
 		 * Foreground process *
@@ -80,7 +78,7 @@ exec(int argc, char *argv[])
 				setvar("argc", oa);
 				a_hm["argv"] = bak;
 			
-			} else {
+			} else if (!builtin_check(argc, argv)) {
 				PGROUP_INITIALIZE;
 				if ((pid = fork()) < 0)
 					die("fork");
@@ -114,7 +112,7 @@ exec(int argc, char *argv[])
 					a_hm.erase("argv");
 					INIT_ZRC_ARGS;
 					run_function(*argv);
-				} else {
+				} else if (!builtin_check(argc, argv)) {
 					RUNCMD;
 				}
 				_Exit(0);
@@ -131,7 +129,6 @@ exec(int argc, char *argv[])
 			}
 		}
 	}
-_skip:
 	// Reset all FDs
 	dup2(o_in, STDIN_FILENO);
 	dup2(o_out, STDOUT_FILENO);

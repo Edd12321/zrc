@@ -3,9 +3,9 @@
 fn este_prim {
 	let {x i} {
 		set x = $argv(1)
-		if {$x < 2} {return 0}
+		if {$x <  2} {return 0}
 		if {$x == 2} {return 1}
-		if {$x % 2 == 0} {return 0}
+		if {!($x&1)} {return 0}
 		for {set i = 3} {$i <= ($x>>1)} {inc i 2} {
 			if {$x % $i == 0} {
 				return 0
