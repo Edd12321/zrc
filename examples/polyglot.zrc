@@ -1,0 +1,106 @@
+#!../bin/zrc
+set file = `{mktemp zrcexampleXXXXXX }
+fn sigexit { echo 'Exiting'; eval rm $file* }
+
+array setkey interp = {
+	c   {tcc -run}
+	pl  {perl}
+	awk {awk -f}
+	d   {env rdmd}
+}
+
+fn run {
+	let {l b} {
+		set l = $argv(1) b = $argv(2)
+		echo $b > $file.$l
+		chmod +x $file.$l \
+			&& {*}$interp($l) $file.$l
+	}
+}
+
+echo 'What language do you want to load? (C, D, Perl, Awk)'
+read x
+
+# demonstrating embedding custom keywords into the language
+# (and embedding other languages, too).
+switch $x {
+	###########################
+	# Loading C code from Zrc #
+	###########################
+	case 'C' {
+		run c {
+			#include <stdio.h>
+	
+			int
+			main()
+			{
+				puts("Hello from C!");
+				for (int i = 0; i < 5; ++i) {
+					for (int j = 0; j < 5; ++j) {
+						printf("%d,%d ", i, j);
+					}
+					putchar('\n');
+				}
+			}
+		}
+	}
+
+	##############################
+	# Loading Perl code from Zrc #
+	##############################
+	case 'Perl' {
+		# metaprogramming example	
+		set t = {
+			use 5.010;
+			my $x=2, $y=3;
+			say "Hello from perl! ", $x.'+'.$y.'='.($x+$y);
+		}
+		run pl $t
+		run pl $t
+	}
+
+	###############################
+	# Loading Dlang code from Zrc #
+	###############################
+	case 'D' {
+		echo 'D code running 5 times:'
+		for {set i = 1} {$i <= 5} {inc i} {
+			printf 'Compiling %dst time: ' $i
+			run d {
+				import std.stdio;
+				
+				void
+				main()
+				{
+					writeln("Hello, world!");
+				}
+			}
+		}
+	}
+
+	#############################
+	# Loading Awk code from Zrc #
+	#############################
+	case 'Awk' {
+		set env('file') = $file
+		cat << EOF > $file
+This
+is
+a
+file
+!
+EOF
+		echo 'Contents of $file:'
+		run awk {
+			BEGIN {
+				while ((getline line < ENVIRON["file"]) > 0) {
+					print line
+				}
+				close(ENVIRON["file"])
+			}
+		}
+	}
+	default {
+		die 'Sorry, I don\'t know that language!'
+	}
+}
