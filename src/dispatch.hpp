@@ -118,6 +118,8 @@ Command(eval)   { return eval(combine(argc, argv, 1)); }
 /** Variable type commands **/
 Command(array)  { return array(argc, argv); }
 Command(string) { return string(argc, argv); }
+/** Merge lists **/
+Command(concat) { return combine(argc, argv, 1); }
 
 /** Evaluates an arithmetic expression **/
 Command(expr) {
@@ -802,7 +804,8 @@ const DispatchTable<std::string, std::function<std::string(int, char**)>> dispat
 	de(source)  , de(string) , de(switch),
 	de(unalias) , de(unless) , de(unset),
 	de(until)   , de(wait)   , de(while),
-	de(subst)   , de(break)  , de(continue)
+	de(subst)   , de(break)  , de(continue),
+	de(concat)
 };
 
 /** Show a list of all BuiltIns **/

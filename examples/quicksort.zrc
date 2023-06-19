@@ -1,4 +1,7 @@
 #!../bin/zrc
+###########################################
+# Trivial quicksort implementation in Zrc.#
+###########################################
 %include list
 
 fn quicksort {
@@ -26,10 +29,11 @@ fn quicksort {
 			}
 			set $vn = '$$vn $x'
 		}
-		return "
-			[quicksort $less]
-			$equal
-			[quicksort $greater]"
+		return [concat \
+			[quicksort $less] \
+			$equal \
+			[quicksort $greater]
+		];
 	}
 }
 
