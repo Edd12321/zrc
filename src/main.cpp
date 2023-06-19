@@ -48,7 +48,7 @@
     len = line.length(); ltmp = "";               \
     while (!line.empty() && line.back() == '\\') {\
         line.pop_back();                          \
-        if (line.back() == '\\') {                \
+        if (!line.empty() && line.back() == '\\'){\
             line += "\\\\";                       \
             break;                                \
         } else if (zrc_read_line(in, ltmp, '>')) {\
