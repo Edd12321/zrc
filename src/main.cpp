@@ -75,7 +75,7 @@
 
 #define CHK_FD                                    \
     /*if (std::regex_match(*it,m,e)){ */          \
-    if ((*it).length()>3&&(*it)[0]=='>'&&(*it)[1]=='('&&(*it).back()==')') {\
+    if ((*it).length()>3&&(*it)[0]=='>'&&(*it)[1]=='('&&(*it).back()==')') [[unlikely]] {\
         sword = 1;                                \
         if (fd_parse(zwl, CIND))                  \
             ++it;                                 \
@@ -249,10 +249,10 @@ glob(std::string_view s)
 	glob_t gvl;
 	int i, j, ok;
 	memset(&gvl, 0, sizeof(glob_t));
-	if (!glob(s.data(), GLOB_TILDE, NULL, &gvl))
+	if (!glob(s.data(), GLOB_TILDE, NULL, &gvl)) [[unlikely]]
 		for (i=0; i<gvl.gl_pathc; ++i)
 			wl.add_token(gvl.gl_pathv[i]);
-	if (!wl.size())
+	if (!wl.size()) [[likely]]
 		wl.add_token(s);
 	globfree(&gvl);
 	return wl;

@@ -135,7 +135,7 @@ tokenize(std::string line, std::istream& in)
 			wl.add_token(";");
 			break;
 
-		default:
+		[[likely]] default:
 			if (strchr("$\\", line[i]))
 				wl.make_not_bare();
 			tmp += line[i];

@@ -27,6 +27,7 @@
 	namespace fs = std::__fs::filesystem;
 #endif
 
+#if defined USE_ZLINEEDIT && USE_ZLINEEDIT == 1
 /** Returns a terminal's width and height
  * 
  * @param {int&}row,{int&}col
@@ -296,6 +297,10 @@ zlineedit(std::string& buf)
 	std::cin.clear();
 	return true;
 }
+#else
+inline bool zlineedit(std::string& buf)
+	{ return !std::getline(std::cin, buf).fail(); }
+#endif
 
 template<typename T> inline bool
 zrc_read_line(std::istream& in, std::string& buf, T const& prompt)

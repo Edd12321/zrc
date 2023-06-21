@@ -66,7 +66,7 @@ fd_parse(WordList& vec, size_t const& index)
 	{
 		fd1 = std::stoi(fds.wl[0]);
 		fd2 = std::stoi(fds.wl[2]);
-		baks.emplace_back(std::make_pair(dup(fd), fd1));
+		baks.emplace_back(std::make_pair(dup(fd1), fd1));
 		dup2(dup(fd2), fd1);
 
 	//=====================
