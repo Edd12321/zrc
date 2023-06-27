@@ -20,4 +20,9 @@
 #define $PATH   "env(PATH)"
 #define $ENV    "env"
 
+#define NO_SIGEXIT {\
+	if (funcs.find("sigexit") != funcs.end())\
+		funcs.erase("sigexit");\
+}
+
 extern bool w, cin_eq_in;

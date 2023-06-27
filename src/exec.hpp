@@ -84,6 +84,7 @@ exec(int argc, char *argv[])
 					die("fork");
 				
 				if (pid == 0) {
+					NO_SIGEXIT;
 					setpgid(0, 0);
 					tcsetpgrp(STDIN_FILENO, getpgrp());
 					sigprocmask(SIG_UNBLOCK, &mask, NULL);
@@ -106,6 +107,7 @@ exec(int argc, char *argv[])
 				die("fork");
 
 			if (pid == 0) {
+				NO_SIGEXIT;
 				setpgid(0, 0);
 				sigprocmask(SIG_UNBLOCK, &mask, NULL);
 				if (FOUND_FN(0)) {
@@ -125,19 +127,17 @@ exec(int argc, char *argv[])
 						std::cerr << FMT << '\n';
 				}
 				sigprocmask(SIG_UNBLOCK, &mask, NULL);
-				setvar("!", itoa(pid));
+				setvar($LPID, itoa(pid));
 			}
 		}
 	}
-	// Reset all FDs
+	
+	// Reset/cleanup everything for next command
 	dup2(o_in, STDIN_FILENO);
 	dup2(o_out, STDOUT_FILENO);
 	for (auto const& it : baks)
 		dup2(it.first, it.second);
 	baks.clear();
-
-	setvar($RETURN, ret_val);
-	
 	cleanup_memory();
 	for (i = 0; i < argc; ++i)
 		free(argv[i]);
@@ -146,6 +146,7 @@ exec(int argc, char *argv[])
 	// set fg group ID
 	if (tcgetpgrp(STDIN_FILENO) != zrcpid)
 		tcsetpgrp(STDIN_FILENO, zrcpid);
+	setvar($RETURN, ret_val);
 }
 
 /** Captures a program fragment's standard output.
@@ -164,7 +165,7 @@ io_cap(std::string frag)
 	pipe(pd);
 	pid = fork();
 	if (pid == 0) {
-		atexit([](){});
+		NO_SIGEXIT;
 		chk_exit = true;
 		dup2(pd[1], STDOUT_FILENO);
 		close(pd[0]);

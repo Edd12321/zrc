@@ -106,7 +106,7 @@ prints(std::stack<Path> sp)
 }
 
 /** Closes the Zrc session **/
-Command(exit)   { if (chk_exit) _Exit(EXIT_SUCCESS); else exit(EXIT_SUCCESS); }
+Command(exit)   { exit(EXIT_SUCCESS); }
 /** Displays a job table **/
 Command(jobs)   { jobs(); return "0"; }
 /** Waits for child processes to finish **/
@@ -335,18 +335,16 @@ Command(fn) {
 	if (+FOUND_FN(1))
 		other_error("Function exists", 2);
 	funcs[argv[1]] = argv[2];
-	if (txt2sig.find(argv[1]) != txt2sig.end()) {
-		if (!strcmp(argv[1], "sigexit")) {
-			atexit([](){eval(funcs["sigexit"]);});
-		} else {
-			signal2(txt2sig.at(argv[1]), [](int sig){
-				// We have to re-traverse the hashmap, because lambdas can't be passed as
-				// function pointers if they capture argv[]...
-				for (auto const& it : txt2sig)
-					if (it.second == sig && funcs.find(it.first) != funcs.end())
-						eval(it.first);
-			});
-		}
+	if (txt2sig.find(argv[1]) != txt2sig.end()
+	&& (strcmp(argv[1], "sigexit")))
+	{
+		signal2(txt2sig.at(argv[1]), [](int sig){
+			// We have to re-traverse the hashmap, because lambdas can't be passed as
+			// function pointers if they capture argv[]...
+			for (auto const& it : txt2sig)
+				if (it.second == sig && funcs.find(it.first) != funcs.end())
+					eval(it.first);
+		});
 	}
 	return "0";
 }
@@ -380,10 +378,6 @@ Command(nf) {
 		else if (!strcmp(argv[1], "sigttin") || !strcmp(argv[1], "sigttou"))
 			signal2(txt2sig.at(argv[1]), SIG_IGN);
 	
-		// This is the `SIGEXIT` pseudosig:
-		else if (!strcmp(argv[1], "sigexit"))
-			atexit([](){});
-
 		// These sigs use the default handler:
 		else
 			signal2(txt2sig.at(argv[1]), SIG_DFL);
@@ -425,8 +419,7 @@ Command(fork) {
 		other_error("fork() failed", 2);
 
 	if (pid == 0) {
-		chk_exit = true;
-		atexit([](){});
+		NO_SIGEXIT;
 		setvar($PID, std::to_string(getpid()));
 		strcpy(message, eval(argv[1]).data());
 		_Exit(0);
@@ -596,6 +589,7 @@ Command(let) {
 	WordList vars;
 	std::map<std::string, Array> a_hm_bak;
 	std::map<std::string, Scalar> s_hm_bak;
+	bool ret=0, brk=0, con=0;
 	/* empty */ {
 		NullFin;
 		vars = tokenize(argv[1], fin);
@@ -611,8 +605,10 @@ Command(let) {
 	try {
 		//BlockHandler xh(&in_func);
 		eval(argv[2]);
-	} catch (ZrcReturnHandler ex)
-		{}
+	} catch   (ZrcReturnHandler ex) { ret = 1; }
+	  catch    (ZrcBreakHandler ex) { brk = 1; }
+	  catch (ZrcContinueHandler ex) { con = 1; }
+	
 	for (std::string& str : vars.wl) {
 		if (str[0] == 'A' && str[1] == ',') {
 			str.erase(0, 2);
@@ -621,6 +617,9 @@ Command(let) {
 			setvar(str, s_hm_bak[str]);
 		}
 	}
+	if (ret) throw ZrcReturnHandler();
+	if (brk) throw ZrcReturnHandler();
+	if (con) throw ZrcContinueHandler();
 	NoReturn;
 }
 
