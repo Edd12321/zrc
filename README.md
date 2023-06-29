@@ -1,17 +1,26 @@
 <img src="img/zrc.svg" width=100 height=auto />
 
-Zrc is a small scripting language for Linux,BSD,etc. written in C++ (core interpreter in a very minimalist ~2000SLOC). It is a shell with syntax similar to Tcl/TK ([EIAS](https://wiki.tcl-lang.org/page/everything+is+a+string)).
+Zrc is a small scripting language for Linux,BSD,etc. written in C++ (core interpreter in a very small ~2000SLOC). It is a shell with syntax similar to Tcl/TK ([EIAS](https://wiki.tcl-lang.org/page/everything+is+a+string)). The code is quite small, but minimalism is not the main focus of Zrc (which is why it has way more "luxury features" compared to usual shells). Instead, the idea is to be a better alternative to `tclsh` that extends its syntax and adds features like job control, a custom line editor and more, while still almost keeping Tcl's "pure syntax".
 
 It was created because the old shell languages that I used weren't "programmable" like Tcl or Lisp, didn't have builtin expression evaluator, and were very basic. It is hard to write simple scripts in these usual shells because of the compilcated grammar rules. Zrc makes it easy to write even small programs, being a full programming language.
 
-Zrc is just 1.3mb in size because its implementation is to the point and simple. The language doesn't even need a Backus -- Naur form (BNF). You can compile with -Os to make it even smaller, at the expense of performance !
+Zrc is just ~600KB in size because its implementation is to the point and simple. The language doesn't even need a Backus -- Naur form (BNF). You can compile with -Os to make it even smaller, at the expense of performance !
 
 ## Features left to implement:
 
-- [X] Standard library
+- [ ] Full standard library
+    - [ ] Finish corebuf
+    - [ ] Finish zrclib
+        - [X] List implementation
+        - [X] Basic utility library
+        - [X] Math.c equivalent
+        - [ ] Formatted I/O
+        - [ ] Classes/objects, structs
+        - [ ] More?
 - [X] Home directory config file (`~/.zrc`)
 - [X] Aliases
 - [X] **Rich return values** (not just 0-255, but any string)
+- [X] Complex I/O handling (control flow, functions, built-ins and commands can be seamlessly piped together)
 - [X] Procedures/functions
 	- [X] Function arguments
 		- [X] `$argv(...)`
