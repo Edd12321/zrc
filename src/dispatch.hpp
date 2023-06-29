@@ -477,6 +477,7 @@ Command(read) {
 		}
 	}
 #define GET_INPUT \
+	buf.clear();\
 	if (n == -1) {\
 		int ok;\
 		ok = read(0, &b, 1);\
