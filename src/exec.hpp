@@ -2,9 +2,9 @@
     int rv = execvp(argv[0], argv); \
     if (rv < 0) {                   \
         perror(argv[0]);            \
-        _Exit(127);                 \
+        exit(127);                  \
     } else {                        \
-        _Exit(rv);                  \
+        exit(rv);                   \
     }                               \
 }
 
@@ -117,7 +117,7 @@ exec(int argc, char *argv[])
 				} else if (!builtin_check(argc, argv)) {
 					RUNCMD;
 				}
-				_Exit(0);
+				exit(0);
 			
 			} else {
 				if (make_new_jobs) {
@@ -171,7 +171,7 @@ io_cap(std::string frag)
 		close(pd[0]);
 		close(pd[1]);
 		eval(frag);
-		_Exit(0);
+		exit(0);
 	} else {
 		close(pd[1]);
 		do {

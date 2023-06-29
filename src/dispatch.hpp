@@ -422,7 +422,7 @@ Command(fork) {
 		NO_SIGEXIT;
 		setvar($PID, std::to_string(getpid()));
 		strcpy(message, eval(argv[1]).data());
-		_Exit(0);
+		exit(0);
 	
 	} else {
 		waitpid(pid, NULL, 0);
@@ -451,42 +451,54 @@ Command(echo) {
 
 /** Reads from stdin **/
 Command(read) {
-#define GET_INPUT \
-	buf.clear();\
-	if (n == -1) {\
-		if (!getline(std::cin, buf, d))\
-			return "1";\
-	} else for (i = 0; i < n; ++i) {\
-		if (!(std::cin >> std::noskipws >> t))\
-			return "1";\
-		buf += t;\
-	}
+	const char *se = "[-d <delim>|-n <nchars>] [-p <prompt>] [<var1> <var2>...]";
 	std::string buf;
-	char t, d = '\n';
-	int opt;
-	long i, n = -1;
+	long n = -1, i;
+	char d = '\n', b;
 	optind = 0;
-	while ((opt = getopt(argc, argv, "d:n:")) != -1) {
+	int opt;
+	while ((opt = getopt(argc, argv, "d:n:p:")) != -1) {
 		switch (opt) {
 		case 'd':
 			if (n != -1)
-				syntax_error("Expected only one opt");
-			d = optarg[0];
+				syntax_error(se);
+			d = *optarg;
 			break;
 		case 'n':
 			if (d != '\n')
-				syntax_error("Expected only one opt");
-			n = std::stoi(optarg);
+				syntax_error(se);
+			n = atoi(optarg);
+			break;
+		case 'p':
+			std::cout << optarg;
 			break;
 		case '?':
-			syntax_error("[-d <delim>|-n <nchars>] [<var1> <var2>...]");
+			syntax_error(se);
 		}
 	}
+#define GET_INPUT \
+	if (n == -1) {\
+		int ok;\
+		ok = read(0, &b, 1);\
+		if (ok != 1)\
+			return "1";\
+		buf += b;\
+		for ever {\
+			ok = read(0, &b, 1);\
+			if (ok != 1 || b == d)\
+				break;\
+			buf += b;\
+		}\
+	} else for (i = 0; i < n; ++i) {\
+		if (read(0, &b, 1) != 1)\
+			return "1";\
+		buf += b;\
+	}
+
 	if (optind >= argc) {
 		GET_INPUT;
 		std::cout << buf << std::endl;
-	}
-	for (; optind < argc; ++optind) {
+	} else for (; optind < argc; ++optind) {
 		GET_INPUT;
 		setvar(argv[optind], buf);
 	}

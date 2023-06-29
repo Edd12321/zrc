@@ -42,7 +42,7 @@
 #define CIND std::distance(zwl.wl.begin(), it)
 #define sub static inline void
 
-#define FAIL or (can_runcmd=0);
+#define FAIL or (can_runcmd=0); continue;
 
 #define CHK_ESC {                                 \
     len = line.length(); ltmp = "";               \
@@ -63,7 +63,7 @@
 #define RC(X) do {                                \
     make_new_jobs = true;                         \
     args[k] = NULL;                               \
-	std::cin.clear();                             \
+		std::cin.clear();                             \
     if (can_runcmd) {                             \
         exec(k, args);                            \
         if (!bg_or_fg.empty())                    \
@@ -302,11 +302,11 @@ eval_stream(std::istream& in)
 				/*!*/else if (*it == "&&")         { sword = 1; RC(ret_val=="0"); }
 				/*!*/else if (*it == "||")         { sword = 1; RC(ret_val!="0"); }
 				/** I/O redirection **/
-				/*!*/else if (*it == "<<" ) { sword = 1; io_hedoc(*(++it), in, 0) FAIL continue; }
-				/*!*/else if (*it == "<<<") { sword = 1; io_hedoc(*(++it), in, 1) FAIL continue; }
-				/*!*/else if (*it == "<"  ) { sword = 1; io_left (*(++it)       ) FAIL continue; }
-				/*!*/else if (*it == ">"  ) { sword = 1; io_right(*(++it), 0 , 1) FAIL continue; }
-				/*!*/else if (*it == ">>" ) { sword = 1; io_right(*(++it), 1 , 1) FAIL continue; }
+				/*!*/else if (*it == "<<" ) { sword = 1; io_hedoc(*(++it), in, 0) FAIL }
+				/*!*/else if (*it == "<<<") { sword = 1; io_hedoc(*(++it), in, 1) FAIL }
+				/*!*/else if (*it == "<"  ) { sword = 1; io_left (*(++it)       ) FAIL }
+				/*!*/else if (*it == ">"  ) { sword = 1; io_right(*(++it), 0 , 1) FAIL }
+				/*!*/else if (*it == ">>" ) { sword = 1; io_right(*(++it), 1 , 1) FAIL }
 				/*!*/else if (*it == "|"  ) {
 					sword = 1;
 					if (!can_runcmd)
@@ -385,7 +385,8 @@ main(int argc, char *argv[])
 	signal2(SIGTTOU, SIG_IGN);
 	// sigexit
 	atexit([](){
-			eval(funcs["sigexit"]);
+			if (!chk_exit)
+				eval(funcs["sigexit"]);
 			sigchld_handler(SIGCHLD);
 		});
 	

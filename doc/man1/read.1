@@ -2,12 +2,12 @@
 .SH NAME
 read \- Read text from standard input
 .SH SYNOPSIS
-.BI "read [" "-d <delim>" | "-n <nchars>" "] [" "<var1> <var2>..." ]
+.BI "read [" "-d <delim>" | "-n <nchars>" "] [" "-p <prompt>" "] [" "<var1> <var2>..." ]
 .SH DESCRIPTION
 .I Read
 is a command used to do various methods of text input. It can be used in conjunction with
 .I stty
-for more sophisticated reasons like formatted I/O functions, REPLs, and so on. This command can either read 'n' chars or a string separated by an IFS, and it can output to the stdout/set multiple variables' values.
+for more sophisticated reasons like formatted I/O functions, REPLs, and so on. This command can either read 'n' chars or a string separated by an IFS, and it can output to the stdout/set multiple variables' values. The utility may also display a prompt for the user if needed.
 .SH OPTIONS
 .TP
 .B d <delim>
