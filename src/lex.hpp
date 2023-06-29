@@ -66,6 +66,7 @@ tokenize(std::string line, std::istream& in)
 	char q, p;
 	long cmpnd;
 	size_t i, len2, len = line.length();
+	bool subs;
 
 	tmp.reserve(DEFAULT_TOKSIZ);
 	for (i = len2 = 0; i < len; ++i) {
@@ -74,7 +75,7 @@ tokenize(std::string line, std::istream& in)
 		case '[':
 		case '{':
 		case '(':
-			cmpnd = 0;
+			cmpnd = subs = 0;
 			q = line[i];
 			if (q == '[') p = ']';
 			if (q == '{') p = '}';
@@ -82,8 +83,8 @@ tokenize(std::string line, std::istream& in)
 			
 			if (!tmp.empty() && tmp.back() == '`' && q == '{') {
 				tmp.pop_back();
-				wl.add_token(tmp);
 				tmp += "`{";
+				subs = 1;
 			} else if (q == '{') {
 				wl.add_token(tmp);
 			}
@@ -105,7 +106,7 @@ tokenize(std::string line, std::istream& in)
 			}
 			
 			wl.make_not_bare();
-			if (q == '{')
+			if (q == '{' && !subs)
 				wl.add_token(tmp);
 			break;
 

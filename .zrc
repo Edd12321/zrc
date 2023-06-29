@@ -5,11 +5,11 @@ set env('SHELL') = 'zrc'
 #echo "Disk usage:";
 #df -h;
 # Prompt variables
-set HOSTNAME =`{hostname}
-set USER     =`{whoami}
-set RBOLD =`{/bin/echo -ne {\e[1;31m}}
-set GREEN =`{/bin/echo -ne {\e[0;32m}}
-set RESET =`{/bin/echo -ne {\e[0m}}
+set HOSTNAME = `{hostname}
+set USER     = `{whoami}
+set RBOLD = `{/bin/echo -ne {\e[1;31m}}
+set GREEN = `{/bin/echo -ne {\e[0;32m}}
+set RESET = `{/bin/echo -ne {\e[0m}}
 
 #Other vars
 set ZRC = /usr/lib/zrc
@@ -34,8 +34,15 @@ fn __status_ps1 {
 
 fn prompt_cmd {
 	set status = $?
-	set PWD = `{pwd | sed 's|^$env(HOME)|~|'};
-	title "(zrc) $PWD" > /dev/tty
+	set PWD = `{pwd | sed 's|^$env(HOME)|~|'}
+	set PWDSTR = `{dirname $PWD | sed -r {s|/(.)[^/]*|/\1|g}}
+	if {![string cmp $PWDSTR '.']} {
+		set PWDSTR = '~'
+	} else {
+		set PWDSTR = $PWDSTR/`{basename $PWD}
+	}
+	set PWDSTR = `{echo $PWDSTR | tr -s /}
+	title "(zrc) $PWDSTR" > /dev/tty
 	return {}
 }
 
@@ -45,7 +52,7 @@ fn title {
 }
 
 set PS1 = {[string cat [prompt_cmd]$GREEN $USER $RESET\@$HOSTNAME]\
-           [string cat $GREEN $PWD]\
+           [string cat $GREEN $PWDSTR]\
            [string cat \
 		$RESET \
 		`{__git_ps1} \

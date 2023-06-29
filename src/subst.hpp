@@ -6,7 +6,7 @@
 #define ITERATE_PAREN(X,Y) {                   \
     for (++i, cmpnd = 1; i < len; ++i) {       \
         if (i == len-1 && str[i] != Y)         \
-            die("Unmatched paren");            \
+            std::cerr << "Unmatched paren\n";  \
         if (str[i] == '\\') {                  \
           tmp2 += '\\';                        \
           tmp2 += str[++i];                    \
@@ -93,15 +93,13 @@ str_subst(std::string& str)
 			 * Command substitution *
 			 ************************/
 			if (i < len-1 && str[i+1] == '{') {
-				++i;
+				if NO_QUOTES ++i; ++i;
 				ITERATE_PAREN('{','}');
-				// Remove trailing newline unless specified otherwise
-				if (tmp2.front() == '{' && tmp2.back() == '}')
-					rq(tmp2);
 				orig_f = in_func;
 				in_func = false;
 				std::string out = io_cap(tmp2);
 				in_func = orig_f;
+				// Remove trailing newline unless specified otherwise
 				if (NO_QUOTES && !out.empty() && out.back() == '\n')
 					out.pop_back();
 				res += out;
