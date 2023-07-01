@@ -795,6 +795,38 @@ Command(subst) {
 	return t;
 }
 
+/** Increase Zrc call stack for recursion**/
+Command(rlimit) {
+	if (argc != 2)
+		syntax_error("<n>");
+
+	rlim_t memory = std::stoull(argv[1]);
+	struct rlimit rlm;
+	int err;
+	short exp = 0;
+	switch (argv[1][strlen(argv[1])-1]) {
+	case 'K': exp =  10; break;
+	case 'M': exp =  20; break;
+	case 'G': exp =  30; break;
+	case 'T': exp =  40; break;
+	case 'P': exp =  50; break;
+	case 'E': exp =  60; break;
+	case 'Z': exp =  70; break;
+	case 'Y': exp =  80; break;
+	case 'B': exp =  90; break;
+	case 'g': exp = 100; break;
+	}
+	memory <<= exp;
+	if (!getrlimit(RLIMIT_STACK, &rlm)) {
+		if (rlm.rlim_cur < memory) {
+			rlm.rlim_cur = memory;
+			if (setrlimit(RLIMIT_STACK, &rlm))
+				other_error("setrlimit() failed", 2);
+		}
+	}
+	NoReturn;
+}
+
 Command(help);
 
 const DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
@@ -817,7 +849,7 @@ const DispatchTable<std::string, std::function<std::string(int, char**)>> dispat
 	de(unalias) , de(unless) , de(unset),
 	de(until)   , de(wait)   , de(while),
 	de(subst)   , de(break)  , de(continue),
-	de(concat)
+	de(concat)  , de(rlimit)
 };
 
 /** Show a list of all BuiltIns **/

@@ -13,7 +13,7 @@ Zrc is just ~600KB in size because its implementation is to the point and simple
     - [ ] Finish zrclib
         - [X] List implementation
         - [X] Basic utility library
-        - [X] Math.c equivalent
+        - [X] Math.h equivalent
         - [ ] Formatted I/O
         - [ ] Classes/objects, structs
         - [ ] More?

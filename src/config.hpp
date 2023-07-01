@@ -7,6 +7,7 @@
 #ifndef USE_ZLINEEDIT
 	#define USE_ZLINEEDIT 1
 #endif
+#define MAX_FD 4096
 
 static std::string errmsg         = "syntax error: ";
 static std::string default_prompt = "zrc% ";

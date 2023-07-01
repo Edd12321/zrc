@@ -1,0 +1,183 @@
+#!../bin/zrc
+%include 'cfuncs'
+%include 'list'
+
+##################
+# Reset terminal #
+##################
+fn sigexit {
+	stty cooked
+	stty echo
+	printf "\\e\[?25h"
+}
+
+#########################
+# Move cursor to (0,0). #
+#########################
+fn clear2 {
+	printf "\\033\[0;0H\\e\[?25l"
+}
+
+####################
+# Echo in raw mode #
+####################
+unalias puts && fn puts {
+	let {p i len} {
+		set p = 1
+		if {![strcmp $argv(1) "-n"]} {
+			inc p
+		}
+		echo $argv(1) $argv(2)
+		if {$p == 1} {
+			echo -n '\r' 
+		}
+	}
+}
+
+##################
+# Display a cell #
+##################
+fn show {
+	let {i j ii jj nei} {
+		set i = $argv(1)
+		set j = $argv(2)
+		switch $exp($i,$j) {
+			## Unknown cell
+			case 0 {
+				return ' '
+			}
+			## Flagged cell
+			case 1 {
+				return 'p'
+			}
+			## Blown up cell
+			case 2 {
+				set nei = 0
+				for {set ii = [expr $i-1]} {$ii <= $i+1} {inc ii} {
+					for {set jj = [expr $j-1]} {$jj <= $j+1} {inc jj} {
+						if {$cell($ii,$jj)} {
+							inc nei
+						}
+					}
+				}
+				if {$cell($i,$j)} { inc nei -1 }
+				if {!$nei} { return '#' }
+				return $nei
+			}
+		}
+	}
+}
+
+######################
+# Lee/Fill algorithm #
+######################
+array set d_lin = { -1  0 1 0 }
+array set d_col = {  0 -1 0 1 }
+
+fn fill {
+	let {i j v k} {
+		set i = $argv(1) j = $argv(2) v = $argv(3)
+		if {$i >= 0 && $i < $m && $j >= 0 && $j < $m} {
+			if {$exp($i,$j) != $v && !$cell($i,$j)} {
+				set exp($i,$j) = $v
+				for {set k = 0} {$k < 4} {inc k} {
+					fill [expr {$i+$d_lin($k)}] \
+					     [expr {$j+$d_col($k)}] \
+					     $v
+				}
+			}
+		}
+	}
+}
+
+############################
+# Generate a random number #
+############################
+fn rand {
+	switch $d {
+		case 0 { expr `{shuf -i 0-4 -n 1} == 0 }
+		case 1 { expr `{shuf -i 0-3 -n 1} == 0 }
+		case 2 { expr `{shuf -i 0-2 -n 1} == 0 }
+	}
+}
+
+###############
+# Minesweeper #
+###############
+fn main {
+	echo -n "What grid size do you want? "
+	read m
+	echo -n "What difficulty? (0-2) "
+	read d
+
+	rlimit [expr {$m*10}]M #generous memory for any game of minesweeper...
+	set x_pos = 0 y_pos = 0
+
+	stty raw
+	stty -echo
+	clear
+	
+	for {set i = 0} {$i < $m} {inc i} {
+		for {set j = 0} {$j < $m} {inc j} {
+			set cell($i,$j) = [rand] exp($i,$j) = 0
+		}
+	}
+	while 1 {
+		clear2
+		puts "---------------"
+		puts "ZRC MINESWEEPER"
+		puts "---------------"
+		puts -n ""
+		for {set i = 0} {$i < $m} {inc i} {
+			for {set j = 0} {$j < $m} {inc j} {
+				if {$i == $y_pos && $j == $x_pos} {
+					puts -n "([show $i $j])"
+				} else {
+					puts -n ".[show $i $j]."
+				}
+			}
+			puts
+		}
+		puts "Controls: WASD-movement, Q-quit, P-set flag, X-detonate"
+		# Read input
+		read -n 1 c
+		switch $c {
+			# Go up
+			case 'w' {if {$y_pos > 0} {inc y_pos -1}}
+			# Go left
+			case 'a' {if {$x_pos > 0} {inc x_pos -1}}
+			# Go down
+			case 's' {if {$y_pos < $m-1} {inc y_pos}}
+			# Go right
+			case 'd' {if {$x_pos < $m-1} {inc x_pos}}
+			
+			# Flag cell as possible mine
+			case 'p' {
+				set c = exp($y_pos,$x_pos)
+				if {$$c != 2} {
+					set $c = [expr !$$c]
+				}
+			}
+
+			# Detonate mine
+			case 'x' {
+				if {!$ok} {
+					set ok = 1
+					set cell($y_pos,$x_pos) = 0
+				}
+				if {$cell($y_pos,$x_pos)} {
+					# die '...'
+					puts 'YOU LOSE!'
+					exit 255
+				}
+				fill $y_pos $x_pos 2
+			}
+
+			# Exit
+			case 'q' {
+				clear && exit
+			}
+		}
+	}	
+	return 0
+}; main

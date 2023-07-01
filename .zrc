@@ -166,7 +166,7 @@ fn kernelgraph {
 alias top+ 'cstop;reset'
 alias vi+  'evct'
 
-set env('PATH') = $ZRC/corebuf/bin:$env('PATH')
+#set env('PATH') = $ZRC/corebuf/bin:$env('PATH')
 set env('MANPATH') = $ZRC/doc:$env('MANPATH')
 
 # Default programs

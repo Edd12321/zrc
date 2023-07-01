@@ -1,6 +1,7 @@
 #pragma GCC optimize("Ofast")
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -36,12 +37,8 @@
 #include <unordered_map>
 #include <vector>
 
-#define ever (;;)
-#define MAX_FD 4096
 #define REFRESH_TTY cin_eq_in = (&std::cin == &in)
 #define CIND std::distance(zwl.wl.begin(), it)
-#define sub static inline void
-
 #define FAIL or (can_runcmd=0); continue;
 
 #define CHK_ESC {                                 \
@@ -234,7 +231,7 @@ die(std::string_view err)
  * @param {string_view}str
  * @return bool
  */
-static inline bool is_number(std::string_view str)
+static Inline bool is_number(std::string_view str)
 	{ return str.find_first_not_of("1234567890") == std::string::npos; }
 
 /** Perform globbing.
@@ -270,6 +267,7 @@ eval_stream(std::istream& in)
 	WordList    zwl, gbzwl, spl;
 	char  *args[BUFSIZ];
 	bool   sword, glb, can_runcmd=1;
+	bool   ret = 0, brk = 0, con = 0;
 	long   k;
 	size_t len;
 	/*FD expr 1*///std::regex const e{"\\>\\((.*?)\\)"};
@@ -281,70 +279,78 @@ eval_stream(std::istream& in)
 	o_in    = dup(STDIN_FILENO);
 	o_out   = dup(STDOUT_FILENO);
 	REFRESH_TTY;
-	while (zrc_read_line(in, line)) {
-		bg_or_fg.clear();
-		CHK_ESC;
-		zwl = tokenize(line, in);
-		if (!zwl.size()) {
+
+	try {
+		while (zrc_read_line(in, line)) {
+			bg_or_fg.clear();
+			CHK_ESC;
+			zwl = tokenize(line, in);
+			if (!zwl.size()) {
+				REFRESH_TTY;
+				continue;
+			}
+			if (!strchr("&;", zwl.back()[0])) {
+				zwl.add_token(";");
+				bg_or_fg.push_back(FG);
+			}
+			k = 0;
+			for (auto it = zwl.wl.begin(); it != zwl.wl.end(); ++it) {
+				sword = glb = 0;
+				if (zwl.is_bare(CIND)) {
+					/** Separators **/
+					/*!*/if (*it == "&" || *it == ";") { sword = 1; RC(1); }
+					/*!*/else if (*it == "&&")         { sword = 1; RC(ret_val=="0"); }
+					/*!*/else if (*it == "||")         { sword = 1; RC(ret_val!="0"); }
+					/** I/O redirection **/
+					/*!*/else if (*it == "<<" ) { sword = 1; io_hedoc(*(++it), in, 0) FAIL }
+					/*!*/else if (*it == "<<<") { sword = 1; io_hedoc(*(++it), in, 1) FAIL }
+					/*!*/else if (*it == "<"  ) { sword = 1; io_left (*(++it)       ) FAIL }
+					/*!*/else if (*it == ">"  ) { sword = 1; io_right(*(++it), 0 , 1) FAIL }
+					/*!*/else if (*it == ">>" ) { sword = 1; io_right(*(++it), 1 , 1) FAIL }
+					/*!*/else if (*it == "|"  ) {
+						sword = 1;
+						if (!can_runcmd)
+							continue;
+							args[k] = NULL;
+						io_pipe(k, args);
+						k = 0;
+					}
+					/*!*/else CHK_ALIAS else {
+						gbzwl = glob(*it);
+						if (gbzwl.size() > 0)
+							glb = 1;
+						for (auto const& it : gbzwl.wl)
+							args[k++] = strdup(it.c_str());
+					}
+				}
+				if (!glb && (!zwl.is_bare(CIND) || !sword)) {
+					/*!*/if (*it == "{*}"/* && it<zwl.wl.end()-1*/) {
+						sword = 1;
+						str_subst(*(++it));
+						spl = tokenize(*it, in);
+						for (std::string& str : spl.wl)
+							args[k++] = strdup(str.c_str());
+					}
+					/*!*/else CHK_FD
+					     else {
+						str_subst(*it);
+						args[k++] = strdup((*it).c_str());
+					}
+				}
+			}
 			REFRESH_TTY;
-			continue;
 		}
-		if (!strchr("&;", zwl.back()[0])) {
-			zwl.add_token(";");
-			bg_or_fg.push_back(FG);
-		}
-		k = 0;
-		for (auto it = zwl.wl.begin(); it != zwl.wl.end(); ++it) {
-			sword = glb = 0;
-			if (zwl.is_bare(CIND)) {
-				/** Separators **/
-				/*!*/if (*it == "&" || *it == ";") { sword = 1; RC(1); }
-				/*!*/else if (*it == "&&")         { sword = 1; RC(ret_val=="0"); }
-				/*!*/else if (*it == "||")         { sword = 1; RC(ret_val!="0"); }
-				/** I/O redirection **/
-				/*!*/else if (*it == "<<" ) { sword = 1; io_hedoc(*(++it), in, 0) FAIL }
-				/*!*/else if (*it == "<<<") { sword = 1; io_hedoc(*(++it), in, 1) FAIL }
-				/*!*/else if (*it == "<"  ) { sword = 1; io_left (*(++it)       ) FAIL }
-				/*!*/else if (*it == ">"  ) { sword = 1; io_right(*(++it), 0 , 1) FAIL }
-				/*!*/else if (*it == ">>" ) { sword = 1; io_right(*(++it), 1 , 1) FAIL }
-				/*!*/else if (*it == "|"  ) {
-					sword = 1;
-					if (!can_runcmd)
-						continue;
-					args[k] = NULL;
-					io_pipe(k, args);
-					k = 0;
-				}
-				/*!*/else CHK_ALIAS else {
-					gbzwl = glob(*it);
-					if (gbzwl.size() > 0)
-						glb = 1;
-					for (auto const& it : gbzwl.wl)
-						args[k++] = strdup(it.c_str());
-				}
-			}
-			if (!glb && (!zwl.is_bare(CIND) || !sword)) {
-				/*!*/if (*it == "{*}"/* && it<zwl.wl.end()-1*/) {
-					sword = 1;
-					str_subst(*(++it));
-					spl = tokenize(*it, in);
-					for (std::string& str : spl.wl)
-						args[k++] = strdup(str.c_str());
-				}
-				/*!*/else CHK_FD
-				     else {
-					str_subst(*it);
-					args[k++] = strdup((*it).c_str());
-				}
-			}
-		}
-		REFRESH_TTY;
-	}
+	} catch   (ZrcReturnHandler ex) { ret = 1; }
+	  catch    (ZrcBreakHandler ex) { brk = 1; }
+	  catch (ZrcContinueHandler ex) { con = 1; }
 	close(o_in);
 	close(o_out);
 	o_in  = o_in2;
 	o_out = o_out2;
 	in.clear();
+	if (ret) throw ZrcReturnHandler();
+	if (brk) throw ZrcBreakHandler();
+	if (con) throw ZrcContinueHandler();
 	return ret_val;
 }
 
@@ -353,7 +359,7 @@ eval_stream(std::istream& in)
  * @param {T}sv
  * @return void
  */
-template<typename T>
+template<typename T> Inline 
 std::string eval(T sv)
 {
 	std::stringstream ss;

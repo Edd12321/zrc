@@ -20,7 +20,12 @@
 #define $PATH   "env(PATH)"
 #define $ENV    "env"
 
+// Ugly hack for forcing inline functions
+#define Inline inline __attribute__((always_inline))
+
 #define NO_SIGEXIT \
 	chk_exit = 1;
+#define ever (;;)
+#define sub static Inline void
 
 extern bool w, cin_eq_in;
