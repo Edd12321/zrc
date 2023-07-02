@@ -1,7 +1,11 @@
 /* Default lexer token length (optimization) */
 #define DEFAULT_TOKSIZ 256
 /* Where include searches */
-#define LIBPATH "/usr/lib/zrc/stdlib"
+#ifdef __ANDROID__
+	#define LIBPATH "/data/data/com.termux/files/zrc/stdlib"
+#else
+	#define LIBPATH "/usr/lib/zrc/stdlib"
+#endif
 #define LIBEXT  ".zrc"
 /* Choose the option to use/not to use line editor */
 #ifndef USE_ZLINEEDIT

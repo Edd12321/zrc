@@ -1,3 +1,5 @@
+UNAME := $(shell uname -o)
+
 all:
 	mkdir -p bin
 	g++ src/main.cpp -o bin/zrc
@@ -9,7 +11,11 @@ nozledit:
 sloc:
 	sloccount . | tee sloccount.txt
 install:
+ifeq ($(UNAME), Android)
+	ln -sf $$(pwd) '/data/data/com.termux/files/zrc'
+else
 	ln -sf $$(pwd) '/usr/lib/zrc'
+endif
 corebuf:
 	cd corebuf; \
 		./build.zrc
