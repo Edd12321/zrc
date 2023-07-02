@@ -470,7 +470,7 @@ Command(read) {
 			n = atoi(optarg);
 			break;
 		case 'p':
-			std::cout << optarg;
+			std::cout << optarg << std::flush;
 			break;
 		case '?':
 			syntax_error(se);
@@ -558,7 +558,9 @@ Command(chr) {
 	if (argc != 2)
 		syntax_error("<o>");
 	std::string t;
-	t += (char)std::stoi(expr(combine(argc, argv, 1)));
+	auto ret = expr(combine(argc, argv, 1));
+	if (is_number(ret))
+		t += (char)std::stoi(ret);
 	return t;
 }
 Command(ord) { 

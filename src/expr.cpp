@@ -123,7 +123,7 @@ expr(std::string e, ExprType mode)
 		du(LOG10, log10(x)),      du(LOG2, log2(x)), du(LOG,   log(x)),
 		du(SQRT,  sqrt(x)),       du(SIN,  sin(x)),  du(COS,   cos(x)),
 		du(CTG,   cos(x)/sin(x)), du(TG,   tan(x)),  du(FLOOR, floor(x)),
-		du(CEIL,  ceil(x)),       du(ABS,  abs(x))
+		du(CEIL,  ceil(x)),       du(ABS,  abs(x)),  du(ROUND, round(x))
 	};
 
 	#define db(X,Y) { X,[](ld x,ld y){return Y;}}
@@ -155,6 +155,7 @@ expr(std::string e, ExprType mode)
 	REP("floor", FLOOR);  REP("!=" , NEQ);
 	REP("ceil" , CEIL );  REP("**" , POW);
 	REP("abs"  , ABS  );  REP("//" , IND);
+	REP("round", ROUND);
 
 	//=====alt=====
 	REP("and"  , AND);
@@ -234,7 +235,7 @@ expr(std::string e, ExprType mode)
 			/*******************************
 			 * Unary operators & functions *
 			 *******************************/
-			if (strchr("!~pmQWERTYUIOPX", tok[0])) {
+			if (unary_table.find(tok) != unary_table.end()) {
 				if (!len)
 					INVALIDSYN();
 				ld x1 = nums.top(); nums.pop();

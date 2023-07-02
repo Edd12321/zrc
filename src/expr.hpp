@@ -9,6 +9,7 @@
 #define TG    "I"
 #define FLOOR "O"
 #define CEIL  "P"
+#define ROUND "V"
 
 #define AND   "A"
 #define OR    "S"

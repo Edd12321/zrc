@@ -8,7 +8,7 @@ if {![string cmp $__MATHOP_ZRC_INCLUDED {}]} {
 set __MATHOP_ZRC_INCLUDED = 1
 
 ###############################
-# Helper to generate funcs    #
+# Helper to generate ops      #
 #                             #
 # @param  2                   #
 # @return expr                #
@@ -16,10 +16,28 @@ set __MATHOP_ZRC_INCLUDED = 1
 fn __MakeMathOp {
 	fn $argv(1) {
 		if {$argc != 3} {
-			echo 'Expected 2 operands!' >(2=1)
+			echo 'Expected 2 operands!' >(1=2)
 			return nan
 		} else {
 			expr {$argv(1) $argv(0) $argv(2)}
+		}
+	}
+}
+
+
+###############################
+# Helper to generate funcs    #
+#                             #
+# @param  2                   #
+# @return expr                #
+###############################
+fn __MakeMathFunc {
+	fn $argv(1) {
+		if {$argc != 2} {
+			echo 'Exepected 1 operand!' >(1=2)
+			return nan
+		} else {
+			expr $argv(0)($argv(1))
 		}
 	}
 }
@@ -37,22 +55,24 @@ __MakeMathOp '//'; __MakeMathOp  '>'
 __MakeMathOp '**'
 __MakeMathOp '&&'
 __MakeMathOp '||'
-
 # Alt operators
 __MakeMathOp 'and'
 __MakeMathOp 'or'
 
+# Functions
+__MakeMathFunc log10
+__MakeMathFunc log2
+__MakeMathFunc log
+__MakeMathFunc sin
+__MakeMathFunc cos
+__MakeMathFunc ctg
+__MakeMathFunc tg
+__MakeMathFunc floor
+__MakeMathFunc ceil
+__MakeMathFunc abs
+__MakeMathFunc round
+__MakeMathFunc sqrt
+
 nf -s __MakeMathOp
-
-alias log10 { expr log10 }
-alias log2  { expr log2 }
-alias log   { expr log }
-alias sin   { expr sin }
-alias cos   { expr cos }
-alias ctg   { expr ctg }
-alias tg    { expr tg }
-alias floor { expr floor }
-alias ceil  { expr ceil }
-alias abs   { expr abs }
-
+nf -s __MakeMathFunc
 }

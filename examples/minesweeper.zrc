@@ -127,7 +127,6 @@ fn main {
 		puts "---------------"
 		puts "ZRC MINESWEEPER"
 		puts "---------------"
-		puts -n ""
 		for {set i = 0} {$i < $m} {inc i} {
 			for {set j = 0} {$j < $m} {inc j} {
 				if {$i == $y_pos && $j == $x_pos} {
