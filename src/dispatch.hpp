@@ -609,6 +609,7 @@ Command(let) {
 		NullFin;
 		vars = tokenize(argv[1], fin);
 	}
+	std::for_each(vars.wl.begin(), vars.wl.end(), &str_subst);	
 	for (std::string str : vars.wl) {
 		if (str[0] == 'A' && str[1] == ',') {
 			str.erase(0, 2);
