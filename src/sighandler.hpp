@@ -190,7 +190,7 @@ sigchld_handler(int signum)
 		if (index != -1) {
 			// set foreground PGID to shell's PID
 			if (pid == getfg())
-				if (tcgetpgrp(STDIN_FILENO != zrcpid))
+				if (tcgetpgrp(STDIN_FILENO) != zrcpid)
 					tcsetpgrp(STDIN_FILENO, zrcpid);
 			if (WIFSIGNALED(cs)) {
 				if (TERMINAL)

@@ -46,7 +46,7 @@ fn list {
 ###############################
 fn lindex {
 	if {$argc != 3} {
-		echo >(2=1) 'Expected 2 args!'
+		echo >(1=2) 'Expected 2 args!'
 		return {}
 	} else {
 		let {tmp k res} {
@@ -71,7 +71,7 @@ fn lindex {
 #########################
 fn llength {
 	if {$argc != 2} {
-		echo >(2=1) 'Expected 1 arg!'
+		echo >(1=2) 'Expected 1 arg!'
 		return -1
 	} else {
 		let {tmp k} {
@@ -92,7 +92,7 @@ fn llength {
 ##################################
 fn lremove {
 	if {$argc != 3} {
-		echo >(2=1) 'Expected 2 args!'
+		echo >(1=2) 'Expected 2 args!'
 		return {}
 	} else {
 		let {tmp k cmd} {
@@ -116,7 +116,7 @@ fn lremove {
 ##########################
 fn linsert {
 	if {$argc != 4} {
-		echo >(2=1) 'Expected 3 args!'
+		echo >(1=2) 'Expected 3 args!'
 		return {}
 	} else {
 		let {tmp k cmd} {
@@ -141,7 +141,7 @@ fn linsert {
 ####################
 fn lappend {
 	if {$argc != 3} {
-		echo >(2=1) 'Expected 2 args!'
+		echo >(1=2) 'Expected 2 args!'
 		return {}
 	} else {
 		return [list {*}$argv(1) $argv(2)]
