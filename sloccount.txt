@@ -34,16 +34,25 @@ WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/bdproc.zrc has unknow
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/cstimer.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/fib.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/flood_fill.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/forkbomb.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/gameoflife.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/graph.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/gui_zenity.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/hanoi.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/ip_tool.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/is_prime.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/lexical_scoping.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/loops.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/man.cgi.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/mandelbrot.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/mgcsquare.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/minesweeper.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/oji_arhitect.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/polyglot.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/quicksort.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/server.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/sierpinski.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/sieve.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/sleep_sort.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/split.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/sum_fn.zrc has unknown start: #!../bin/zrc
@@ -53,15 +62,14 @@ WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/truth_machine.zrc has
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/unique.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/whereis.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/windowmgrmgr.zrc has unknown start: #!/usr/bin/env zrc
-WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/server.zrc has unknown start: #!../bin/zrc
-WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/sieve.zrc has unknown start: #!../bin/zrc
-WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/mathop.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/cfuncs.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/list.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/mathop.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
 Computing results.
 
 
 SLOC	Directory	SLOC-by-Language (Sorted)
-2386    src_top_dir     cpp=2386
+2617    src_top_dir     cpp=2617
 552     corebuf         ansic=552
 0       bin             (none)
 0       doc             (none)
@@ -72,19 +80,19 @@ SLOC	Directory	SLOC-by-Language (Sorted)
 
 
 Totals grouped by language (dominant language first):
-cpp:           2386 (81.21%)
-ansic:          552 (18.79%)
+cpp:           2617 (82.58%)
+ansic:          552 (17.42%)
 
 
 
 
-Total Physical Source Lines of Code (SLOC)                = 2,938
-Development Effort Estimate, Person-Years (Person-Months) = 0.62 (7.44)
+Total Physical Source Lines of Code (SLOC)                = 3,169
+Development Effort Estimate, Person-Years (Person-Months) = 0.67 (8.06)
  (Basic COCOMO model, Person-Months = 2.4 * (KSLOC**1.05))
-Schedule Estimate, Years (Months)                         = 0.45 (5.36)
+Schedule Estimate, Years (Months)                         = 0.46 (5.52)
  (Basic COCOMO model, Months = 2.5 * (person-months**0.38))
-Estimated Average Number of Developers (Effort/Schedule)  = 1.39
-Total Estimated Cost to Develop                           = $ 83,771
+Estimated Average Number of Developers (Effort/Schedule)  = 1.46
+Total Estimated Cost to Develop                           = $ 90,701
  (average salary = $56,286/year, overhead = 2.40).
 SLOCCount, Copyright (C) 2001-2004 David A. Wheeler
 SLOCCount is Open Source Software/Free Software, licensed under the GNU GPL.
