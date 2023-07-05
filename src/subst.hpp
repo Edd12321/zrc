@@ -114,10 +114,21 @@ str_subst(std::string& str)
 		/**********************
 		 * Variable expansion *
 		 **********************/
+			
+			// $?, $!
 			if (i < len-1 && strchr("?!", str[i+1])) {
 				std::string tmp;
 				tmp += str[++i];
 				res += getvar(tmp);
+
+			// ${...} syntax
+			} else if (str[i+1] == '{') {
+				if NO_QUOTES ++i; ++i;
+				ITERATE_PAREN('{', '}');
+				str_subst(tmp2);
+				res += getvar(tmp2);
+			
+			// $... and $...(...) syntax
 			} else {
 				bool arr_ok = false;
 				for (++i; i < len && strchr(SCALAR, str[i]); ++i) {

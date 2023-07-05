@@ -76,6 +76,12 @@ Inside a word, any sequence of characters beginning with a dollar sign and follo
 	echo $scalar;
 	# We have accessed the value of a string variable.
 
+	echo ${scalar};
+	echo ${"scalar"};
+	# We may use ${...} to denote the same idea.
+	# Note, unlike in Tcl, we need balanced braces.
+	# Regular substitution rules also apply here.
+
 	set var = deref;
 	echo $var;
 	echo $$var;
