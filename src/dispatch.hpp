@@ -1,7 +1,7 @@
 // Macro for laziness
 #define FOUND_FN(X) (funcs.find(argv[X]) != funcs.end())
-#define itoa ldtoa
-#define OK(X) atof(expr(X))
+#define itoa ldtos
+#define OK(X) std::stold(expr(X))
 #define de(X)   { #X, zrc_builtin_##X }
 #define ce(X,Y) { #X, zrc_builtin_##Y }
 

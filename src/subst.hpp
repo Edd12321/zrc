@@ -93,7 +93,7 @@ str_subst(std::string& str)
 			 * Command substitution *
 			 ************************/
 			if (i < len-1 && str[i+1] == '{') {
-				if NO_QUOTES ++i; ++i;
+				/*if NO_QUOTES ++i;*/ ++i;
 				ITERATE_PAREN('{','}');
 				orig_f = in_func;
 				in_func = false;
@@ -123,7 +123,7 @@ str_subst(std::string& str)
 
 			// ${...} syntax
 			} else if (str[i+1] == '{') {
-				if NO_QUOTES ++i; ++i;
+				/*if NO_QUOTES ++i;*/ ++i;
 				ITERATE_PAREN('{', '}');
 				str_subst(tmp2);
 				res += getvar(tmp2);

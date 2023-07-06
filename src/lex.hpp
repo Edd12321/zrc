@@ -84,7 +84,7 @@ tokenize(std::string line, std::istream& in)
 			if (!tmp.empty() && strchr("$`", tmp.back()) && q == '{') {
 				char b = tmp.back();
 				tmp.pop_back();
-				tmp += b, tmp += "{";
+				tmp += b;
 				subs = 1;
 			} else if (q == '{') {
 				wl.add_token(tmp);

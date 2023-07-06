@@ -56,7 +56,7 @@ exec(int argc, char *argv[])
 	w = (bg_or_fg.front() == FG);
 	ret_val = "0";
 
-#define PGROUP_INITIALIZE \
+#define SIGSET_INITIALIZE \
 	sigemptyset(&mask);\
 	sigaddset(&mask, SIGCHLD);\
 	sigprocmask(SIG_BLOCK, &mask, NULL);
@@ -79,7 +79,7 @@ exec(int argc, char *argv[])
 				a_hm["argv"] = bak;
 			
 			} else if (!builtin_check(argc, argv)) {
-				PGROUP_INITIALIZE;
+				SIGSET_INITIALIZE;
 				if ((pid = fork()) < 0)
 					die("fork");
 				
@@ -102,7 +102,7 @@ exec(int argc, char *argv[])
 		 * Background process *
 		 **********************/
 		} else {
-			PGROUP_INITIALIZE;
+			SIGSET_INITIALIZE;
 			if ((pid = fork()) < 0)
 				die("fork");
 
@@ -138,7 +138,6 @@ exec(int argc, char *argv[])
 	for (auto const& it : baks)
 		dup2(it.first, it.second);
 	baks.clear();
-	cleanup_memory();
 	for (i = 0; i < argc; ++i)
 		free(argv[i]);
 	make_new_jobs = false;

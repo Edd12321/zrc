@@ -8,15 +8,13 @@
 	return (char*)"nan";\
 }
 
-std::stack<char*> unfreed;
-
 /** Checks if a string contains only mathematical chars.
  *
  * @param  void
  * @return void
  */
 extern inline bool
-is_expr(std::string str)
+is_expr(std::string_view str)
 {
 	return str.find_first_not_of(
 		".0123456789 \t\n\r\v\f"
@@ -52,53 +50,31 @@ enum ExprType {
  * @param {char}op
  * @return bool
  */
-static inline bool
-lassoc(char op)
-{
-	return !strchr("!~pm", op);
-}
+#define lassoc(X) (!(strchr("!~pm", X)))
 
-/** Frees memory garbage
- * 
- * @param  none
- * @return void
- */
-static void
-cleanup_memory()
-{
-	while (!unfreed.empty()) {
-		free(unfreed.top());
-		unfreed.pop();
-	}
-}
-
-/** Converts a number to a char pointer/array.
+/** Converts a number to a std::string object.
  *
  * @param  void
  * @return void
  */
-static inline char*
-ldtoa(ld x)
+static Inline std::string
+ldtos(ld x)
 {
-	int i, k, max = 4+LDBL_DIG-LDBL_MIN_10_EXP;
-	char *p, *buf = (char*)malloc(max);
-	sprintf(buf, "%Lf", x);
-	p = strchr(buf, '.');
-	if (p != NULL) {
-		k = max;
-		while (k--) {
-			if (*p == '\0')
-				break;
-			++p;
-		}
-		*p-- = '\0';
-		while (*p == '0')
-			*p-- = '\0';
-		if (*p == '.')
-			*p = '\0';
+	std::string str;
+	size_t len;
+	/* empty */ {
+		std::stringstream ss;
+		ss << std::fixed << x;
+		str = ss.str();
 	}
-	unfreed.push(buf);
-	return buf;
+	if (str.find('.') != std::string::npos) {
+		len = str.length();
+		while (len --> 0 && str.back() == '0')
+			str.pop_back();
+		if (len && str.back() == '.')
+			str.pop_back();
+	}
+	return str;
 }
 
 /** Evaluates an arithmetic expression.
@@ -106,7 +82,7 @@ ldtoa(ld x)
  * @param  void
  * @return void
  */
-char *
+std::string
 expr(std::string e, ExprType mode)
 {
 	std::string old = e;
@@ -165,11 +141,8 @@ expr(std::string e, ExprType mode)
 	REP("true" , "1");
 
 	std::stack<char> ops;
-	std::stack<ld>   nums;
-	std::string      rpn;
-
-	char *tok, *endptr;
-	ld val;
+	std::stack<ld> nums;
+	std::string rpn, tok;
 
 	if (mode == RPN) {
 		rpn = e;
@@ -226,12 +199,20 @@ expr(std::string e, ExprType mode)
 			ops.pop();
 		}
 	}
-	tok = strtok(&rpn[0], " ");
-	while (tok != NULL) {
-		val = strtold(tok, &endptr);
+	std::stringstream ss{rpn};
+	while (ss >> tok) {
+		ld val;
+		bool isop = false;
+
+		try {
+			val = std::stold(tok);
+		} catch (std::exception& ex) {
+			isop = true;
+		}
+
 		li len = nums.size();
 
-		if (tok == endptr && !nums.empty()) {
+		if (isop && !nums.empty()) {
 			/*******************************
 			 * Unary operators & functions *
 			 *******************************/
@@ -269,15 +250,14 @@ expr(std::string e, ExprType mode)
 		} else {
 			nums.push(val);
 		}
-		tok = strtok(NULL, " ");
 	}
 
 	if (!nums.empty())
-		return ldtoa(nums.top());
+		return ldtos(nums.top());
 	else
-		return (char*)"nan";
+		return "nan";
 }
 
 // Default action
-char *expr(std::string e)
+std::string expr(std::string e)
 	{ return expr(e, ExprType::INFIX); }
