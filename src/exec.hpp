@@ -138,8 +138,10 @@ exec(int argc, char *argv[])
 	for (auto const& it : baks)
 		dup2(it.first, it.second);
 	baks.clear();
-	for (i = 0; i < argc; ++i)
+	for (i = 0; i < argc; ++i) {
 		free(argv[i]);
+		argv[i] = NULL;
+	}
 	make_new_jobs = false;
 
 	// set fg group ID

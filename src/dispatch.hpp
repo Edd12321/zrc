@@ -132,25 +132,19 @@ Command(expr) {
 
 /** Executes a block if an expression evaluates non-zero **/
 Command(if) {
+	constexpr char se[] = "<expr> <block> [else < <arg1> <arg2>... >|<block>]";	
 	if (argc < 3)
-		syntax_error("<expr> <block> [elsif <expr> <block>...|else <block>]");
+		syntax_error(se);
 
 	if (OK(argv[1])) {
 		eval(argv[2]);
-	} else for (int i = 3; i < argc; i += 2) {
-		if (!strcmp(argv[i], "else")) {
-			if (i == argc-2)
-				eval(argv[i+1]);
-			else
-				syntax_error("else");
-			break;
-		}
-		if (!strcmp(argv[i], "elsif")) {
-			if (i <= argc-2 && OK(argv[++i])) {
-				eval(argv[i+1]);
-				break;
-			}
-		}
+	} else if (argc > 3 && !strcmp(argv[3], "else")) {
+		if (argc == 4)
+			syntax_error(se);
+		if (argc == 5)
+			eval(argv[4]);
+		else
+			exec(argc-4, argv+4);
 	}
 	NoReturn;
 }

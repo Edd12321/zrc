@@ -55,7 +55,7 @@ Zrc is just ~600KB in size because its implementation is to the point and simple
 		- [X] Return value (`[...]`)
 - [X] Built-in commands (like `expr`, `jobs`, etc. but there are too many to list. View `dispatch.hpp`)
 - [X] Conditional logic/flow control with full C arithmetic operator set
-	- [X] If/elsif/else
+	- [X] If/else
 	- [X] Do
 	- [X] While
 	- [X] Foreach

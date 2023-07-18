@@ -15,24 +15,20 @@ Alternatively, you can trap a signal by defining a function with the name of tha
 	fn is_prime {
 		if {$argv(1) < 2} {
 			return 0
-		} elsif {$argv(1) == 2) {
+		} else if {$argv(1) == 2} {
 			return 1
-		} elsif {$argv(1) % 2 == 0} {
+		} else if {$argv(1) % 2 == 0} {
 			return 0
-		} else {
-			let {i ok} {
-				set ok = 1
-				for {set i = 3} {$i <= $argv(1)/2} {inc i} {
-					if {$argv(1) % $i == 0} {
-						set ok = 0
-						set i = $argv(1)
-					}
+		} else let i {
+			for {set i = 3} {$i <= $argv(1)/2} {inc i} {
+				if {$argv(1) % $i == 0} {
+					return 0
 				}
-				return $ok
 			}
+			return 1
 		}
 	}
-
+	
 	##################
 	# Trap SIGWINCH. #
 	##################

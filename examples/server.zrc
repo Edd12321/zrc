@@ -72,24 +72,24 @@ fn remo {
 		ssh-agent -k &
 
 	#2:
-	} elsif {[string cmp $argv(1) "dialog"] == 0} {
+	} else if {[string cmp $argv(1) "dialog"] == 0} {
 		log "\[Remote-controlled dialog window]";
 		zenity --info \
 		       --title="Dialog Box"\
 		       --text="test"
 	
 	#3:
-	} elsif {[string cmp $argv(1) "killsv"] == 0} {
+	} else if {[string cmp $argv(1) "killsv"] == 0} {
 		log "\[Exiting server]"
 		exit
 	
 	#4:
-	} elsif {[string cmp $argv(1) "shutdn"] == 0} {
+	} else if {[string cmp $argv(1) "shutdn"] == 0} {
 		log "\[Shutting down]"
 		poweroff
 	
 	#5:
-	} elsif {[string cmp $argv(1) "clrscr"] == 0} {
+	} else if {[string cmp $argv(1) "clrscr"] == 0} {
 		clear
 
 	#6:

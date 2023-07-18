@@ -1,0 +1,64 @@
+#!/usr/lib/zrc/bin/zrc
+set env(tf) = `{mktemp}
+set outfile = "speedtest.out"
+
+rm -f $outfile && unbuffer -p zrc -c {
+	fn main {
+		echo "\nBash will always be faster:"
+		time bash -c {
+			for i in {1..10000}; do
+				# Print out to the file
+				printf '%d ' $i >> $tf
+			done
+			rm $tf
+		}
+
+		echo "\nFish is also fast, but uses more memory:"
+		time fish -c {
+			for i in (seq 0 10000)
+				printf '%d ' $i >> $tf
+			end
+			rm $tf
+		}
+
+		echo "\nCsh will use more CPU power:"
+		time csh <<< {
+			@ i = 0
+			while ($i <= 10000)
+				# Just a comment... test
+				printf '%d ' $i >> $tf
+				@ i += 5
+			end
+			rm $tf
+		}
+
+		echo "\nZrc will also have lower memory consumption:"
+		time zrc -c {
+			for {set i = 0} {$i <= 10000} {inc i} {
+				# This is a comment
+				printf '%d ' $i >> $env(tf)
+			}
+			rm $env(tf)
+		}
+
+		echo "\nRc is comparable to Zrc in terms of performance:"
+		time rc -c {
+			for (i in `{seq 0 10000}) {
+				# Rc has an AST, so comments don't affect performance
+				printf '%d ' $i >> $tf
+			}
+			rm $tf
+		}
+
+		echo "\nPowershell performs the worst:"
+		time >(1=) pwsh -c {
+			for ($i = 0; $i -lt 10000; ++$i) {
+				# Comment test
+				printf '%d ' $i >> $env:tf
+			}
+			rm $env:tf
+		}
+
+		echo "\nCONCLUSION: Zrc doesn't totally suck ;) It's just very lightweight"
+	}; main >(2=1)
+} | tee $outfile

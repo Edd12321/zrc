@@ -1,0 +1,26 @@
+
+Bash will always be faster:
+0.08user 0.08system 0:00.16elapsed 98%CPU (0avgtext+0avgdata 6788maxresident)k
+0inputs+0outputs (0major+1106minor)pagefaults 0swaps
+
+Fish is also fast, but uses more memory:
+0.12user 0.07system 0:00.20elapsed 98%CPU (0avgtext+0avgdata 17200maxresident)k
+0inputs+0outputs (0major+2663minor)pagefaults 0swaps
+
+Csh will use more CPU power:
+0.86user 1.10system 0:01.96elapsed 100%CPU (0avgtext+0avgdata 4036maxresident)k
+0inputs+0outputs (3major+333953minor)pagefaults 0swaps
+
+Zrc will also have lower memory consumption:
+6.70user 22.51system 0:29.60elapsed 98%CPU (0avgtext+0avgdata 4508maxresident)k
+0inputs+0outputs (9major+1381354minor)pagefaults 0swaps
+
+Rc is comparable to Zrc in terms of performance:
+8.60user 18.88system 0:27.75elapsed 99%CPU (0avgtext+0avgdata 2980maxresident)k
+0inputs+0outputs (0major+3829864minor)pagefaults 0swaps
+
+Powershell performs the worst:
+29.91user 46.83system 1:10.31elapsed 109%CPU (0avgtext+0avgdata 124964maxresident)k
+0inputs+296outputs (0major+745159minor)pagefaults 0swaps
+
+CONCLUSION: Zrc doesn't totally suck ;) It's just very lightweight

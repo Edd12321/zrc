@@ -23,7 +23,7 @@ fn sieve {
 	for {set p = 2} {$p <= $n} {inc p} {
 		if {$prime($p)} {
 			set ANSI = {\e[0;31m}
-		} elsif {$p == 42} {
+		} else if {$p == 42} {
 			set ANSI = {\e[0;32m}
 		} else {
 			set ANSI = {\e[0m}

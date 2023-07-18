@@ -2,25 +2,24 @@
 .SH NAME
 if \- Execute script body if a condition is met
 .SH SYNOPSIS
-.BI "if " "<expr> <block>" " [elsif " "<expr> <block>..." "|else " <block> ]
+.BI "if " "<expr> <block>" " [else " "< <block>" | "<w1> <w2>...<wn> >" ]
 .SH DESCRIPTION
 The
 .I if
 command evaluates its first argument as an 'expr' expression and executes the second argument as a script if said expression is true. If it is not true, it checks the next argument. If it is
-.BR elsif ,
-it evaluates the argument next to it as an expression and executes another function body, otherwise if it is
-.BR else
-ii evaluates the argument next to it regardless of an expression. This can repeat for as many times as necessary.
+.BR else ,
+it either evaluates one single argument as a script, or treats its remaining arguments as words for a new command to be exec'd via Bernstein chaining (NOT evaled!).
 .SH EXAMPLE
 .EX
 	set i = 0
-	if {i == -2} { 
+	if {$i == -2} { 
 		echo this shouldn\\'t happen
-	} elsif {i == -1} {
+	} else if {$i == -1} {
 		echo elsif test
-	} elsif {i > 0} {
+	} else if {$i > 0} {
 		echo elsif test \\# 2
-	} else {
-		echo 0 equals 0 true
+	} else while {$i < 10} {
+		echo '$i < 10'
+		set i += 1
 	}
 .EE

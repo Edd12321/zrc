@@ -29,11 +29,7 @@ fn quicksort {
 			}
 			set $vn = '$$vn $x'
 		}
-		return [concat \
-			[quicksort $less] \
-			$equal \
-			[quicksort $greater]
-		];
+		return [concat [quicksort $less] $equal [quicksort $greater]]
 	}
 }
 
