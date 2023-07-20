@@ -511,7 +511,7 @@ Command(inc) {
 	if (argc >= 3)
 		val = expr(combine(argc, argv, 2));
 	var = getvar(argv[1]);
-	ret_val = expr((std::string)"("+var+")+("+val+")");
+	ret_val = expr(S("(")+var+")+("+val+")");
 	setvar(argv[1], ret_val);
 	NoReturn;
 }
@@ -534,7 +534,7 @@ Command(set) {
 			if (argv[i][len-1] == '=') {
 				argv[i][len-1] = '\0';
 				setvar(argv[i-1], expr(
-					(std::string)"("
+					S("(")
 					 + getvar(argv[i-1])
 					 + ")"
 					 + argv[i]
@@ -754,17 +754,21 @@ Command(regexp) {
 Command(shift) {
 	size_t howmuch = 1, i;
 	auto *arg = &a_hm[$ARGV];
+	size_t len = arg->size();
 	if (argc  > 2)
 		syntax_error("[<n>]");
 	if (argc == 2)
 		howmuch = atoi(argv[1]);
+	
 	//shift to left
-	for (i = 0; i < arg->size-howmuch; ++i)
-		arg->set(std::to_string(i), arg->get(std::to_string(i+howmuch)));
+	for (i = 0; i < len-howmuch; ++i)
+		arg->set(i, arg->get(i+howmuch));
+	
 	//delete the rest
-	for (i = arg->size-howmuch; i < arg->size; ++i)
-		arg->destroy(std::to_string(i));
-	setvar($ARGC, std::to_string(arg->size));
+	for (i = len-howmuch; i < len; ++i)
+		arg->destroy(i);
+	
+	setvar($ARGC, arg->size());
 	return getvar($ARGC);
 }
 

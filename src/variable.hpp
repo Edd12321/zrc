@@ -8,33 +8,38 @@ enum Mode {
 typedef std::string Scalar;
 typedef std::string Variable;
 
+/* convert ints to string*/
+template<typename T>
+std::string S(T const& t)
+{
+	if constexpr (std::is_integral<T>::value)
+		return std::to_string(t);
+	else
+		return static_cast<std::string>(t);
+}
+
 /** Associative array objects **/
 class Array
 {
 public:
-//private:
-	std::unordered_map<std::string, std::string> hm;
-//public:
-	size_t size;
-	std::string get(std::string key)
-		{ return (hm.find(key) != hm.end()) ? hm.at(key) : ""; }
+	std::unordered_map<Variable, std::string> hm;
+public:
+	//array length...
+	size_t size()
+		{ return hm.size(); }
 
-	void
-	set(std::string key, std::string value)
-	{
-		if (hm.find(key) == hm.end())
-			++size;
-		hm[key] = value;
-	}
-
-	void
-	destroy(std::string key)
-	{
-		if (hm.find(key) != hm.end()) {
-			hm.erase(key);
-			--size;
-		}
-	}
+	//$...
+	template<typename T>
+	std::string get(T const& key)
+		{ return (hm.find(S(key)) != hm.end()) ? hm.at(S(key)) : ""; }
+	//set ... = ...
+	template<typename A, typename B>
+	void set(A const& key, B const& value)
+		{ hm[S(key)] = S(value); }
+	//unset ...
+	template<typename T>
+	void destroy(T const& key)
+		{ if (hm.find(S(key)) != hm.end()) { hm.erase(S(key)); } }
 };
 
 std::unordered_map<Variable, Scalar> s_hm;
@@ -45,8 +50,9 @@ std::unordered_map<Variable, Array>  a_hm;
  * @param {std::string}a1,{std::string}a2
  * @return std::string
  */
+
 std::string
-variable_magic(std::string a1, std::string a2, Mode mode)
+variable_magic(std::string const& a1, std::string const& a2, Mode mode)
 {
 	auto it = a1.find('(');
 
@@ -86,6 +92,10 @@ variable_magic(std::string a1, std::string a2, Mode mode)
 	}
 	return "";
 }
+
+template<typename A, typename B>
+std::string variable_magic(A const& a1, B const& a2, Mode mode)
+	{ return variable_magic(S(a1), S(a2), mode); }
 
 #define   setvar(X, Y) variable_magic(X,  Y,   SET)
 #define unsetvar(X)    variable_magic(X, "", UNSET)
@@ -142,7 +152,7 @@ array(int argc, char *argv[])
 		return a_hm[argv[2]].get(argv[3]);
 	}
 	// % array length <a>
-	if (!strcmp(argv[1], "length")) return std::to_string(a_hm[argv[2]].size);
+	if (!strcmp(argv[1], "length")) return std::to_string(a_hm[argv[2]].size());
 	// % array delete <a>
 	if (!strcmp(argv[1], "delete")) a_hm.erase(argv[2]);
 	// % array unset <a> <k1> <k2...>

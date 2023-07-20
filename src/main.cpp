@@ -133,7 +133,7 @@ typedef int Jid;
   static inline bool        is_number      (std::string_view          );
   WordList                  glob           (std::string_view          );
   static std::string        eval_stream    (std::istream&             );
-  template<typename T>      std::string          eval(T               );
+  template<typename T>      std::string          eval(T const&        );
   // MAIN.CPP
 
   WordList                  tokenize       (std::string, std::istream&);
@@ -358,7 +358,7 @@ eval_stream(std::istream& in)
  * @return void
  */
 template<typename T> Inline 
-std::string eval(T sv)
+std::string eval(T const& sv)
 {
 	std::stringstream ss;
 	ss << sv;

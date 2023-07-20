@@ -7,6 +7,8 @@
 if {![string cmp $__IPC_ZRC_INCLUDED {}]} {
 set __IPC_ZRC_INCLUDED = 1
 
+%include cfuncs
+
 ############################
 # Pipe 2 lists as commands #
 #                          #

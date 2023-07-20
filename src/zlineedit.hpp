@@ -1,3 +1,4 @@
+/** Keyboard macros **/
 #define KEY_ESC 27
 #define KEY_BACKSPACE 127
 #define KEY_ALTBSPACE 8
@@ -7,18 +8,22 @@
 	#define KEY_RETURN '\n'
 #endif
 
+/** Moving cursor **/
 #define CURSOR_FWD(X) std::cout << "\033[" << X << "C"
 #define CURSOR_BWD(X) std::cout << "\033[" << X << "D"
 
+/* Display $PS1 */
 #define SHOW_PROMPT \
 	if (s_hm.find($PS1) != s_hm.end()) {\
 		char *argv[2];\
 		argv[0] = strdup("@");\
-		argv[1] = strdup(((std::string)"echo -n "+getvar($PS1)).c_str());\
+		argv[1] = strdup((S("echo -n ")+getvar($PS1)).c_str());\
 		exec(2, argv);\
 	} else {\
 		std::cout << default_prompt << std::flush;\
 	}
+
+/* Compatibility reasons */
 #ifdef __cpp_lib_filesystem
 	namespace fs = std::filesystem;
 #elif __cpp_lib_experimental_filesystem
