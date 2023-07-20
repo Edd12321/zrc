@@ -144,7 +144,7 @@ fn lappend {
 		echo >(1=2) 'Expected 2 args!'
 		return {}
 	} else {
-		return [list {*}[subst $argv(1)] $argv(2)]
+		return [concat $argv(1) [list $argv(2)]]
 	}
 }
 

@@ -1,0 +1,27 @@
+#!/usr/lib/zrc/bin/zrc
+# ipc.zrc
+#
+# Use pipes and other redirections as commands
+# (to simulate true EIAS)
+
+if {![string cmp $__IPC_ZRC_INCLUDED {}]} {
+set __IPC_ZRC_INCLUDED = 1
+
+############################
+# Pipe 2 lists as commands #
+#                          #
+# @param any               #
+# @return none/-1          #
+############################
+fn pipe {
+	if {$argc < 1} {
+		echo >(1=2) 'Expected at least 1 arg!'
+		return -1
+	} else let s {
+		while {[shift]} {
+			set s = "${s}$argv(0) | "
+		}
+		eval [strrep $s [expr [strlen $s]-2] ' ']
+	}
+}
+}

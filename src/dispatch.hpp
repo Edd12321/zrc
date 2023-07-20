@@ -470,25 +470,25 @@ Command(read) {
 			syntax_error(se);
 		}
 	}
-#define GET_INPUT \
-	buf.clear();\
-	if (n == -1) {\
-		int ok;\
-		ok = read(0, &b, 1);\
-		if (ok != 1)\
-			return "1";\
-		buf += b;\
-		for ever {\
-			ok = read(0, &b, 1);\
-			if (ok != 1 || b == d)\
-				break;\
-			buf += b;\
-		}\
-	} else for (i = 0; i < n; ++i) {\
-		if (read(0, &b, 1) != 1)\
-			return "1";\
-		buf += b;\
-	}
+#define GET_INPUT                   \
+    buf.clear();                    \
+    if (n == -1) {                  \
+        int ok;                     \
+        ok = read(0, &b, 1);        \
+        if (ok != 1)                \
+            return "1";             \
+        buf += b;                   \
+        for ever {                  \
+            ok = read(0, &b, 1);    \
+            if (ok != 1 || b == d)  \
+                break;              \
+            buf += b;               \
+        }                           \
+    } else for (i = 0; i < n; ++i) {\
+        if (read(0, &b, 1) != 1)    \
+            return "1";             \
+        buf += b;                   \
+    }
 
 	if (optind >= argc) {
 		GET_INPUT;
@@ -604,7 +604,7 @@ Command(let) {
 		vars = tokenize(argv[1], fin);
 	}
 	std::for_each(vars.wl.begin(), vars.wl.end(), &str_subst);	
-	for (std::string str : vars.wl) {
+	for (Variable str : vars.wl) {
 		if (str[0] == 'A' && str[1] == ',') {
 			str.erase(0, 2);
 			a_hm_bak[str] = a_hm[str];
@@ -619,7 +619,7 @@ Command(let) {
 	  catch    (ZrcBreakHandler ex) { brk = 1; }
 	  catch (ZrcContinueHandler ex) { con = 1; }
 	
-	for (std::string& str : vars.wl) {
+	for (Variable& str : vars.wl) {
 		if (str[0] == 'A' && str[1] == ',') {
 			str.erase(0, 2);
 			a_hm[str] = a_hm_bak[str];
@@ -752,27 +752,20 @@ Command(regexp) {
 
 /** Shift argv **/
 Command(shift) {
-	if (argc > 2)
-		syntax_error("[<n>]");
-	long len = a_hm[$ARGV].size;
-	long howmuch = 1;
-
-	if (argc > 2)
+	size_t howmuch = 1, i;
+	auto *arg = &a_hm[$ARGV];
+	if (argc  > 2)
 		syntax_error("[<n>]");
 	if (argc == 2)
 		howmuch = atoi(argv[1]);
-	if (len) {
-		len -= howmuch;
-		for (auto i = 0; i < len-howmuch; ++i) {
-			a_hm[$ARGV].set(
-				std::to_string(i),
-				a_hm[$ARGV].get(std::to_string(i+howmuch))
-			);
-		}
-		for (auto i = len-howmuch; i < len; ++i)
-			a_hm[$ARGV].destroy(std::to_string(i));
-	}
-	return std::to_string(len);
+	//shift to left
+	for (i = 0; i < arg->size-howmuch; ++i)
+		arg->set(std::to_string(i), arg->get(std::to_string(i+howmuch)));
+	//delete the rest
+	for (i = arg->size-howmuch; i < arg->size; ++i)
+		arg->destroy(std::to_string(i));
+	setvar($ARGC, std::to_string(arg->size));
+	return getvar($ARGC);
 }
 
 /** Replace proc **/

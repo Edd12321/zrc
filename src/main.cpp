@@ -196,9 +196,8 @@ typedef int Jid;
   inline bool               zrc_read_line  (std::istream&,std::string&);
   // ZLINEEDIT.HPP
 
-  #include "variable.hpp"
   #include "lex.hpp"
-  #include "array.hpp"
+  #include "variable.hpp"
   #include "string.hpp"
   #include "expr.hpp"
   #include "expr.cpp"

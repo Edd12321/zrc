@@ -58,7 +58,7 @@ string(int argc, char *argv[])
 		if (argc != 5)
 			USAGE
 		std::string temp = argv[2];
-		temp[argv[3][0]-'0'] = argv[4][0];
+		temp[std::stoi(argv[3])] = argv[4][0];
 		return temp;
 	}
 
