@@ -121,7 +121,6 @@ typedef int Jid;
   std::string ret_val;
   std::deque<bool> bg_or_fg;
   std::vector<std::pair<int, int>> baks;
-
   DispatchTable<CodeBlock, WordList> zwlcache;
   long ch_mode;
   #include "global.hpp"
@@ -263,7 +262,6 @@ eval_stream(std::istream& in)
 {
 	std::string line, ltmp;
 	WordList    zwl, gbzwl, spl;
-	char  *args[BUFSIZ];
 	bool   sword, glb, can_runcmd=1;
 	bool   ret = 0, brk = 0, con = 0;
 	long   k;
@@ -278,6 +276,7 @@ eval_stream(std::istream& in)
 	o_out   = dup(STDOUT_FILENO);
 	REFRESH_TTY;
 
+	char **args = new char*[ARG_MAX];
 	try {
 		while (zrc_read_line(in, line)) {
 			bg_or_fg.clear();
@@ -341,6 +340,7 @@ eval_stream(std::istream& in)
 	} catch   (ZrcReturnHandler ex) { ret = 1; }
 	  catch    (ZrcBreakHandler ex) { brk = 1; }
 	  catch (ZrcContinueHandler ex) { con = 1; }
+	delete [] args;
 	close(o_in);
 	close(o_out);
 	o_in  = o_in2;
@@ -360,8 +360,7 @@ eval_stream(std::istream& in)
 template<typename T> Inline 
 std::string eval(T const& sv)
 {
-	std::stringstream ss;
-	ss << sv;
+	std::istringstream ss{sv};
 	return eval_stream(ss);
 }
 

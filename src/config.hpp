@@ -12,6 +12,10 @@
 	#define USE_ZLINEEDIT 1
 #endif
 #define MAX_FD 4096
+/* Max arg count */
+#ifndef ARG_MAX
+	const auto ARG_MAX = sysconf(_SC_ARG_MAX);
+#endif
 
 static std::string errmsg         = "syntax error: ";
 static std::string default_prompt = "zrc% ";
