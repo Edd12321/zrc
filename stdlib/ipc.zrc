@@ -16,14 +16,44 @@ set __IPC_ZRC_INCLUDED = 1
 # @return none/-1          #
 ############################
 fn pipe {
-	if {$argc < 1} {
-		echo >(1=2) 'Expected at least 1 arg!'
+	if {$argc < 2} {
+		zrcusage <block1> <block2>...<blockn>
 		return -1
 	} else let s {
 		while {[shift]} {
-			set s = "${s}$argv(0) | "
+			set s = "${s}eval {$argv(0)} | "
 		}
 		eval [strrep $s [expr [strlen $s]-2] ' ']
 	}
 }
+
+########################################
+# Redirect file descriptor n to a file #
+#                                      #
+# @param 3                             #
+# @return none/-1                      #
+########################################
+fn redir {
+	if {$argc != 4} {
+		zrcusage <fd> <filename> <block>
+		return -1
+	} else {
+		eval "eval {$argv(3)} >($argv(1)) '$argv(2)'"
+	}
+}
+
+##############################
+# Duplicate file descriptors #
+#                            #
+# @param 3                   #
+# @return none/-1            #
+##############################
+fn dup {
+	if {$argc != 4} {
+		zrcusage <fd1> <fd2> <block>
+		return -1
+	} else {
+		eval "eval {$argv(3)} >($argv(1)=$argv(2))"
+	}
+} 
 }

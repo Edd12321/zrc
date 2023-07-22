@@ -7,6 +7,12 @@
 if {![string cmp $__CFUNCS_ZRC_INCLUDED {}]} {
 set __CFUNCS_ZRC_INCLUDED = 1
 
+##################
+# Usage function #
+##################
+alias zrcusage { eval echo >(1=2) \
+	usage: (`{basename $argv(0)}) }
+
 ####################
 # String functions #
 ####################
@@ -39,7 +45,7 @@ alias new  { malloc char }
 ########################################
 fn malloc {
 	if {$argc != 3} {
-		echo >(2=1) 'Expected 2 args!'
+		zrcusage "char|short|int|long|long long" <n>
 		return 1
 	} else {
 		let {i j A,types res} {
@@ -68,7 +74,7 @@ fn malloc {
 #########################
 fn chrcmp {
 	if {$argc != 3} {
-		echo >(2=1) 'Expected 2 args!'
+		zrcusage <c1> <c2>
 		return {}
 	} else {
 		expr {[ord $argv(1)] <=> [ord $argv(2)]}

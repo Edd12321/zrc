@@ -3,17 +3,13 @@
 #(I/O and file demo)
 set max = -1
 
-fn fin {
-	let i {
-	for {set i = 1} {$i < $argc} {inc i} {
-		read $argv($i)
-	}}
-}
-
 fn main {
 	read n
 	while {$n>0} {
-		fin x1 y1 x2 y2
+		read -d ' ' x1
+		read -d ' ' y1
+		read -d ' ' x2
+		read y2
 		set num = [expr {abs(($x1-$x2)/($y1-$y2))}]
 		if {![string cmp $hm($num) '']} {
 			set hm($num) = 0
@@ -25,4 +21,4 @@ fn main {
 		inc n -1
 	}
 	echo $max
-};@ main
+}; main < arhitect.in > arhitect.out

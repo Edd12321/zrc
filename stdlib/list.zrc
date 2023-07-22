@@ -1,5 +1,5 @@
 #!/usr/lib/zrc/bin/zrc
-# cfuncs.zrc
+# list.zrc
 #
 # This code is licensed under the BSD license (see LICENSE for details).
 # This library adds lists to Zrc.
@@ -46,7 +46,7 @@ fn list {
 ###############################
 fn lindex {
 	if {$argc != 3} {
-		echo >(1=2) 'Expected 2 args!'
+		zrcusage <l> <n>
 		return {}
 	} else {
 		let {tmp k res} {
@@ -71,7 +71,7 @@ fn lindex {
 #########################
 fn llength {
 	if {$argc != 2} {
-		echo >(1=2) 'Expected 1 arg!'
+		zrcusage <l>
 		return -1
 	} else {
 		let {tmp k} {
@@ -92,7 +92,7 @@ fn llength {
 ##################################
 fn lremove {
 	if {$argc != 3} {
-		echo >(1=2) 'Expected 2 args!'
+		zrcusage <l> <n>
 		return {}
 	} else {
 		let {tmp k cmd} {
@@ -116,7 +116,7 @@ fn lremove {
 ##########################
 fn linsert {
 	if {$argc != 4} {
-		echo >(1=2) 'Expected 3 args!'
+		zrcusage <l> <n> <w>
 		return {}
 	} else {
 		let {tmp k cmd} {
@@ -141,7 +141,7 @@ fn linsert {
 ####################
 fn lappend {
 	if {$argc != 3} {
-		echo >(1=2) 'Expected 2 args!'
+		zrcusage <l> <w>
 		return {}
 	} else {
 		return [concat $argv(1) [list $argv(2)]]

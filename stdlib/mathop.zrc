@@ -7,6 +7,8 @@
 if {![string cmp $__MATHOP_ZRC_INCLUDED {}]} {
 set __MATHOP_ZRC_INCLUDED = 1
 
+%include cfuncs
+
 ###############################
 # Helper to generate ops      #
 #                             #
@@ -16,7 +18,7 @@ set __MATHOP_ZRC_INCLUDED = 1
 fn __MakeMathOp {
 	fn $argv(1) {
 		if {$argc != 3} {
-			echo 'Expected 2 operands!' >(1=2)
+			zrcusage <x> <y>
 			return nan
 		} else {
 			expr {$argv(1) $argv(0) $argv(2)}
@@ -34,7 +36,7 @@ fn __MakeMathOp {
 fn __MakeMathFunc {
 	fn $argv(1) {
 		if {$argc != 2} {
-			echo 'Exepected 1 operand!' >(1=2)
+			zrcusage <x>
 			return nan
 		} else {
 			expr $argv(0)($argv(1))
