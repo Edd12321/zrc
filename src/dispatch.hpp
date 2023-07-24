@@ -424,7 +424,10 @@ Command(fork) {
 	}
 }
 
-/** Outputs a message to stdout **/
+/** Outputs a message to stdout
+  Based on this very elegant implementation by Suckless.org:
+  https://git.suckless.org/sbase/file/echo.c.html
+ **/
 Command(echo) {
 	bool n_flag = false;
 

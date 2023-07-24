@@ -52,12 +52,8 @@ addjob(pid_t pid, int state, int argc, char *argv[])
 	jt[index].argc  = argc;
 
 	jt[index].argv  = new char*[argc+1];
-	for (i = 0; i < argc; ++i) {
-		jt[index].argv[i] = new char[
-			strlen(argv[i])+1
-		];
-		strcpy(jt[index].argv[i], argv[i]);
-	}
+	for (i = 0; i < argc; ++i)
+		jt[index].argv[i] = strdup(argv[i]);
 	return index;
 }
 

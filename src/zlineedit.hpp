@@ -245,6 +245,7 @@ zlineedit(std::string& buf)
 	dp_list = cursor_pos = 0;
 	R();
 	buf.clear();
+	dn(buf);
 
 	while (zrawch(c)) {
 		switch (c) {
