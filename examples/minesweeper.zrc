@@ -105,6 +105,8 @@ fn rand {
 # Minesweeper #
 ###############
 fn main {
+	set ok = 0
+
 	echo -n "What grid size do you want? "
 	read m
 	echo -n "What difficulty? (0-2) "

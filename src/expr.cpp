@@ -1,11 +1,12 @@
+#include ".expr_ops.hpp"
 #define syn std::cerr << errmsg
 
 #define ld long double
-#define li long int
+#define ll long long
 #define isnum(X) (isdigit(X) || X == '.' || islower(X))
-#define INVALIDSYN() {\
+#define INVALIDSYN {\
 	syn << old << '\n';\
-	return (char*)"nan";\
+	return "nan";\
 }
 
 /** Checks if a string contains only mathematical chars.
@@ -24,20 +25,58 @@ is_expr(std::string_view str)
 }
 
 std::unordered_map<char, short> prio = {
-	  {    '(', -13 }, {    ')', -13 },
-	  {    '?', -12 }, {    ':', -12 },
-	  {  OR[0], -11 },
-	  { AND[0], -10 },
-	  {    '|',  -9 },
-	  {    '^',  -8 },
-	  {    '&',  -7 },
-	  { EQU[0],  -6 }, { NEQ[0],  -6 },
-	  {    '<',  -5 }, { LEQ[0],  -5 }, {    '>',  -5 }, { GEQ[0],  -5 },
-	  { SPC[0],  -4 },
-	  { SHL[0],  -3 }, { SHR[0],  -3 },
-	  {    '+',  -2 }, {    '-',  -2 },
-	  {    '*',  -1 }, {    '/',  -1 }, { IND[0],  -1 }, {    '%',  -1 }
+	  { '(', -13 }, { ')', -13 },
+	  { '?', -12 }, { ':', -12 },
+	  {  OR, -11 },
+	  { AND, -10 },
+	  { '|',  -9 },
+	  { '^',  -8 },
+	  { '&',  -7 },
+	  { EQU,  -6 }, { NEQ,  -6 },
+	  { '<',  -5 }, { LEQ,  -5 }, { '>', -5 }, { GEQ, -5 },
+	  { SPC,  -4 },
+	  { SHL,  -3 }, { SHR,  -3 },
+	  { '+',  -2 }, { '-',  -2 },
+	  { '*',  -1 }, { '/',  -1 }, { IND, -1 }, { '%', -1 }
 	//{ implicit  0 }
+};
+
+#define du(X,Y) {X,[](ld x){return Y;}} 
+DispatchTable<char, std::function<ld(ld const&)>> unary_table = {
+	// unary ops
+	du('!', !x), du('m', -x), du('p', +x), du('~', ~(ll)x),
+
+	// 1 arg functions
+	du(LOG10, log10(x)),      du(LOG2, log2(x)), du(LOG,   log(x)),
+	du(SQRT,  sqrt(x)),       du(SIN,  sin(x)),  du(COS,   cos(x)),
+	du(CTG,   cos(x)/sin(x)), du(TG,   tan(x)),  du(FLOOR, floor(x)),
+	du(CEIL,  ceil(x)),       du(ABS,  abs(x)),  du(ROUND, round(x))
+};
+
+#define db(X,Y) { X,[](ld x,ld y){return Y;}}
+DispatchTable<char, std::function<ld(ld const&, ld const&)>> binary_table = {
+	// binops
+	db(SHL, (ll)x << (ll)y),
+	db(SHR, (ll)x >> (ll)y),
+	db('&', (ll)x & (ll)y),
+	db('|', (ll)x | (ll)y),
+	db('^', (ll)x ^ (ll)y),
+	db(AND, x && y),
+	db(OR,  x || y),
+	db(POW, pow(x, y)),
+	db(IND, floor(x/y)),
+	db('+', x + y),
+	db('-', x - y),
+	db('*', x * y),
+	db('/', x / y),
+	db('%', fmod(x, y)),
+	db('<', x < y),
+	db('>', x > y),
+	db(LEQ, x <= y),
+	db(GEQ, x >= y),
+	db(NEQ, x != y),
+	db(EQU, x == y),
+	db(SPC, x<y?-1:(x>y?1:0)/*x <=> y*/)
 };
 
 enum ExprType {
@@ -68,13 +107,58 @@ ldtos(ld x)
 		str = ss.str();
 	}
 	if (str.find('.') != std::string::npos) {
-		len = str.length();
-		while (len --> 0 && str.back() == '0')
+		while (!str.empty() && str.back() == '0')
 			str.pop_back();
-		if (len && str.back() == '.')
+		if (!str.empty() && str.back() == '.')
 			str.pop_back();
 	}
 	return str;
+}
+
+/** "Execute" operator in the Shunting-Yard alg.
+ * 
+ * @param {char}op,{stack<ld>&}nums,{stack<char>&}ops
+ * @return bool
+ */
+static bool
+expr_op(char op, std::stack<ld>& nums, std::stack<char>& ops)
+{
+	ll len = nums.size();
+
+	/*******************************
+ 	 * Unary operators & functions *
+	 *******************************/
+	if (unary_table.find(op) != unary_table.end()) {
+		if (!len)
+			return false;
+		ld x1 = nums.top(); nums.pop();
+		nums.push(unary_table[op](x1));
+
+	/********************
+	 * Ternary operator *
+	 ********************/
+	} else if (op == '?') {
+		ops.push(op);
+	} else if (op == ':') {
+		if (ops.top() != '?' || len < 3)
+			return false;
+		ops.pop();
+		ld x3 = nums.top(); nums.pop();
+		ld x2 = nums.top(); nums.pop();
+		ld x1 = nums.top(); nums.pop();
+		nums.push(x1?x2:x3);
+
+	/********************
+	 * Binary operators *
+	 ********************/
+	} else {
+		if (len < 2)
+			return false;
+		ld x2 = nums.top(); nums.pop();
+		ld x1 = nums.top(); nums.pop();
+		nums.push(binary_table[op](x1, x2));
+	}
+	return true;
 }
 
 /** Evaluates an arithmetic expression.
@@ -85,40 +169,14 @@ ldtos(ld x)
 std::string
 expr(std::string e, ExprType mode)
 {
+	std::stack<char> ops;
+	std::stack<ld> nums;
+	std::string tok;
 	std::string old = e;
+
 	str_subst(e);
 	if (!is_expr(e))
-		INVALIDSYN();
-
-	#define du(X,Y) {X,[](ld x){return Y;}} 
-	DispatchTable<std::string, std::function<ld(ld const&)>> unary_table = {
-		// unary ops
-		du("!", !x), du("m", -x), du("p", +x), du("~", ~(int)x),
-
-		// 1 arg functions
-		du(LOG10, log10(x)),      du(LOG2, log2(x)), du(LOG,   log(x)),
-		du(SQRT,  sqrt(x)),       du(SIN,  sin(x)),  du(COS,   cos(x)),
-		du(CTG,   cos(x)/sin(x)), du(TG,   tan(x)),  du(FLOOR, floor(x)),
-		du(CEIL,  ceil(x)),       du(ABS,  abs(x)),  du(ROUND, round(x))
-	};
-
-	#define db(X,Y) { X,[](ld x,ld y){return Y;}}
-	#define di(O)   {#O,[](ld x,ld y){return (int)x O (int)y;}}
-	#define dc(O)   {#O,[](ld x,ld y){return x O y;}}
-	DispatchTable<std::string, std::function<ld(ld const&, ld const&)>> binary_table = {
-		// binops
-		dc(+), dc(-), dc(*), dc(/), dc(<), dc(>),
-		di(&), di(|), di(^),
-
-		db(SHL, (int)x<<(int)y),  db(LEQ, x <=  y),
-		db(SHR, (int)x>>(int)y),  db(GEQ, x >=  y),
-		db(AND, x && y),          db(NEQ, x !=  y),
-		db(OR,  x || y),          db(EQU, x ==  y),
-		db(POW,   pow(x, y)),     db(SPC, x<y?-1:(x>y?1:0)),
-		db("%",  fmod(x, y)),
-		db(IND, floor(x/ y))
-	};
-
+		INVALIDSYN;
 	//=====functions===== =====operators=====
 	REP("log10", LOG10);  REP("&&" , AND);
 	REP("log2" , LOG2 );  REP("||" , OR );
@@ -132,123 +190,76 @@ expr(std::string e, ExprType mode)
 	REP("ceil" , CEIL );  REP("**" , POW);
 	REP("abs"  , ABS  );  REP("//" , IND);
 	REP("round", ROUND);
-
 	//=====alt=====
 	REP("and"  , AND);
 	REP("or"   , OR );
-	REP("nan"  , "0");
-	REP("false", "0");
-	REP("true" , "1");
+	REP("nan"  , '0');
+	REP("false", '0');
+	REP("true" , '1');
 
-	std::stack<char> ops;
-	std::stack<ld> nums;
-	std::string rpn, tok;
-
-	if (mode == RPN) {
-		rpn = e;
-	} else {
-		e.erase(
-			remove_if(
-				e.begin(),
-				e.end(),
-				[](char x){return isspace(x);}
-			),
-			e.end()
-		);
-
+	if (mode == INFIX) {
+		e.erase(remove_if(e.begin(), e.end(),
+					[](char x){return isspace(x);}), e.end());
 		for (int i = 0, len = e.length(); i < len; ++i) {
-			//=====number=====
+			/// number
 			if (isnum(e[i])) {
-				rpn += e[i];
-				if (i+1 >= len || !isnum(e[i+1]))
-					rpn += ' ';
-	
-			//=====opening paren=====
+				std::string buf;
+				while (isnum(e[i]) && i < len)
+					buf += e[i++];
+				--i;
+				nums.push(std::stold(buf));
+
+			/// opening paren
 			} else if (e[i] == '(') {
 				ops.push('(');
-	
-			//=====closing paren=====
+			
+			/// closing paren
 			} else if (e[i] == ')') {
 				while (!ops.empty() && ops.top() != '(') {
-					rpn += ops.top();
-					rpn += ' ';
+					if (!expr_op(ops.top(), nums, ops))
+						INVALIDSYN;
 					ops.pop();
 				}
 				if (!ops.empty())
 					ops.pop();
-	
-			//=====other=====
+			
+			/// other (operator)
 			} else {
 				if (!i || !isnum(e[i-1]) && e[i-1] != ')') {
 					if (e[i] == '+') e[i] = 'p';
 					if (e[i] == '-') e[i] = 'm';
 				}
 				while (!ops.empty()
-				&&     prio[e[i]] <= prio[ops.top()]
-				&&     lassoc(e[i])) {
-					rpn += ops.top();
-					rpn += ' ';
+				&& prio[e[i]] <= prio[ops.top()]
+				&& lassoc(e[i])) {
+					if (!expr_op(ops.top(), nums, ops))
+						INVALIDSYN;
 					ops.pop();
 				}
 				ops.push(e[i]);
 			}
 		}
 		while (!ops.empty()) {
-			rpn += ops.top();
-			rpn += ' ';
+			if (!expr_op(ops.top(), nums, ops))
+				INVALIDSYN;
 			ops.pop();
 		}
-	}
-	std::stringstream ss{rpn};
-	while (ss >> tok) {
+	} else {
+		std::stringstream ss{e};
 		ld val;
-		bool isop = false;
-
-		try {
-			val = std::stold(tok);
-		} catch (std::exception& ex) {
-			isop = true;
-		}
-
-		li len = nums.size();
-
-		if (isop && !nums.empty()) {
-			/*******************************
-			 * Unary operators & functions *
-			 *******************************/
-			if (unary_table.find(tok) != unary_table.end()) {
-				if (!len)
-					INVALIDSYN();
-				ld x1 = nums.top(); nums.pop();
-				nums.push(unary_table[tok](x1));
-
-			/********************
-			 * Ternary operator *
-			 ********************/
-			} else if (tok[0] == '?') {
-				ops.push(tok[0]);
-			} else if (tok[0] == ':') {
-				if (ops.top() != '?' || len < 3)
-					INVALIDSYN();
-				ops.pop();
-				ld x3 = nums.top(); nums.pop();
-				ld x2 = nums.top(); nums.pop();
-				ld x1 = nums.top(); nums.pop();
-				nums.push(x1?x2:x3);
-
-			/********************
-			 * Binary operators *
-			 ********************/
-			} else {
-				if (len < 2)
-					INVALIDSYN();
-				
-				ld x2 = nums.top(); nums.pop();
-				ld x1 = nums.top(); nums.pop();
-				nums.push(binary_table[tok](x1, x2));
+		while (ss >> tok) {
+			bool isop = false;
+			try {
+				val = std::stold(tok);
+			} catch (std::exception& ex) {
+				isop = true;
 			}
-		} else {
-			nums.push(val);
+			if (isop && !nums.empty()) {
+				if (!expr_op(tok[0], nums, ops))
+					INVALIDSYN;
+			} else {
+				nums.push(val);
+			}
 		}
 	}
 

@@ -41,7 +41,7 @@ rm -f $outfile && unbuffer -p zrc -c {
 			rm $env(tf)
 		}
 
-		echo "\nRc is comparable to Zrc in terms of performance:"
+		echo "\nRc is way slower compared to Zrc in terms of performance:"
 		time rc -c {
 			for (i in `{seq 0 10000}) {
 				# Rc has an AST, so comments don't affect performance
