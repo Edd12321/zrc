@@ -7,7 +7,7 @@
 if {![string cmp $__LIST_ZRC_INCLUDED {}]} {
 set __LIST_ZRC_INCLUDED = 1
 
-%include cfuncs
+include cfuncs
 
 ##########################################
 # Returns a list created from given args #

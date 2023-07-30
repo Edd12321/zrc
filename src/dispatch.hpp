@@ -3,7 +3,7 @@
 #define itoa ldtos
 #define OK(X) std::stold(expr(X))
 #define de(X)   { #X, zrc_builtin_##X }
-#define ce(X,Y) { #X, zrc_builtin_##Y }
+#define ce(X,Y) { #X, zrc_builtin_##Y }, { #Y, zrc_builtin_##Y }
 
 #define unless(X) if (!(X))
 #define until(X) while (!(X))
@@ -829,7 +829,6 @@ Command(help);
 const DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
 	/* Aliased commands */
 	ce(!,not)   , ce(.,source), ce(@,fork),
-	ce(%include , include),
 
 	/* Normal cmds */
 	de(alias)   , de(array)  , de(bg),
@@ -846,7 +845,7 @@ const DispatchTable<std::string, std::function<std::string(int, char**)>> dispat
 	de(unalias) , de(unless) , de(unset),
 	de(until)   , de(wait)   , de(while),
 	de(subst)   , de(break)  , de(continue),
-	de(concat)  , de(rlimit)
+	de(concat)  , de(rlimit) , de(include)
 };
 
 /** Show a list of all BuiltIns **/

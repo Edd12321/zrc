@@ -34,7 +34,6 @@ alias sizeof { array length }
 # Other #
 #########
 alias puts { echo }
-alias fork { @ }
 alias new  { malloc char } 
 
 ########################################

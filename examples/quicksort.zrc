@@ -2,7 +2,7 @@
 ###########################################
 # Trivial quicksort implementation in Zrc.#
 ###########################################
-%include list
+include list
 
 fn quicksort {
 	let {m pivot less equal greater vn x} {

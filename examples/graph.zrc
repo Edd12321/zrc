@@ -5,7 +5,7 @@
 # Code translated from C to Zrc from:   #
 # https://c-for-dummies.com/blog/?p=831 #
 #########################################
-%include 'mathop'
+include mathop
 set PI     = 3.14159
 set WIDTH  = 60
 set HEIGHT = 20

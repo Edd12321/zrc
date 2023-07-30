@@ -1,10 +1,10 @@
-.TH @ 1
+.TH FORK 1
 .SH NAME
-@ \- Fork a subshell
+@|fork \- Fork a subshell
 .SH SYNOPSIS
-.BI "@ " <block>
+.BI "@|fork " <block>
 .SH DESCRIPTION
-.I @
+.I @ or fork
 must be followed by a string, representing a code block to be eval'ed. The utility forks off a new child process, executes the code inside of the block, and returns the last exit code from that block.
 .SH EXAMPLES
 .EX
@@ -16,7 +16,7 @@ must be followed by a string, representing a code block to be eval'ed. The utili
 	}]
 
 	set a = b
-	@ {
+	fork {
 		set a = c
 		echo $a #shows 'c'
 	}

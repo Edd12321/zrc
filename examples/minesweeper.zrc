@@ -1,6 +1,6 @@
 #!../bin/zrc
-%include 'cfuncs'
-%include 'list'
+include cfuncs
+include list
 
 ##################
 # Reset terminal #

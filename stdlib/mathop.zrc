@@ -7,7 +7,7 @@
 if {![string cmp $__MATHOP_ZRC_INCLUDED {}]} {
 set __MATHOP_ZRC_INCLUDED = 1
 
-%include cfuncs
+include cfuncs
 
 ###############################
 # Helper to generate ops      #

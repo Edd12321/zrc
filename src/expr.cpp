@@ -207,7 +207,10 @@ expr(std::string e, ExprType mode)
 				while (isnum(e[i]) && i < len)
 					buf += e[i++];
 				--i;
-				nums.push(std::stold(buf));
+				try {
+					nums.push(std::stold(buf));
+				} catch (std::exception& ex) 
+					{}
 
 			/// opening paren
 			} else if (e[i] == '(') {
