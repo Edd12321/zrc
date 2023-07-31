@@ -71,12 +71,12 @@ exec(int argc, char *argv[])
 				std::string oa = getvar("argc");
 
 				// Copy original argv
-				Array bak = a_hm["argv"];
-				a_hm.erase("argv");
+				Array bak = a_hm[$ARGV];
+				a_hm.erase($ARGV);
 				INIT_ZRC_ARGS;
 				run_function(*argv);
-				setvar("argc", oa);
-				a_hm["argv"] = bak;
+				setvar($ARGC, oa);
+				a_hm[$ARGV] = bak;
 			
 			} else if (!builtin_check(argc, argv)) {
 				SIGSET_INITIALIZE;
@@ -111,7 +111,7 @@ exec(int argc, char *argv[])
 				setpgid(0, 0);
 				sigprocmask(SIG_UNBLOCK, &mask, NULL);
 				if (FOUND_FN(0)) {
-					a_hm.erase("argv");
+					a_hm.erase($ARGV);
 					INIT_ZRC_ARGS;
 					run_function(*argv);
 				} else if (!builtin_check(argc, argv)) {
