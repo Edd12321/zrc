@@ -135,9 +135,6 @@ exec(int argc, char *argv[])
 	// Reset/cleanup everything for next command
 	dup2(o_in, STDIN_FILENO);
 	dup2(o_out, STDOUT_FILENO);
-	for (auto const& it : baks)
-		dup2(it.first, it.second);
-	baks.clear();
 	for (i = 0; i < argc; ++i) {
 		free(argv[i]);
 		argv[i] = NULL;

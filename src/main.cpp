@@ -60,9 +60,12 @@
 #define RC(X) do {                                \
     make_new_jobs = true;                         \
     args[k] = NULL;                               \
-		std::cin.clear();                             \
+		std::cin.clear();                         \
     if (can_runcmd) {                             \
         exec(k, args);                            \
+        for (auto const& it : baks)               \
+            dup2(it.second, it.first);            \
+        baks.clear();                             \
         if (!bg_or_fg.empty())                    \
             bg_or_fg.pop_front();                 \
     }                                             \
@@ -74,8 +77,44 @@
     /*if (std::regex_match(*it,m,e)){ */          \
     if ((*it).length()>3&&(*it)[0]=='>'&&(*it)[1]=='('&&(*it).back()==')') [[unlikely]] {\
         sword = 1;                                \
-        if (fd_parse(zwl, CIND))                  \
-            ++it;                                 \
+        size_t i = 2;                             \
+        int fd1 = 0, fd2 = 0;                     \
+        bool c = false;                           \
+        /* phase 1 scanning */                    \
+        for (; (*it)[i] != '=' && i < (*it).length()-1; ++i) {\
+            if (isdigit((*it)[i])) {              \
+                fd1 = fd1*10+((*it)[i]-'0');      \
+            } else {                              \
+                std::cerr << errmsg << ">(num..)\n";\
+                c = true;                         \
+                break;                            \
+            }                                     \
+        }                                         \
+        if (c) continue;                          \
+        /* phase 2 scanning */                    \
+        if ((*it)[i] == '=') {                    \
+            /* phase 3 scanning */                \
+            if (i == (*it).length()-2) {          \
+                baks[fd1] = dup(fd1);             \
+                close(fd1);                       \
+            } else {                              \
+                for (++i; i < (*it).length()-1; ++i) {\
+                    if (isdigit((*it)[i])) {      \
+                        fd2 = fd2*10+((*it)[i]-'0');\
+                    } else {                      \
+                        std::cerr << errmsg << ">(..num)\n";\
+                        break;                    \
+                    }                             \
+                }                                 \
+                baks[fd2] = dup(fd2);             \
+                dup2(baks[fd2], fd1);             \
+            }                                     \
+        } else if (i == (*it).length()-1) {       \
+            baks[fd1] = dup(fd1);                 \
+            io_right(*(++it), 0, fd1);            \
+        } else {                                  \
+            std::cerr << errmsg << ">(..?)";      \
+        }                                         \
         continue;                                 \
     }
 
@@ -120,7 +159,6 @@ typedef int Jid;
   pid_t zrcpid = getpid();
   std::string ret_val;
   std::deque<bool> bg_or_fg;
-  std::vector<std::pair<int, int>> baks;
   DispatchTable<CodeBlock, WordList> zwlcache;
   long ch_mode;
   #include "global.hpp"
@@ -204,7 +242,6 @@ typedef int Jid;
   #include "subst.hpp"
   #include "exec.hpp"
   #include "zlineedit.hpp"
-  #include "fd.hpp"
 /***** FUNCTIONDECLS END *****/
 
 void
@@ -267,6 +304,7 @@ eval_stream(std::istream& in)
 	size_t len;
 	/*FD expr 1*///std::regex const e{"\\>\\((.*?)\\)"};
 	/*FD expr 2*///std::smatch m;
+    std::unordered_map<int, int> baks;
 
 	int o_in2, o_out2;
 	o_in2   = o_in;
@@ -311,7 +349,8 @@ eval_stream(std::istream& in)
 						io_pipe(k, args);
 						k = 0;
 					}
-					/*!*/else CHK_ALIAS else {
+					/*!*/else CHK_ALIAS
+                         else {
 						gbzwl = glob(*it);
 						if (gbzwl.size() > 0)
 							glb = 1;
@@ -326,9 +365,7 @@ eval_stream(std::istream& in)
 						spl = tokenize(*it, in);
 						for (std::string& str : spl.wl)
 							args[k++] = strdup(str.c_str());
-					}
-					/*!*/else CHK_FD
-					     else {
+					} else CHK_FD else {
 						str_subst(*it);
 						args[k++] = strdup((*it).c_str());
 					}
@@ -344,6 +381,8 @@ eval_stream(std::istream& in)
 	close(o_out);
 	o_in  = o_in2;
 	o_out = o_out2;
+	for (auto const& it : baks)
+		dup2(it.second, it.first);
 	in.clear();
 	if (ret) throw ZrcReturnHandler();
 	if (brk) throw ZrcBreakHandler();
@@ -427,8 +466,6 @@ main(int argc, char *argv[])
 			goto _err;
 		}
 	}
-_suc: return (is_number(ret_val) && !ret_val.empty())
-		  ? std::stoi(ret_val)
-		  : EXIT_SUCCESS;
+_suc: EXIT_SESSION; 
 _err: return EXIT_FAILURE;
 }

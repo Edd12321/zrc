@@ -71,7 +71,7 @@ tokenize(std::string line, std::istream& in)
 	tmp.reserve(DEFAULT_TOKSIZ);
 	for (i = len2 = 0; i < len; ++i) {
 		switch(line[i]) {
-		// Brace quoting
+		// -----Brace quoting-----
 		case '[':
 		case '{':
 		case '(':
@@ -105,24 +105,32 @@ tokenize(std::string line, std::istream& in)
 				if (!cmpnd) break;
 				++i;
 			}
-			
 			wl.make_not_bare();
 			if (q == '{' && !subs)
 				wl.add_token(tmp);
 			break;
 
-		// Regular quoting
+		// -----Regular quoting-----
 		case '\'':
 		case  '"':
 			q = line[i];
 			STR_KLUDGE(q);
 			wl.make_not_bare();
 			break;
+		
+		// -----Vars-----
+		case '$':
+			wl.make_not_bare();
+			tmp += line[i];
+			break;
 
+		// -----Comments-----
 		case '#':
 			for (++i; i < len && line[i] != '\n'; ++i)
 				;
 			[[fallthrough]];
+
+		// -----Whitespace-----
 		case  ' ':
 		case '\t':
 		case '\n':
@@ -132,17 +140,19 @@ tokenize(std::string line, std::istream& in)
 			wl.add_token(tmp);
 			break;
 
+		// -----Command separators-----
 		case ';':
 			wl.add_token(tmp);
 			wl.add_token(";");
 			break;
 
+		// -----Normal characters-----
 		[[likely]] default:
-			if (strchr("$\\", line[i]))
-				wl.make_not_bare();
 			tmp += line[i];
-			if (line[i] == '\\')
+			if (line[i] == '\\') {
+				wl.make_not_bare();
 				tmp += line[++i];
+			}
 		}
 	}
 	wl.add_token(tmp);

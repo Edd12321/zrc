@@ -165,8 +165,7 @@ fn main {
 				if {!$ok} {
 					set ok = 1
 					set cell($y_pos,$x_pos) = 0
-				}
-				if {$cell($y_pos,$x_pos)} {
+				} else if {$cell($y_pos,$x_pos)} {
 					# die '...'
 					puts 'YOU LOSE!'
 					exit 255

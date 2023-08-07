@@ -105,8 +105,15 @@ prints(std::stack<Path> sp)
 	std::cout << std::endl;
 }
 
+#define EXIT_SESSION \
+	ret_val = getvar($RETURN);\
+	exit((is_number(ret_val) && !ret_val.empty())\
+			  ? std::stoi(ret_val)\
+			  : EXIT_SUCCESS)\
+
+
 /** Closes the Zrc session **/
-Command(exit)   { exit(EXIT_SUCCESS); }
+Command(exit)   { EXIT_SESSION; }
 /** Displays a job table **/
 Command(jobs)   { jobs(); return "0"; }
 /** Waits for child processes to finish **/
@@ -416,8 +423,8 @@ Command(fork) {
 		NO_SIGEXIT;
 		setvar($PID, std::to_string(getpid()));
 		strcpy(message, eval(argv[1]).data());
-		exit(0);
-	
+		EXIT_SESSION;
+
 	} else {
 		waitpid(pid, NULL, 0);
 		return message;
