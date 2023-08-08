@@ -360,8 +360,10 @@ Command(nf) {
 		ok = 1;
 	}
 	if (!FOUND_FN(1)) {
-		if (!ok)
+		if (!ok) {
+			--argv, ++argc;
 			other_error("Function not found", 2);
+		}
 	} else {
 		funcs.erase(argv[1]);
 	}
@@ -383,6 +385,7 @@ Command(nf) {
 		else
 			signal2(txt2sig.at(argv[1]), SIG_DFL);
 	}
+	--argv, ++argc;
 	return "0";
 }
 
@@ -449,6 +452,7 @@ Command(echo) {
 	}
 	if (!n_flag)
 		std::cout << '\n';
+	++argc, --argv;
 	std::cout << std::flush;
 	return "0";	
 }
@@ -686,12 +690,9 @@ Command(unset) {
 /** Invert a command's return value **/
 Command(not) {
 	exec(--argc, ++argv);
-	// Avoid double free(1)
-	for (int i = 0; i < argc; ++i)
-		argv[i] = NULL;
-	argv = NULL;
 	ret_val = (ret_val=="0")?"1":"0";
 	setvar($RETURN, ret_val);
+	++argc, --argv;
 	NoReturn;
 }
 
@@ -832,6 +833,7 @@ Command(rlimit) {
 }
 
 Command(help);
+Command(builtin);
 
 const DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
 	/* Aliased commands */
@@ -852,7 +854,8 @@ const DispatchTable<std::string, std::function<std::string(int, char**)>> dispat
 	de(unalias) , de(unless) , de(unset),
 	de(until)   , de(wait)   , de(while),
 	de(subst)   , de(break)  , de(continue),
-	de(concat)  , de(rlimit) , de(include)
+	de(concat)  , de(rlimit) , de(include),
+	de(builtin)
 };
 
 /** Show a list of all BuiltIns **/
@@ -863,6 +866,7 @@ Command(help) {
 	return "0";
 }
 
+/** Execute command, but prioritize builtins **/
 extern inline bool
 builtin_check(int argc, char *argv[])
 {
@@ -870,4 +874,15 @@ builtin_check(int argc, char *argv[])
 		return false;
 	ret_val = dispatch_table.at(argv[0])(argc, argv);
 	return true;
+}
+Command(builtin) {
+	--argc, ++argv;
+	if (!argc) {
+		++argc, --argv;
+		syntax_error("<arg1> <arg2>...");
+	}
+	if (!builtin_check(argc, argv))
+		exec(argc, argv);
+	++argc, --argv;
+	NoReturn;
 }

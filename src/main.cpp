@@ -41,6 +41,9 @@
 #define CIND std::distance(zwl.wl.begin(), it)
 #define FAIL or (can_runcmd=0); continue;
 
+/**
+ * Check escapes at the end of a line
+ */
 #define CHK_ESC {                                 \
     len = line.length(); ltmp = "";               \
     while (!line.empty() && line.back() == '\\') {\
@@ -57,15 +60,17 @@
     }                                             \
 }
 
+/**
+ * Run command and set a condition for the next one
+ */
 #define RC(X) do {                                \
     make_new_jobs = true;                         \
     args[k] = NULL;                               \
-		std::cin.clear();                         \
+		std::cin.clear();                             \
     if (can_runcmd) {                             \
         exec(k, args);                            \
-        for (auto const& it : baks)               \
-            dup2(it.second, it.first);            \
-        baks.clear();                             \
+        RESET_FD;                                 \
+			  baks.clear();                             \
         if (!bg_or_fg.empty())                    \
             bg_or_fg.pop_front();                 \
     }                                             \
@@ -73,6 +78,18 @@
     k = 0;                                        \
 } while (0)
 
+/**
+ * Reset all file descriptors for the next command
+ */
+#define RESET_FD {                                \
+    for (auto const& it : baks) {                 \
+        dup2(it.second, it.first);                \
+    }                                             \
+}
+
+/**
+ * Parse >(...) file descriptor syntax
+ */
 #define CHK_FD                                    \
     /*if (std::regex_match(*it,m,e)){ */          \
     if ((*it).length()>3&&(*it)[0]=='>'&&(*it)[1]=='('&&(*it).back()==')') [[unlikely]] {\
@@ -118,6 +135,9 @@
         continue;                                 \
     }
 
+/**
+ * Check if a word is an interp alias
+ */
 #define CHK_ALIAS                                 \
     if (!k && aliases.find(*it) != aliases.end()){\
         for (std::string& str : aliases[*it].wl) {\
@@ -127,6 +147,9 @@
         continue;                                 \
     }
 
+/**
+ * Create an empty "dummy" stream
+ */
 #define NullFin \
 	NullIOSink ns;\
 	std::istream fin(&ns)
@@ -347,6 +370,7 @@ eval_stream(std::istream& in)
 							continue;
 							args[k] = NULL;
 						io_pipe(k, args);
+						RESET_FD;
 						k = 0;
 					}
 					/*!*/else CHK_ALIAS
@@ -381,8 +405,7 @@ eval_stream(std::istream& in)
 	close(o_out);
 	o_in  = o_in2;
 	o_out = o_out2;
-	for (auto const& it : baks)
-		dup2(it.second, it.first);
+	RESET_FD;
 	in.clear();
 	if (ret) throw ZrcReturnHandler();
 	if (brk) throw ZrcBreakHandler();

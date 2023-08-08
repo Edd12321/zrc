@@ -276,22 +276,21 @@ io_pipe(int argc, char *argv[])
 bool
 io_hedoc(std::string hs, std::istream& in, bool mode)
 {
-	char *temp;
-	std::string line, hs1;
+	std::string temp, line, hs1;
 	int fd;
 
 #ifdef __ANDROID__
 	if (geteuid() != 0)
 		/*not rooted (assume Termux) */
-		temp = strdup("/data/data/com.termux/files/usr" HTMP);
+		temp = "/data/data/com.termux/files/usr" HTMP;
 	else
-		temp = strdup(HTMP);
+		temp = HTMP;
 #else
-	temp = strdup(HTMP);
+	temp = HTMP;
 #endif
 
 	str_subst(hs);
-	fd = mkstemp(temp);
+	fd = mkstemp(temp.data());
 	if (mode) {
 		/* HERESTRING */
 		hs += "\n";
@@ -312,7 +311,6 @@ io_hedoc(std::string hs, std::istream& in, bool mode)
 	}
 	close(fd);
 	io_left(temp);
-	unlink(temp);
-	free(temp);
+	unlink(temp.c_str());
 	return 1;
 }

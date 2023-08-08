@@ -242,11 +242,11 @@ Each command has its own manpage, detailing its use and giving examples.
 .I Zrc
 builtins can do actions ranging from creating and deleting functions, modifying arrays, forking subshells, making aliases and much more.
 .HP
-.BI "! [" <cmd> ]
+.BI "not|! [" <cmd> ]
 .br
 Invert a command's return value.
 .HP
-.BI "@ " <block>
+.BI "@|fork " <block>
 .br
 Fork a child process.
 .HP
@@ -261,6 +261,10 @@ Work with arrays. See `man array` for more info.
 .BI "bg " <pid> | <%jid>
 .br
 Move a job to the background.
+.HP
+.BI "builtin " "<arg1> <arg2>..."
+.br
+Run a command but choose the builtin over a function of the same name if it exists
 .HP
 .BI break
 .br

@@ -1,0 +1,19 @@
+.TH BUILTIN 1
+.SH NAME
+builtin \- Execute a command, but prioritize builtins
+.SH SYNOPSIS
+.BI "builtin " <cmd>
+.SH DESCRIPTION
+This builtin executes its args as a command, but it prioritizes builtins of the same name over a function if such function exists.
+.SH EXAMPLES
+.EX
+	builtin if {1 && (2 != 3)} ls
+	fn if {}
+	
+	# This does nothing
+	if 1 ls
+	# This works
+	builtin if 1 ls
+
+	nf -s if
+.EE
