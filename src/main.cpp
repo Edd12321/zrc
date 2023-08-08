@@ -51,7 +51,7 @@
         if (!line.empty() && line.back() == '\\'){\
             line += "\\\\";                       \
             break;                                \
-        } else if (zrc_read_line(in, ltmp, '>')) {\
+        } else if (zrc_read_line(in, ltmp, here_prompt)) {\
              line += ltmp;                        \
              len  += ltmp.length()-1;             \
         } else {                                  \
@@ -123,8 +123,8 @@
                         break;                    \
                     }                             \
                 }                                 \
-                baks[fd2] = dup(fd2);             \
-                dup2(baks[fd2], fd1);             \
+                baks[fd1] = dup(fd1);             \
+                dup2(dup(fd2), fd1);             \
             }                                     \
         } else if (i == (*it).length()-1) {       \
             baks[fd1] = dup(fd1);                 \
@@ -373,8 +373,7 @@ eval_stream(std::istream& in)
 						RESET_FD;
 						k = 0;
 					}
-					/*!*/else CHK_ALIAS
-                         else {
+					/*!*/else CHK_ALIAS else {
 						gbzwl = glob(*it);
 						if (gbzwl.size() > 0)
 							glb = 1;

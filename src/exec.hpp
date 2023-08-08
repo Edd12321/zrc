@@ -276,21 +276,19 @@ io_pipe(int argc, char *argv[])
 bool
 io_hedoc(std::string hs, std::istream& in, bool mode)
 {
-	std::string temp, line, hs1;
+	std::string line, hs1;
 	int fd;
+	char temp[PATH_MAX];
 
 #ifdef __ANDROID__
-	if (geteuid() != 0)
-		/*not rooted (assume Termux) */
-		temp = "/data/data/com.termux/files/usr" HTMP;
-	else
-		temp = HTMP;
+	strcpy( temp, (geteuid()) != 0
+			? "/data/data/com.termux/files/usr" HTMP
+			: HTMP );
 #else
-	temp = HTMP;
+	strcpy(temp, HTMP);
 #endif
-
+	fd = mkstemp(temp);
 	str_subst(hs);
-	fd = mkstemp(temp.data());
 	if (mode) {
 		/* HERESTRING */
 		hs += "\n";
@@ -300,10 +298,11 @@ io_hedoc(std::string hs, std::istream& in, bool mode)
 		}
 	} else {
 		/* HEREDOC */
-		while (zrc_read_line(in, line, '>')) {
+		while (zrc_read_line(in, line, here_prompt)) {
 			if (line == hs)
 				break;
-			else if (write(fd, (line+"\n").data(), line.length()+1) == -1) {
+			line += "\n";
+			if (write(fd, line.data(), line.length()) == -1) {
 				std::cerr << "heredoc: write(3) failed\n";
 				return 0;
 			}
@@ -311,6 +310,6 @@ io_hedoc(std::string hs, std::istream& in, bool mode)
 	}
 	close(fd);
 	io_left(temp);
-	unlink(temp.c_str());
+	unlink(temp);
 	return 1;
 }
