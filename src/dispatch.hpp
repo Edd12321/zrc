@@ -55,15 +55,15 @@ const DispatchTable<FunctionName, int> txt2sig = {
 };
 
 #define ExceptionClass(X) \
-	class Zrc##X##Handler   \
-	{                       \
-	public:                 \
-		virtual const char *  \
-		what() const throw()  \
-		{                     \
-			return "Caught " #X;\
-		}                     \
-	}
+  class Zrc##X##Handler   \
+  {                       \
+  public:                 \
+    virtual const char *  \
+    what() const throw()  \
+    {                     \
+      return "Caught " #X;\
+    }                     \
+  }
 ExceptionClass(Return);
 ExceptionClass(Break);
 ExceptionClass(Continue);

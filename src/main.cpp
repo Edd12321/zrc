@@ -66,11 +66,11 @@
 #define RC(X) do {                                \
     make_new_jobs = true;                         \
     args[k] = NULL;                               \
-		std::cin.clear();                             \
+    std::cin.clear();                             \
     if (can_runcmd) {                             \
         exec(k, args);                            \
         RESET_FD;                                 \
-			  baks.clear();                             \
+        baks.clear();                             \
         if (!bg_or_fg.empty())                    \
             bg_or_fg.pop_front();                 \
     }                                             \
@@ -214,6 +214,7 @@ typedef int Jid;
   void                      sigint_handler (int                       );
   void                      sigtstp_handler(int                       );
   void                      sigquit_handler(int                       );
+  static inline void        async_message  (int, int, int, const char*);
   extern std::string        bg_fg          (int, char**               );
   
   typedef void Handle(int);

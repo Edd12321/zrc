@@ -1,4 +1,3 @@
-#define FMT " [" << index << "] (" << pid << ") "
 #ifndef WAIT_ANY
 	#define WAIT_ANY -1
 #endif
@@ -109,6 +108,34 @@ waitproc(pid_t pid)
 	}
 }
 
+/** Async signal-safe print for signal handler
+ * 
+ * @param {int}index,{int}pid,{const char*}msg
+ * @return none
+ */
+sub async_message(int index, int pid, const char *msg)
+{
+	static std::function<void(char*, int)> itoa2 = [] (char *num, int x) {
+		long k = int(log10(x));
+		num[k+1] = '\0';
+		while (x) {
+			num[k--] = x%10+'0';
+			x /= 10;
+		}
+	};
+	constexpr auto dig = int(log10(INT_MAX))+1;
+	char i[dig], p[dig];
+	itoa2(i, index);
+	itoa2(p, pid);
+	write(JOB_MSG, " [", 2);
+	write(JOB_MSG, i, strlen(i));
+	write(JOB_MSG, "] (", 3);
+	write(JOB_MSG, p, strlen(p));
+	write(JOB_MSG, ") ", 2);
+	write(JOB_MSG, msg, strlen(msg));
+	write(JOB_MSG, "\n", 1);
+}
+
 /** Converts a C-string to uppercase.
  * 
  * @param {char*}s
@@ -146,7 +173,7 @@ bg_fg(int argc, char *argv[])
 		j->state = BG;
 		if (TERMINAL) {
 			pid_t pid = j->pid;
-			std::cerr << FMT;
+			async_message(index, pid, "");
 		}
 	} else {
 		j->state = FG;
@@ -155,7 +182,7 @@ bg_fg(int argc, char *argv[])
 		for ever {
 			if (j->pid != getfg()) {
 				if (TERMINAL)
-					std::cerr << j->pid << " no longer fg proc\n";
+					async_message(index, j->pid, "no longer fg proc");
 				break;
 			} else {
 				sleep(1);
@@ -190,23 +217,25 @@ sigchld_handler(int signum)
 			if (pid == getfg())
 				if (tcgetpgrp(STDIN_FILENO) != zrcpid)
 					tcsetpgrp(STDIN_FILENO, zrcpid);
+			////
 			if (WIFSIGNALED(cs)) {
 				if (TERMINAL)
-					std::cerr << FMT << strsignal(WTERMSIG(cs)) << '\n';
+					async_message(index, pid, strsignal(WTERMSIG(cs))); 
 				deljob(index);
 			}
+			////
 			if (WIFSTOPPED(cs)) {
 				if (TERMINAL)
-					std::cerr << FMT << strsignal(WSTOPSIG(cs)) << '\n';
+					async_message(index, pid, strsignal(WSTOPSIG(cs)));
 				jt[index].state = ST;
 			}
+			////
 			if (WIFEXITED(cs)) {
 				if (TERMINAL && mode == BG)
-					std::cerr << FMT << "Done\n";
+					async_message(index, pid, "Done");
 				deljob(index);
 				ret_val = itoa(WEXITSTATUS(cs));
 			}
-			setvar($LPID, itoa(pid));
 		}
 	}
 }

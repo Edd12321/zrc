@@ -94,6 +94,7 @@ exec(int argc, char *argv[])
 					if (make_new_jobs)
 						addjob(pid, FG, argc, argv);
 					sigprocmask(SIG_UNBLOCK, &mask, NULL);
+					setvar($LPID, itoa(pid));
 					waitproc(pid);
 				}
 			}
@@ -124,7 +125,7 @@ exec(int argc, char *argv[])
 					Jid index = addjob(pid, BG, argc, argv);
 					// Only show in interactive mode
 					if (TERMINAL)
-						std::cerr << FMT << '\n';
+						async_message(index, pid, "");
 				}
 				sigprocmask(SIG_UNBLOCK, &mask, NULL);
 				setvar($LPID, itoa(pid));

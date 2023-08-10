@@ -16,6 +16,8 @@
 #ifndef ARG_MAX
 	const auto ARG_MAX = sysconf(_SC_ARG_MAX);
 #endif
+/* Where to write job control messages */
+#define JOB_MSG STDERR_FILENO
 
 static std::string errmsg         = "syntax error: ";
 static char here_prompt           = '>';
