@@ -113,6 +113,7 @@ waitproc(pid_t pid)
  * @param {int}index,{int}pid,{const char*}msg
  * @return none
  */
+const auto dig_max = (int)log10(INT_MAX)+1;
 sub async_message(int index, int pid, const char *msg)
 {
 	static std::function<void(char*, int)> itoa2 = [] (char *num, int x) {
@@ -123,8 +124,7 @@ sub async_message(int index, int pid, const char *msg)
 			x /= 10;
 		}
 	};
-	constexpr auto dig = int(log10(INT_MAX))+1;
-	char i[dig], p[dig];
+	char i[dig_max], p[dig_max];
 	itoa2(i, index);
 	itoa2(p, pid);
 	write(JOB_MSG, " [", 2);
