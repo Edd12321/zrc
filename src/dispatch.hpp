@@ -279,38 +279,44 @@ Command(do) {
 /** Switch statement implementation **/
 Command(switch) {
 	std::string def_cmd;
+	std::string se = "<value> {<case <c> cmd|reg <r>|default <block>...}";
 	WordList args;
-
 	if (argc != 3)
-		syntax_error("<value> {<case <c> cmd|reg <r>|default <block>...}");
-	
-	/* empty */ {
-		NullFin;
-		args = tokenize(argv[2], fin);
-	}
+		syntax_error(se);
+	{ NullFin; args = tokenize(argv[2], fin); }
 	std::for_each(args.wl.begin(), args.wl.end(), &str_subst);
-	for (int i = 0, argc = args.size(); i < argc; i += 3) {
+
+	for (int i = 0; i < args.size(); ) {
 		if (args.wl[i] == "case") {
-			if (i >= argc-2)
-				syntax_error("`case` ends too early");
-			if (args.wl[i+1] == argv[1]) {
+			if (i >= args.size()-2)
+				syntax_error(se);
+			if (argv[1] == args.wl[i+1]) {
 				eval(args.wl[i+2]);
 				NoReturn;
 			}
-		} else if (args.wl[i] == "reg") {
-			if (i >= argc-2)
-				syntax_error("`reg` ends too early");
-			std::regex sr(args.wl[i+1]);
-			if (std::regex_search(argv[1], sr)) {
+			i += 3;
+		}
+		
+		else if (args.wl[i] == "reg") {
+			if (i >= args.size()-2)
+				syntax_error(se);
+			std::regex sr{args.wl[i+1]};
+			if (std::regex_match(argv[1], sr)) {
 				eval(args.wl[i+2]);
 				NoReturn;
 			}
-		} else if (args.wl[i] == "default") {
-			if (i >= argc-1)
-				syntax_error("`default` ends too early");
-			def_cmd = args.wl[1+i--];
-		} else {
-			syntax_error("Expected `case`/`default`");
+			i += 3;
+		}
+	
+		else if (args.wl[i] == "default") {
+			if (i >= args.size()-1)
+				syntax_error(se);
+			def_cmd = args.wl[i+1];
+			i += 2;
+		}
+
+		else {
+			syntax_error(se);
 		}
 	}
 	eval(def_cmd);
@@ -459,13 +465,14 @@ Command(echo) {
 
 /** Reads from stdin **/
 Command(read) {
-	const char *se = "[-d <delim>|-n <nchars>] [-p <prompt>] [<var1> <var2>...]";
+	const char *se = "[-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...]";
 	std::string buf;
 	long n = -1, i;
-	char d = '\n', b;
+	char d = '\n';
 	optind = 0;
 	int opt;
-	while ((opt = getopt(argc, argv, "d:n:p:")) != -1) {
+	int fd = STDIN_FILENO;
+	while ((opt = getopt(argc, argv, "d:n:p:f:")) != -1) {
 		switch (opt) {
 		case 'd':
 			if (n != -1)
@@ -477,6 +484,9 @@ Command(read) {
 				syntax_error(se);
 			n = atoi(optarg);
 			break;
+		case 'f':
+			fd = atoi(optarg);
+			break;
 		case 'p':
 			std::cout << optarg << std::flush;
 			break;
@@ -484,23 +494,27 @@ Command(read) {
 			syntax_error(se);
 		}
 	}
+	// buffers
+  char b[(n > 0) ? (n+1) : 1];
+	char c;
 #define GET_INPUT                   \
     buf.clear();                    \
     if (n == -1) {                  \
         int ok;                     \
-        ok = read(0, &b, 1);        \
+        ok = read(fd, &c, 1);       \
         if (ok != 1)                \
             return "1";             \
-        buf += b;                   \
+        buf += c;                   \
         for ever {                  \
-            ok = read(0, &b, 1);    \
-            if (ok != 1 || b == d)  \
+            ok = read(fd, &c, 1);   \
+            if (ok != 1 || c == d)  \
                 break;              \
-            buf += b;               \
+            buf += c;               \
         }                           \
-    } else for (i = 0; i < n; ++i) {\
-        if (read(0, &b, 1) != 1)    \
+    } else {                        \
+        if (read(fd, b, n) != n)    \
             return "1";             \
+        b[n] = '\0';                \
         buf += b;                   \
     }
 
@@ -525,7 +539,7 @@ Command(inc) {
 	if (argc >= 3)
 		val = expr(combine(argc, argv, 2));
 	var = getvar(argv[1]);
-	ret_val = expr(S("(")+var+")+("+val+")");
+	ret_val = expr(zrc_fmt("(%s)+(%s)", var.data(), val.data()));
 	setvar(argv[1], ret_val);
 	NoReturn;
 }
@@ -547,14 +561,10 @@ Command(set) {
 			size_t len = strlen(argv[i]);
 			if (argv[i][len-1] == '=') {
 				argv[i][len-1] = '\0';
-				setvar(argv[i-1], expr(
-					S("(")
-					 + getvar(argv[i-1])
-					 + ")"
-					 + argv[i]
-					 + "("
-					 + argv[i+1]
-					 + ")"));
+				setvar(argv[i-1], expr(zrc_fmt("(%s)%s(%s)",
+								getvar(argv[i-1]).data(),
+								argv[i],
+								argv[i+1])));
 			} else syntax_error(se);
 		}
 	}

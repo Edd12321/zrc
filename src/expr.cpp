@@ -177,6 +177,7 @@ expr(std::string e, ExprType mode)
 	str_subst(e);
 	if (!is_expr(e))
 		INVALIDSYN;
+	
 	//=====functions===== =====operators=====
 	REP("log10", LOG10);  REP("&&" , AND);
 	REP("log2" , LOG2 );  REP("||" , OR );

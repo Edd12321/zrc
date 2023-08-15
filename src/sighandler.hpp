@@ -148,7 +148,7 @@ bg_fg(int argc, char *argv[])
 {
 	Job *j;
 	Jid index = -1;
-	if (argc != 2 && (!isdigit(*argv[1]) && *argv[1] != '%'))
+	if (argc != 2 || (!isdigit(*argv[1]) && *argv[1] != '%'))
 		syntax_error("<pid>|<%jid>");
 	if (*argv[1] == '%') {
 		int num = atoi(&argv[1][1]);

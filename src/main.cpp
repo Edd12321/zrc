@@ -16,6 +16,7 @@
 #include <limits.h>
 #include <math.h>
 #include <pwd.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
@@ -23,6 +24,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <functional>
 #include <iomanip>
@@ -92,7 +94,7 @@
  */
 #define CHK_FD                                    \
     /*if (std::regex_match(*it,m,e)){ */          \
-    if ((*it).length()>3&&(*it)[0]=='>'&&(*it)[1]=='('&&(*it).back()==')') [[unlikely]] {\
+    if ((*it).length()>3 && (*it)[0]=='>' && (*it)[1]=='(' && (*it).back()==')') [[unlikely]] {\
         sword = 1;                                \
         size_t i = 2;                             \
         int fd1 = 0, fd2 = 0;                     \
@@ -124,7 +126,7 @@
                     }                             \
                 }                                 \
                 baks[fd1] = dup(fd1);             \
-                dup2(dup(fd2), fd1);             \
+                dup2(dup(fd2), fd1);              \
             }                                     \
         } else if (i == (*it).length()-1) {       \
             baks[fd1] = dup(fd1);                 \
@@ -133,7 +135,7 @@
             std::cerr << errmsg << ">(..?)";      \
         }                                         \
         continue;                                 \
-    }
+}
 
 /**
  * Check if a word is an interp alias
@@ -192,6 +194,7 @@ typedef int Jid;
   static bool               die            (std::string_view          );
   static inline bool        is_number      (std::string_view          );
   WordList                  glob           (std::string_view          );
+	template<typename... Var> std::string zrc_fmt(const char *fmt, Var... args);
   static std::string        eval_stream    (std::istream&             );
   template<typename T>      std::string          eval(T const&        );
   // MAIN.CPP
@@ -310,6 +313,23 @@ glob(std::string_view s)
 		wl.add_token(s);
 	globfree(&gvl);
 	return wl;
+}
+
+/** Formatted string support
+ * 
+ * @param {const char*}fmt,...
+ * @return string
+ */
+template<typename... Var> std::string
+zrc_fmt(const char *fmt, Var... args)
+{
+	size_t len = snprintf(nullptr, 0, fmt, args...)+1;
+	char *ret = new char[len];
+	snprintf(ret, len, fmt, args...);
+
+	std::string ret_str{ret};
+	delete [] ret;
+	return ret_str;
 }
 
 /** Evaluate a text stream.

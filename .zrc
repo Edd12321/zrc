@@ -128,17 +128,17 @@ fn extract {
 		let s {
 			set s = $argv(1)
 			switch $s {
-				reg {.\.tar.bz2$} { tar xjf    $s }
-				reg {.\.tar.gz$}  { tar xzf    $s }
-				reg {.\.bz2$}     { bunzip2    $s }
-				reg {.\.rar$}     { unrar e    $s }
-				reg {.\.gz$}      { gunzip     $s }
-				reg {.\.tar$}     { tar xf     $s }
-				reg {.\.tbz2$}    { tar xjf    $s }
-				reg {.\.tgz$}     { tar xzf    $s }
-				reg {.\.zip$}     { unzip      $s }
-				reg {.\.Z$}       { uncompress $s }
-				reg {.\.7z$}      { 7z x       $s }
+				reg {.*\.tar.bz2$} { tar xjf    $s }
+				reg {.*\.tar.gz$}  { tar xzf    $s }
+				reg {.*\.bz2$}     { bunzip2    $s }
+				reg {.*\.rar$}     { unrar e    $s }
+				reg {.*\.gz$}      { gunzip     $s }
+				reg {.*\.tar$}     { tar xf     $s }
+				reg {.*\.tbz2$}    { tar xjf    $s }
+				reg {.*\.tgz$}     { tar xzf    $s }
+				reg {.*\.zip$}     { unzip      $s }
+				reg {.*\.Z$}       { uncompress $s }
+				reg {.*\.7z$}      { 7z x       $s }
 				default {
 					echo '$s could not be extracted!' >(1=2)
 					return 1

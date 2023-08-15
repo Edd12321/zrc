@@ -2,7 +2,7 @@
 .SH NAME
 read \- Read text from standard input
 .SH SYNOPSIS
-.BI "read [" "-d <delim>" | "-n <nchars>" "] [" "-p <prompt>" "] [" "<var1> <var2>..." ]
+.BI "read [" "-d <delim>" | "-n <nchars>" "] [" "-p <prompt>" "] [" "-f <fd>" "] [" "<var1> <var2>..." ]
 .SH DESCRIPTION
 .I Read
 is a command used to do various methods of text input. It can be used in conjunction with
@@ -16,8 +16,10 @@ Choose which delimiter to use (IFS)
 .B n <nchars>
 Read n characters
 .TP
-.B d <prompt>
+.B p <prompt>
 Display a prompt to the user
+.B f <fd>
+Read from a file descriptor
 .SH EXAMPLES
 .EX
 	read str
