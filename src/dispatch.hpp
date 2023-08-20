@@ -495,7 +495,7 @@ Command(read) {
 		}
 	}
 	// buffers
-  char b[(n > 0) ? (n+1) : 1];
+	char b[(n > 0) ? (n+1) : 1];
 	char c;
 #define GET_INPUT                   \
     buf.clear();                    \
@@ -562,9 +562,9 @@ Command(set) {
 			if (argv[i][len-1] == '=') {
 				argv[i][len-1] = '\0';
 				setvar(argv[i-1], expr(zrc_fmt("(%s)%s(%s)",
-								getvar(argv[i-1]).data(),
-								argv[i],
-								argv[i+1])));
+						getvar(argv[i-1]).data(),
+						argv[i],
+						argv[i+1])));
 			} else syntax_error(se);
 		}
 	}
