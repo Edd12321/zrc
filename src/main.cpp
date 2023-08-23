@@ -196,7 +196,6 @@ typedef int Jid;
   pid_t zrcpid = getpid();
   std::string ret_val;
   std::deque<bool> bg_or_fg;
-  DispatchTable<CodeBlock, WordList> zwlcache;
   long ch_mode;
   #include "global.hpp"
   #include "config.hpp"
@@ -206,7 +205,7 @@ typedef int Jid;
   static bool               die            (std::string_view          );
   static inline bool        is_number      (std::string_view          );
   WordList                  glob           (std::string_view          );
-	template<typename... Var> std::string zrc_fmt(const char *fmt, Var... args);
+  template<typename... Var> std::string zrc_fmt(const char *fmt, Var... args);
   static std::string        eval_stream    (std::istream&             );
   template<typename T>      std::string          eval(T const&        );
   // MAIN.CPP

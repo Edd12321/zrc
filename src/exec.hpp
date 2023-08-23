@@ -2,7 +2,7 @@
 #if defined USE_HASHCACHE && USE_HASHCACHE == 1
     #define RUNCMD {                    \
         if (hctable.find(*argv) != hctable.end())\
-            *argv = hctable[*argv].data();\
+            *argv = &hctable[*argv][0]; \
         if (!access(*argv, F_OK)) {     \
             exit(execv(*argv, argv));   \
         } else {                        \
