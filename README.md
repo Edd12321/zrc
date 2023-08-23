@@ -17,6 +17,8 @@ Zrc is just ~600KB in size because its implementation is to the point and simple
         - [ ] Formatted I/O
         - [ ] Classes/objects, structs
         - [ ] More?
+- [X] Path hashing/caching
+- [X] Cdpath support
 - [X] Home directory config file (`~/.zrc`)
 - [X] Aliases
 - [X] **Rich return values** (not just 0-255, but any string)
