@@ -7,10 +7,16 @@
 	#define LIBPATH "/usr/lib/zrc/stdlib"
 #endif
 #define LIBEXT  ".zrc"
+
 /* Choose the option to use/not to use line editor */
 #ifndef USE_ZLINEEDIT
 	#define USE_ZLINEEDIT 1
 #endif
+/* Choose the option to enable path hashing */
+#ifndef USE_HASHCACHE
+	#define USE_HASHCACHE 1
+#endif
+
 #define MAX_FD 4096
 /* Max arg count */
 #ifndef ARG_MAX
@@ -22,4 +28,4 @@
 static std::string errmsg         = "syntax error: ";
 static char here_prompt           = '>';
 static std::string default_prompt = "zrc% ";
-static std::string ver            = "zrc v0.7b";
+static std::string ver            = "zrc v0.8b";

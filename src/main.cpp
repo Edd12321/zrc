@@ -156,6 +156,17 @@
 	NullIOSink ns;\
 	std::istream fin(&ns)
 
+/**
+ * Compatibility reasons
+ */
+#ifdef __cpp_lib_filesystem
+	namespace fs = std::filesystem;
+#elif __cpp_lib_experimental_filesystem
+	namespace fs = std::experimental::filesystem;
+#else
+	namespace fs = std::__fs::filesystem;
+#endif
+
 class Array;
 class WordList;
 class NullIOSink;
@@ -175,7 +186,8 @@ typedef std::string CodeBlock;
 typedef std::string AliasName;
 typedef std::string Path;
 typedef int Jid;
-#define DispatchTable std::map
+#define OrderedDispatchTable std::map
+#define DispatchTable std::unordered_map
 /***** GLOBAL VARIABLES BEGIN *****/
   extern char **environ;
 
@@ -348,7 +360,7 @@ eval_stream(std::istream& in)
 	size_t len;
 	/*FD expr 1*///std::regex const e{"\\>\\((.*?)\\)"};
 	/*FD expr 2*///std::smatch m;
-    std::unordered_map<int, int> baks;
+	std::unordered_map<int, int> baks;
 
 	int o_in2, o_out2;
 	o_in2   = o_in;
@@ -481,6 +493,9 @@ main(int argc, char *argv[])
 	// $pid
 	setvar($PID, std::to_string(getpid()));
 
+#if defined USE_HASHCACHE && USE_HASHCACHE == 1
+	zrc_builtin_rehash(0, NULL);
+#endif
 	if (argc == 1) {
 		//load user config file
 		pw = getpwuid(getuid());

@@ -1,0 +1,14 @@
+.TH UNHASH 1
+.SH NAME
+unhash \- Stop using the internal hash table.
+.SH SYNOPSIS
+.B unhash
+.SH DESCRIPTION
+The
+.I unhash
+utility destroys the internal search path hashtable used to find executable files.
+.SH EXAMPLE
+.EX
+	unhash
+	# Now all commands are found using execvp(2).
+.EE

@@ -407,6 +407,18 @@ Command(cd) {
 		if (stat(argv[1], &sb) == 0 && S_ISDIR(sb.st_mode))
 			chdir(argv[1]);
 		else {
+			/* empty */ {
+				std::istringstream iss{getvar($CDPATH)};
+				std::string tmp;
+				while (getline(iss, tmp, ':')) {
+					char t[PATH_MAX];
+					sprintf(t, "%s/%s", tmp.data(), argv[1]);
+					if (stat(t, &sb) == 0 && S_ISDIR(sb.st_mode)) {
+						chdir(t);
+						NoReturn;
+					}
+				}
+			}
 			perror(argv[1]);
 			return "1";
 		}
@@ -842,10 +854,34 @@ Command(rlimit) {
 	NoReturn;
 }
 
+#if defined USE_HASHCACHE && USE_HASHCACHE == 1
+/** Internal command hash table **/
+DispatchTable<std::string, std::string> hctable;
+Command(unhash) {
+	hctable.clear();
+	NoReturn;
+}
+Command(rehash) {
+	std::istringstream iss{getvar($PATH)};
+	std::string tmp, path;
+	hctable.clear();
+	while (getline(iss, tmp, ':')) {
+		if (fs::is_directory(tmp)) {
+			for (const auto& bin : fs::directory_iterator(tmp)) {
+				path = bin.path().string();
+				if (hctable.find(basename(path.data())) == hctable.end())
+					hctable[basename(path.data())] = path;
+			}
+		}
+	}
+	NoReturn;
+}
+#endif
+
 Command(help);
 Command(builtin);
 
-const DispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
+const OrderedDispatchTable<std::string, std::function<std::string(int, char**)>> dispatch_table = {
 	/* Aliased commands */
 	ce(!,not)   , ce(.,source), ce(@,fork),
 
@@ -865,7 +901,11 @@ const DispatchTable<std::string, std::function<std::string(int, char**)>> dispat
 	de(until)   , de(wait)   , de(while),
 	de(subst)   , de(break)  , de(continue),
 	de(concat)  , de(rlimit) , de(include),
-	de(builtin)
+	de(builtin) ,
+	/* $PATH hashing */
+#if defined USE_HASHCACHE && USE_HASHCACHE == 1
+	de(unhash)  , de(rehash) ,
+#endif
 };
 
 /** Show a list of all BuiltIns **/
@@ -885,6 +925,7 @@ builtin_check(int argc, char *argv[])
 	ret_val = dispatch_table.at(argv[0])(argc, argv);
 	return true;
 }
+
 Command(builtin) {
 	--argc, ++argv;
 	if (!argc) {

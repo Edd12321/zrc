@@ -1,0 +1,18 @@
+.TH REHASH 1
+.SH NAME
+rehash \- Refresh internal command hash table
+.SH SYNOPSIS
+.B rehash
+.SH DESCRIPTION
+The
+.I rehash
+utility creates a search path variable containing all executable files found in $env('PATH').
+.SH EXAMPLE
+.EX
+	unhash
+	cp bin1 /bin/bin2
+	#...
+	rehash
+	# ...
+	# bin1 is now found faster than before
+.EE

@@ -23,15 +23,6 @@
 		std::cout << default_prompt << std::flush;\
 	}
 
-/* Compatibility reasons */
-#ifdef __cpp_lib_filesystem
-	namespace fs = std::filesystem;
-#elif __cpp_lib_experimental_filesystem
-	namespace fs = std::experimental::filesystem;
-#else
-	namespace fs = std::__fs::filesystem;
-#endif
-
 #if defined USE_ZLINEEDIT && USE_ZLINEEDIT == 1
 /** Returns a terminal's width and height
  * 
@@ -188,9 +179,13 @@ namespace zlineshort
 	}
 	sub cmd(std::string& buf)
 	{
+		std::vector<std::string> vec;
+#if defined USED_HASHCACHE && USE_HASHCACHE == 1
+		for (auto const& it : hctable)
+			vec.emplace_back(it.first);
+#else
 		std::istringstream iss(getvar($PATH));
 		std::string tmp;
-		std::vector<std::string> vec;
 		while (getline(iss, tmp, ':')) {
 			if (fs::is_directory(tmp)) {
 				for (const auto& bin : fs::directory_iterator(tmp)) {
@@ -203,6 +198,7 @@ namespace zlineshort
 				}
 			}
 		}
+#endif
 		for (auto const& it : dispatch_table)
 			if (it.first.rfind(buf, 0) == 0)
 				vec.emplace_back(it.first);

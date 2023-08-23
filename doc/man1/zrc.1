@@ -125,6 +125,12 @@ stores the current Zrc PID (or subshell PID).
 .PP
 .B $PS1
 stores the prompt displayed every time before the line editor is loaded to input a command, in interactive mode.
+.PP
+.B $env(PATH)
+stores the paths which will be searched when looking up external commands.
+.PP
+.B $env(CDPATH)
+stores the equivalent for directories. More specifically, if cd cannot find a directory, it will look up all values in the Cdpath until it finds something it can chdir to.
 .SS Backquote (output) substitution
 Any sequence of the type
 .B `{...}
@@ -370,9 +376,13 @@ Pop the directory stack.
 .br
 Push to the directory stack/swap the first two directories.
 .HP
-.BI "read [" "-d <delim>" | "-n <nchars>" "] [" "-p <prompt>" "] [" "<var1> <var2>..." ]
+.BI "read [" "-d <delim>" | "-n <nchars>" "] [" "-p <prompt>" "] [" "-f <fd>" "] [" "<var1> <var2>..." ]
 .br
 Get input.
+.HP
+.BI rehash
+.br
+Refresh internal path hashing.
 .HP
 .BI "regexp " "<reg> <txt> <var1> <var2...>"
 .br
@@ -421,6 +431,10 @@ Conditional statement #3.
 .BI "unset " <name>
 .br
 Delete a variable.
+.HP
+.BI unhash
+.br
+Delete path hashing table.
 .HP
 .BI "until " "<expr> <block>"
 .br

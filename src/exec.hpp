@@ -1,12 +1,32 @@
-#define RUNCMD {                    \
-    int rv = execvp(argv[0], argv); \
-    if (rv < 0) {                   \
-        perror(argv[0]);            \
-        exit(127);                  \
-    } else {                        \
-        exit(rv);                   \
-    }                               \
-}
+// Use path hashing
+#if defined USE_HASHCACHE && USE_HASHCACHE == 1
+    #define RUNCMD {                    \
+        if (hctable.find(*argv) != hctable.end())\
+            *argv = hctable[*argv].data();\
+        if (!access(*argv, F_OK)) {     \
+            exit(execv(*argv, argv));   \
+        } else {                        \
+            int rv = execvp(*argv, argv);\
+            if (rv < 0) {               \
+              perror(*argv);            \
+              exit(127);                \
+            } else {                    \
+              exit(rv);                 \
+            }                           \
+        }                               \
+    }
+// Don't use path hashing
+#else
+    #define RUNCMD {                    \
+        int rv = execvp(*argv, argv);   \
+        if (rv < 0) {                   \
+            perror(*argv);              \
+            exit(127);                  \
+        } else {                        \
+            exit(rv);                   \
+        }                               \
+    }
+#endif
 
 /** Converts an array into a space-separated string.
  * 

@@ -1,9 +1,11 @@
 #!/usr/bin/env zrc
+set env('SHELL') = 'zrc'
+
 echo 'Welcome to Zrc!'
 echo 'The time is: `{date}'
-set env('SHELL') = 'zrc'
 #echo "Disk usage:";
 #df -h;
+
 # Prompt variables
 set HOSTNAME = `{hostname}
 set USER     = `{whoami}
@@ -16,6 +18,13 @@ set ZRC = /usr/lib/zrc
 
 # Load standard library
 eval . $ZRC/stdlib/*
+# Path envvars
+set env('PATH') = $ZRC/corebuf/bin:$env('PATH')
+set env('MANPATH') = $ZRC/doc:$env('MANPATH')
+# Cdpath
+eval set env('CDPATH') = $ZRC:~/.dots/work:/$env('CDPATH')
+# Refresh internal hash table
+rehash >(2=)
 
 fn __git_ps1 {
 	git tag >(2=) > /dev/null
@@ -165,9 +174,6 @@ fn kernelgraph {
 # https://github.com/Edd12321/{cstop,evct,zrc}
 alias top+ 'cstop;reset'
 alias vi+  'evct'
-
-set env('PATH') = $ZRC/corebuf/bin:$env('PATH')
-set env('MANPATH') = $ZRC/doc:$env('MANPATH')
 
 # Default programs
 set env('AUTH')     = "doas"

@@ -7,6 +7,8 @@ cd \- Change the current directory
 The
 .I cd
 utility first checks if it has recieved one or zero arguments. In case it has no arguments, it automatically changes the current directory to the home directory. Otherwise, it changes to the first argument given. Multiple arguments are not supported by this builtin.
+.PP
+If provided with an $env('CDPATH') variable, the builtin will check for a directory in it if one is not already found. The search path variable shall be comma-delimited.
 .SH EXAMPLES
 .EX
 	cd dir1/

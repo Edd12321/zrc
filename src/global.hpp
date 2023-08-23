@@ -17,8 +17,9 @@
 #define $ARGV   "argv"
 #define $ARGC   "argc"
 #define $PS1    "PS1"
-#define $PATH   "env(PATH)"
 #define $ENV    "env"
+#define $PATH   $ENV"(PATH)"
+#define $CDPATH $ENV"(CDPATH)"
 
 // Ugly hack for forcing inline functions
 #define Inline inline __attribute__((always_inline))
