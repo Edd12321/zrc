@@ -1,0 +1,118 @@
+#!/usr/lib/zrc/bin/zrc
+include cfuncs
+
+set env(script) = `{basename $argv(1)}
+
+# Show option screen
+fn option {
+	if {$k} {
+		inc k
+	} else {
+		set k = 1
+	}
+	nf -s $k
+	fn $k $argv(2)
+	printf "%31s " "$argv(1) ($k)"
+	if {$k % 3 == 0} {
+		echo
+	}
+}
+
+fn main {
+	while true {
+		clear && echo `{basename $env(script) .zrc} | figlet -f slant
+		echo "Zrc-based system management script"
+		echo "Please select an option:"
+		set k = 0
+		
+		option "Update Arch" {
+			sudo pacman -Fyy
+			sudo pacman -Syu
+			read opt -p "Run yay? \[Y/n] "
+			if {![chrcmp $opt 'y'] || ![chrcmp $opt 'Y']} {
+				yay -Syu
+			} else echo "Done."
+		}
+	
+		option "Fix connection" {
+			sudo systemctl restart NetworkManager.service
+			echo 'Wait 5 seconds ...' && sleep 5
+			exec nmtui
+		}
+
+		option "Enable/disable Bd Prochot" {
+			sudo zrc -c {
+				# Taken from bdproc.zrc
+				# this is the same script
+				if {!`{id -u} } {
+					set reg = `{rdmsr -d 0x1FC}
+					if {!($reg & 1)} {
+						echo "Enabled Bd Prochot"
+						set reg += 1
+					} else {
+						echo "Disabled Bd Prochot"
+						set reg -= 1
+					}
+					wrmsr -a 0x1FC $reg
+				} else {
+					die "Root check fail!"
+				}
+			}
+		}
+
+		option "Install essentials" {
+			sudo pacman -S \
+				chromium firefox \
+				emacs gvim neovim-qt joe nano micro \
+				dosbox milkytracker links hexchat freecad \
+				gcc clang base-devel valgrind gdb \
+				bluez bluez-libs
+		}
+
+		option "Calculator" {
+			echo 'Type \'q\' to quit'
+			until {[echo -n "> "; read str]} {
+				if {![strcmp $str 'q']} {
+					exit
+				} else {
+					echo [expr $str]
+				}
+			}
+		}
+
+		option "Check interfaces" {
+			foreach int {eth0 eth5 wlo1 wlan0} {
+				! `{ethtool $int | grep -i 'Link detected: yes'} \
+					&& echo "Interface $int is inactive"
+					|| echo "Interface $int is active"
+			}
+		}
+
+		option "SSH into server" {
+			read user -p "User: "
+			read addr -p "IP Address: "
+			ssh $user@$addr
+		}
+
+		option "Reinstall zrc" {
+			set dir = `{realpath /usr/lib/zrc}
+			cd $dir/..
+			set dir = `{basename $dir}
+			rm -rfv $dir
+			git clone https://github.com/Edd12321/zrc
+			mv zrc $dir
+			cd $dir
+			make && make corebuf
+		}
+
+		option "Close script" {
+			echo Bye!
+			killall $env(script)
+		}
+		
+		echo -n "You can also type a command line:\n> "
+		read m && @ {
+			{*}$m; sleep 3
+		}
+	}
+}; main

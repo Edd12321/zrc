@@ -3,16 +3,16 @@
     #define RUNCMD {                    \
         if (hctable.find(*argv) != hctable.end())\
             *argv = &hctable[*argv][0]; \
-        if (!access(*argv, F_OK)) {     \
-            exit(execv(*argv, argv));   \
+        int rv;                         \
+        if (!access(*argv, F_OK))       \
+            rv = execv(*argv, argv);    \
+        else                            \
+            rv = execvp(*argv, argv);   \
+        if (rv < 0) {                   \
+          perror(*argv);                \
+          exit(127);                    \
         } else {                        \
-            int rv = execvp(*argv, argv);\
-            if (rv < 0) {               \
-              perror(*argv);            \
-              exit(127);                \
-            } else {                    \
-              exit(rv);                 \
-            }                           \
+          exit(rv);                     \
         }                               \
     }
 // Don't use path hashing
