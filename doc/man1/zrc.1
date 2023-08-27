@@ -40,22 +40,41 @@ Once a job ends, it is added to the
 , which functions like any usual POSIX job table.
 .SS Basic syntax - Commands
 A command is a sequence of words and redirections. Redirections function similarly to
-.I rc
+.I fish
 , so
 .B check out its man page
 for more information regarding that. There are slight differences in how they are handled, though, as to not interfere with new features:
 .EX
-	ls 2> file      ## The rc way
-	ls >(2) file    ## The zrc way
+	# Zrc can modify file descriptors 0-9.
+	
+	# To read stdin from a file, use < SOURCE_FILE.
+	cat < input_file
 
-	ls >[2=1] file  ## The rc way
-	ls >(2=1) file  ## The zrc way
+	# To write stdout to a file, use > DESTINATION.
+	echo Hello, world! > output_file
 
-	ls >[2=] file   ## The rc way
-	ls >(2=) file   ## The zrc way
+	# To append stdout to a file, use >> DESTINATION.
+	echo Hello, again! >> output_file
+
+	# To write stderr to a file, use ^ DESTINATION.
+	die Goodbye, world! ^ output_file
+
+	# To append stderr to a file, use ^^ DESTINATION.
+	die Goodbye, again! ^^ output_file
+
+	
+	# "DESTINATION" may be:
+	# - A filename
+	# - An ampersand followed by a minus sign (&-), this closes the fd.
+	# - An ampersand followed by a digit (&0, &1... &9). This dups the fd.
+	
+	echo 'This is now stderr.' 1> &2
+	echo 'This is silent.' 1> &-
+	echo 'This is in a file.' 1> file
 
 	# This is the same everywhere (spaces matter, though):
 	dirname abc/def > output.txt
+	errorfakecommand 2> /dev/null 3> fd3 1> &3
 	cat ~/.zrc | grep 'secret' >> output.txt
 	wc < output.txt
 .EE
@@ -238,7 +257,7 @@ Tilde expansion and filename globbing is done on all "barewords" (aka, all words
 .EX
 	ls *
 	ls ~root
-	cat ~/.zrc | wc -nlw
+	cat ~/.zrc | wc -mlw
 
 	# Wrong
 	ls "*"

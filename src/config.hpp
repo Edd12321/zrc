@@ -28,4 +28,4 @@
 static std::string errmsg         = "syntax error: ";
 static char here_prompt           = '>';
 static std::string default_prompt = "zrc% ";
-static std::string ver            = "zrc v0.8b";
+static std::string ver            = "zrc v0.9";

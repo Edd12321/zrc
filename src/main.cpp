@@ -41,7 +41,7 @@
 
 #define REFRESH_TTY cin_eq_in = (&std::cin == &in)
 #define CIND std::distance(zwl.wl.begin(), it)
-#define FAIL or (can_runcmd=0); continue;
+#define FAIL or (can_runcmd=0); ++it; continue;
 
 /**
  * Check escapes at the end of a line
@@ -71,83 +71,15 @@
     std::cin.clear();                             \
     if (can_runcmd) {                             \
         exec(k, args);                            \
-        RESET_FD;                                 \
-        baks.clear();                             \
+        for (int i = 0; i <= 9; ++i)              \
+            if (fcntl(o_fds[i], F_GETFD) != -1 && errno != EBADF)\
+                close(o_fds[i]);\
         if (!bg_or_fg.empty())                    \
             bg_or_fg.pop_front();                 \
     }                                             \
     can_runcmd = X;                               \
     k = 0;                                        \
 } while (0)
-
-/**
- * Reset all file descriptors for the next command
- */
-#define RESET_FD {                                \
-    for (auto const& it : baks) {                 \
-        dup2(it.second, it.first);                \
-    }                                             \
-}
-
-/**
- * Parse >(...) file descriptor syntax
- */
-#define CHK_FD                                    \
-    /*if (std::regex_match(*it,m,e)){ */          \
-    if ((*it).length()>3 && (*it)[0]=='>' && (*it)[1]=='(' && (*it).back()==')') [[unlikely]] {\
-        sword = 1;                                \
-        size_t i = 2;                             \
-        int fd1 = 0, fd2 = 0;                     \
-        bool c = false;                           \
-        /* phase 1 scanning */                    \
-        for (; (*it)[i] != '=' && i < (*it).length()-1; ++i) {\
-            if (isdigit((*it)[i])) {              \
-                fd1 = fd1*10+((*it)[i]-'0');      \
-            } else {                              \
-                std::cerr << errmsg << ">(num..)\n";\
-                c = true;                         \
-                break;                            \
-            }                                     \
-        }                                         \
-        if (c) continue;                          \
-        /* phase 2 scanning */                    \
-        if ((*it)[i] == '=') {                    \
-            /* phase 3 scanning */                \
-            if (i == (*it).length()-2) {          \
-                baks[fd1] = dup(fd1);             \
-                close(fd1);                       \
-            } else {                              \
-                for (++i; i < (*it).length()-1; ++i) {\
-                    if (isdigit((*it)[i])) {      \
-                        fd2 = fd2*10+((*it)[i]-'0');\
-                    } else {                      \
-                        std::cerr << errmsg << ">(..num)\n";\
-                        break;                    \
-                    }                             \
-                }                                 \
-                baks[fd1] = dup(fd1);             \
-                dup2(dup(fd2), fd1);              \
-            }                                     \
-        } else if (i == (*it).length()-1) {       \
-            baks[fd1] = dup(fd1);                 \
-            io_right(*(++it), 0, fd1);            \
-        } else {                                  \
-            std::cerr << errmsg << ">(..?)";      \
-        }                                         \
-        continue;                                 \
-}
-
-/**
- * Check if a word is an interp alias
- */
-#define CHK_ALIAS                                 \
-    if (!k && aliases.find(*it) != aliases.end()){\
-        for (std::string& str : aliases[*it].wl) {\
-            str_subst(str);                       \
-            args[k++] = strdup(str.c_str());      \
-        }                                         \
-        continue;                                 \
-    }
 
 /**
  * Create an empty "dummy" stream
@@ -191,7 +123,7 @@ typedef int Jid;
 /***** GLOBAL VARIABLES BEGIN *****/
   extern char **environ;
 
-  int o_in, o_out; 
+  int o_fds[10], fd_offset; 
   bool cin_eq_in, w, make_new_jobs = true, chk_exit;
   pid_t zrcpid = getpid();
   std::string ret_val;
@@ -251,7 +183,7 @@ typedef int Jid;
   std::string               io_cap         (std::string               );
   bool                     str_subst_expect(std::string  , std::istream&,bool);
   bool                      io_left        (std::string               );
-  bool                      io_right       (std::string  , bool, int  );
+  bool                      io_right       (std::string  , int , bool );
   bool                      io_hedoc       (std::string  , std::istream&,bool);
   void                      io_pipe        (int          , char**     );
   static inline void        run_function   (std::string const&        );
@@ -357,15 +289,13 @@ eval_stream(std::istream& in)
 	bool   ret = 0, brk = 0, con = 0;
 	long   k;
 	size_t len;
-	/*FD expr 1*///std::regex const e{"\\>\\((.*?)\\)"};
-	/*FD expr 2*///std::smatch m;
-	std::unordered_map<int, int> baks;
-
-	int o_in2, o_out2;
-	o_in2   = o_in;
-	o_out2  = o_out;
-	o_in    = dup(STDIN_FILENO);
-	o_out   = dup(STDOUT_FILENO);
+	int o_fd2[10];
+	// Each "stack frame" restores its file descriptors
+	fd_offset += 10;
+	for (int i = 0; i <= 9; ++i) {
+		o_fd2[i] = o_fds[i];
+		o_fds[i] = dup2(i, fd_offset+i);
+	}
 	REFRESH_TTY;
 
 	char **args = new char*[ARG_MAX];
@@ -378,7 +308,7 @@ eval_stream(std::istream& in)
 				REFRESH_TTY;
 				continue;
 			}
-			if (!strchr("&;", zwl.back()[0])) {
+			if (zwl.back() != ";" || zwl.back() != "&") {
 				zwl.add_token(";");
 				bg_or_fg.push_back(FG);
 			}
@@ -386,26 +316,50 @@ eval_stream(std::istream& in)
 			for (auto it = zwl.wl.begin(); it != zwl.wl.end(); ++it) {
 				sword = glb = 0;
 				if (zwl.is_bare(CIND)) {
+					sword = 1;
+					/** I/O Aliases **/
+					if (*it == "^") [[unlikely]] *it = "2>"; if (*it == "^^") *it = "2>>";
+					if (*it == ">") [[unlikely]] *it = "1>"; if (*it == ">>") *it = "1>>";
+					auto len = (*it).length(); 
 					/** Separators **/
-					/*!*/if (*it == "&" || *it == ";") { sword = 1; RC(1); }
-					/*!*/else if (*it == "&&")         { sword = 1; RC(ret_val=="0"); }
-					/*!*/else if (*it == "||")         { sword = 1; RC(ret_val!="0"); }
+					/*!*/if (*it == "&" || *it == ";")
+						RC(1);
+					/*!*/else if (*it == "&&")
+						RC(ret_val=="0");
+					/*!*/else if (*it == "||")
+						RC(ret_val!="0");
+
 					/** I/O redirection **/
-					/*!*/else if (*it == "<<" ) { sword = 1; io_hedoc(*(++it), in, 0) FAIL }
-					/*!*/else if (*it == "<<<") { sword = 1; io_hedoc(*(++it), in, 1) FAIL }
-					/*!*/else if (*it == "<"  ) { sword = 1; io_left (*(++it)       ) FAIL }
-					/*!*/else if (*it == ">"  ) { sword = 1; io_right(*(++it), 0 , 1) FAIL }
-					/*!*/else if (*it == ">>" ) { sword = 1; io_right(*(++it), 1 , 1) FAIL }
-					/*!*/else if (*it == "|"  ) {
-						sword = 1;
+					/*!*/else if (len == 2 && isdigit((*it)[0]) && (*it)[1] == '>')
+						{ io_right(*(it+1), (*it)[0]-'0', 0) FAIL }
+					/*!*/else if (len == 3 && isdigit((*it)[0]) && (*it)[1] == '>' && (*it)[2] == '>')
+						{ io_right(*(it+1), (*it)[0]-'0', 1) FAIL }
+					/*!*/else if (*it == "<<" )
+						{ io_hedoc(*(it+1), in, STDIN_FILENO) FAIL }
+					/*!*/else if (*it == "<<<")
+						{ io_hedoc(*(it+1), in, STDOUT_FILENO) FAIL }
+					/*!*/else if (*it == "<"  )
+						{ io_left(*(it+1)) FAIL }
+					/** Pipes **/
+					/*!*/else if (*it == "|") {
 						if (!can_runcmd)
 							continue;
 							args[k] = NULL;
 						io_pipe(k, args);
-						RESET_FD;
 						k = 0;
-					}
-					/*!*/else CHK_ALIAS else {
+
+					/** Alias **/
+					} else if (!k && aliases.find(*it) != aliases.end()){
+						sword = 0;
+						for (std::string& str : aliases[*it].wl) {
+							str_subst(str);
+							args[k++] = strdup(str.c_str());
+						}
+						continue;
+					
+					/** Other words/globbing **/
+					} else {
+						sword = 0;
 						gbzwl = glob(*it);
 						if (gbzwl.size() > 0)
 							glb = 1;
@@ -420,7 +374,7 @@ eval_stream(std::istream& in)
 						spl = tokenize(*it, in);
 						for (std::string& str : spl.wl)
 							args[k++] = strdup(str.c_str());
-					} else CHK_FD else {
+					} else {
 						str_subst(*it);
 						args[k++] = strdup((*it).c_str());
 					}
@@ -432,11 +386,12 @@ eval_stream(std::istream& in)
 	  catch    (ZrcBreakHandler ex) { brk = 1; }
 	  catch (ZrcContinueHandler ex) { con = 1; }
 	delete [] args;
-	close(o_in);
-	close(o_out);
-	o_in  = o_in2;
-	o_out = o_out2;
-	RESET_FD;
+	for (int i = 0; i <= 9; ++i) {
+		if (fcntl(o_fds[i], F_GETFD) != -1 && errno != EBADF)
+			close(o_fds[i]);
+		o_fds[i] = o_fd2[i];
+	}
+	fd_offset -= 10;
 	in.clear();
 	if (ret) throw ZrcReturnHandler();
 	if (brk) throw ZrcBreakHandler();

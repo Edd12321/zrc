@@ -10,7 +10,7 @@ set __CFUNCS_ZRC_INCLUDED = 1
 ##################
 # Usage function #
 ##################
-alias zrcusage { eval echo >(1=2) \
+alias zrcusage { eval echo 1> &2 \
 	usage: (`{basename $argv(0)}) }
 
 ####################

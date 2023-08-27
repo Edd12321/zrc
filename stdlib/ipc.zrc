@@ -38,7 +38,7 @@ fn redir {
 		zrcusage <fd> <filename> <block>
 		return -1
 	} else {
-		eval "eval {$argv(3)} >($argv(1)) '$argv(2)'"
+		eval "eval {$argv(3)} $argv(1)> '$argv(2)'"
 	}
 }
 
@@ -53,7 +53,7 @@ fn dup {
 		zrcusage <fd1> <fd2> <block>
 		return -1
 	} else {
-		eval "eval {$argv(3)} >($argv(1)=$argv(2))"
+		eval "eval {$argv(3)} $argv(1)> &$argv(2))"
 	}
 } 
 }

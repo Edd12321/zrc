@@ -51,7 +51,7 @@ rm -f $outfile && unbuffer -p zrc -c {
 		}
 
 		echo "\nPowershell performs the worst:"
-		time >(1=) pwsh -c {
+		time > &- pwsh -c {
 			for ($i = 0; $i -lt 10000; ++$i) {
 				# Comment test
 				printf '%d ' $i >> $env:tf
@@ -60,5 +60,5 @@ rm -f $outfile && unbuffer -p zrc -c {
 		}
 
 		echo "\nCONCLUSION: Zrc doesn't totally suck ;) It's just very lightweight"
-	}; main >(2=1)
+	}; main 2> &1
 } | tee $outfile

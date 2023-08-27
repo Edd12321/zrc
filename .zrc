@@ -24,10 +24,10 @@ set env('MANPATH') = $ZRC/doc:$env('MANPATH')
 # Cdpath
 eval set env('CDPATH') = $ZRC:~/.dots/work:/$env('CDPATH')
 # Refresh internal hash table
-rehash >(2=)
+rehash ^ &-
 
 fn __git_ps1 {
-	git tag >(2=) > /dev/null
+	git tag > /dev/null ^ &-
 	if {$? == 0} {
 		echo -n '('
 		git branch | grep {^*} | colrm 1 2 | tr -d '\n'
@@ -131,7 +131,7 @@ fn up {
 # (because it's hard to memorize tar commands)
 fn extract {
 	if [test -f $argv(1)] {
-		echo '$argv(1): file not found!' >(1=2)
+		echo '$argv(1): file not found!' 1> &2
 		return 1
 	} else {
 		let s {
@@ -149,7 +149,7 @@ fn extract {
 				reg {.*\.Z$}       { uncompress $s }
 				reg {.*\.7z$}      { 7z x       $s }
 				default {
-					echo '$s could not be extracted!' >(1=2)
+					echo '$s could not be extracted!' 1> &2
 					return 1
 				}
 			}

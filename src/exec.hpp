@@ -154,8 +154,8 @@ exec(int argc, char *argv[])
 	}
 	
 	// Reset/cleanup everything for next command
-	dup2(o_in, STDIN_FILENO);
-	dup2(o_out, STDOUT_FILENO);
+	for (int i = 0; i <= 9; ++i)
+		dup2(o_fds[i], i);
 	for (i = 0; i < argc; ++i) {
 		free(argv[i]);
 		argv[i] = NULL;
@@ -252,21 +252,37 @@ io_left(std::string fn)
 
 /** Redirects Fd #n (can also append to a file).
  *
- * @param {string}fn,{bool}app,{int}n
+ * @param {string}exp,{int}fd,{bool}app
  * @return void
  */
 bool
-io_right(std::string fn, bool app, int n)
+io_right(std::string exp, int fd, bool app)
 {
-	int fd;
-	if (!str_subst_expect1(fn))
+	auto len = exp.length();
+
+	/* close file descriptor (...> &-) */
+	if (exp == "&-") {
+		close(fd);
+		return 1;
+	}
+
+	/* duplicate file descriptor fd to n (...> &<n>) */
+	if (len == 2 && exp[0] == '&') {
+		if (!isdigit(exp[1])) {
+			std::cerr << errmsg << "...&<n>\n";
+			return 0;
+		}
+		exp[1] -= '0';
+		dup2(exp[1], fd);
+		return 1;
+	}
+
+	if (!str_subst_expect1(exp))
 		return 0;
 	if (app)
-		fd = open(fn.data(), O_CREAT|O_APPEND|O_WRONLY, 0644);
+		dup2(open(exp.data(), O_CREAT|O_APPEND|O_WRONLY, 0644), fd);
 	else
-		fd = open(fn.data(), O_WRONLY|O_TRUNC|O_CREAT,  0600);
-	dup2(fd, n);
-	close(fd);
+		dup2(open(exp.data(), O_WRONLY|O_TRUNC|O_CREAT,  0600), fd);
 	return 1;
 }
 

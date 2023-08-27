@@ -55,7 +55,7 @@ if {![string cmp $q ''] || ![string cmp $q all]} {
 	# Display the manpage (compressed or not)
 	} else {
 		set W1 = `{echo $q | awk '-F&' {{print $1}}}
-		if [man -w $W1 > /dev/null >(2=1)] {
+		if [man -w $W1 > /dev/null 2> &1] {
 			echo "<h3><font color=red>No manual page for $W1!!</font></h3>"
 		} else {
 			set file = `{man -w $W1}
