@@ -1,4 +1,5 @@
 bin/zrc.exe
 bin/zrc
-
+*/*.sloc
+*/*.filecount
 corebuf/bin/*

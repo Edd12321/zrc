@@ -187,16 +187,19 @@ namespace zlineshort
 		std::istringstream iss(getvar($PATH));
 		std::string tmp;
 		while (getline(iss, tmp, ':')) {
-			if (fs::is_directory(tmp)) {
-				for (const auto& bin : fs::directory_iterator(tmp)) {
-					std::string path = basename(
-						bin.path()
-						.string()
-						.data());
-					if (path.rfind(buf, 0) == 0)
-						vec.emplace_back(path);
+			try {
+				if (fs::is_directory(tmp)) {
+					for (const auto& bin : fs::directory_iterator(tmp)) {
+						std::string path = basename(
+							bin.path()
+							.string()
+							.data());
+						if (path.rfind(buf, 0) == 0)
+							vec.emplace_back(path);
+					}
 				}
-			}
+			} catch (std::exception& ex)
+				{ /* ignore permission denied */ }
 		}
 #endif
 		for (auto const& it : dispatch_table)

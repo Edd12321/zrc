@@ -71,9 +71,9 @@
     std::cin.clear();                             \
     if (can_runcmd) {                             \
         exec(k, args);                            \
-        for (int i = 0; i <= 9; ++i)              \
-            if (fcntl(o_fds[i], F_GETFD) != -1 && errno != EBADF)\
-                close(o_fds[i]);\
+        for (int i = 3; i <= 9; ++i)              \
+            if (fcntl(i, F_GETFD) != -1 && errno != EBADF)\
+                close(i);                         \
         if (!bg_or_fg.empty())                    \
             bg_or_fg.pop_front();                 \
     }                                             \
@@ -387,8 +387,10 @@ eval_stream(std::istream& in)
 	  catch (ZrcContinueHandler ex) { con = 1; }
 	delete [] args;
 	for (int i = 0; i <= 9; ++i) {
-		if (fcntl(o_fds[i], F_GETFD) != -1 && errno != EBADF)
+		if (fcntl(o_fds[i], F_GETFD) != -1 && errno != EBADF) {
+			dup2(o_fds[i], i);
 			close(o_fds[i]);
+		}
 		o_fds[i] = o_fd2[i];
 	}
 	fd_offset -= 10;

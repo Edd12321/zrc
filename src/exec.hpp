@@ -154,8 +154,9 @@ exec(int argc, char *argv[])
 	}
 	
 	// Reset/cleanup everything for next command
-	for (int i = 0; i <= 9; ++i)
-		dup2(o_fds[i], i);
+	dup2(o_fds[STDIN_FILENO], STDIN_FILENO);
+	dup2(o_fds[STDOUT_FILENO], STDOUT_FILENO);
+	dup2(o_fds[STDERR_FILENO], STDERR_FILENO);
 	for (i = 0; i < argc; ++i) {
 		free(argv[i]);
 		argv[i] = NULL;

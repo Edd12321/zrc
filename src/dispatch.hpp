@@ -866,13 +866,16 @@ Command(rehash) {
 	std::string tmp, path;
 	hctable.clear();
 	while (getline(iss, tmp, ':')) {
-		if (fs::is_directory(tmp)) {
-			for (const auto& bin : fs::directory_iterator(tmp)) {
-				path = bin.path().string();
-				if (hctable.find(basename(path.data())) == hctable.end())
-					hctable[basename(path.data())] = path;
+		try {
+			if (fs::is_directory(tmp)) {
+				for (const auto& bin : fs::directory_iterator(tmp)) {
+					path = bin.path().string();
+					if (hctable.find(basename(path.data())) == hctable.end())
+						hctable[basename(path.data())] = path;
+				}
 			}
-		}
+		} catch (std::exception& ex)
+			{ /* ignore permission denied */ }
 	}
 	NoReturn;
 }
