@@ -163,10 +163,10 @@ namespace zlineshort
 	}
 	sub tab(std::string& buf)
 	{
-		WordList wlist, globbed;
-		NullFin;
-		wlist = tokenize(buf, fin);
-		globbed = glob(wlist.back()+"*");
+		NullIOSink ns;
+		std::istream fin(&ns);
+		WordList wlist = tokenize(buf, fin);
+		WordList globbed = glob(wlist.back()+"*");
 		if (globbed.size() == 1) {
 			wlist.wl[wlist.size()-1] = globbed.wl[0];
 			buf = combine(wlist.size(), wlist.wl, 0);
@@ -186,20 +186,18 @@ namespace zlineshort
 #else
 		std::istringstream iss(getvar($PATH));
 		std::string tmp;
+		struct dirent *entry;
+		DIR *d = NULL;
 		while (getline(iss, tmp, ':')) {
-			try {
-				if (fs::is_directory(tmp)) {
-					for (const auto& bin : fs::directory_iterator(tmp)) {
-						std::string path = basename(
-							bin.path()
-							.string()
-							.data());
-						if (path.rfind(buf, 0) == 0)
-							vec.emplace_back(path);
-					}
+			d = opendir(tmp.c_str());
+			if (d != NULL) {
+				while (entry = readdir(d)) {
+					std::string s{entry->d_name};
+					if (!s.rfind(buf, 0))
+						vec.emplace_back(s);
 				}
-			} catch (std::exception& ex)
-				{ /* ignore permission denied */ }
+				closedir(d);
+			}
 		}
 #endif
 		for (auto const& it : dispatch_table)

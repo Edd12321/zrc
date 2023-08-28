@@ -283,7 +283,11 @@ Command(switch) {
 	WordList args;
 	if (argc != 3)
 		syntax_error(se);
-	{ NullFin; args = tokenize(argv[2], fin); }
+	/* empty */ {
+		NullIOSink ns;
+		std::istream fin(&ns);
+		args = tokenize(argv[2], fin);
+	}
 	std::for_each(args.wl.begin(), args.wl.end(), &str_subst);
 
 	for (int i = 0; i < args.size(); ) {
@@ -602,7 +606,8 @@ Command(ord) {
 /** Add/remove alias **/
 Command(alias) {
 	if (argc == 3) {
-		NullFin;
+		NullIOSink ns;
+		std::istream fin(&ns);
 		aliases[argv[1]] = tokenize(argv[2], fin);
 	} else if (argc == 1) {
 		for (auto const& it : aliases) {
@@ -636,7 +641,8 @@ Command(let) {
 	std::map<std::string, Scalar> s_hm_bak;
 	bool ret=0, brk=0, con=0;
 	/* empty */ {
-		NullFin;
+		NullIOSink ns;
+		std::istream fin(&ns);
 		vars = tokenize(argv[1], fin);
 	}
 	std::for_each(vars.wl.begin(), vars.wl.end(), &str_subst);	
@@ -863,19 +869,20 @@ Command(unhash) {
 }
 Command(rehash) {
 	std::istringstream iss{getvar($PATH)};
-	std::string tmp, path;
+	std::string tmp;
+	struct dirent *entry;
+	DIR *d = NULL;
 	hctable.clear();
 	while (getline(iss, tmp, ':')) {
-		try {
-			if (fs::is_directory(tmp)) {
-				for (const auto& bin : fs::directory_iterator(tmp)) {
-					path = bin.path().string();
-					if (hctable.find(basename(path.data())) == hctable.end())
-						hctable[basename(path.data())] = path;
-				}
+		d = opendir(tmp.c_str());
+		if (d != NULL) {
+			while (entry = readdir(d)) {
+				char *nm = entry->d_name;
+				if (hctable.find(nm) == hctable.end())
+					hctable[nm] = zrc_fmt("%s/%s", tmp.c_str(), nm);
 			}
-		} catch (std::exception& ex)
-			{ /* ignore permission denied */ }
+		}
+		closedir(d);
 	}
 	NoReturn;
 }

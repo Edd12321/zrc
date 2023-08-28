@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <dirent.h>
 #include <fcntl.h>
 #include <float.h>
 #include <glob.h>
@@ -23,8 +24,6 @@
 #include <unistd.h>
 
 #include <algorithm>
-#include <filesystem>
-//#include <format>
 #include <fstream>
 #include <functional>
 #include <iomanip>
@@ -80,24 +79,6 @@
     can_runcmd = X;                               \
     k = 0;                                        \
 } while (0)
-
-/**
- * Create an empty "dummy" stream
- */
-#define NullFin \
-	NullIOSink ns;\
-	std::istream fin(&ns)
-
-/**
- * Compatibility reasons
- */
-#ifdef __cpp_lib_filesystem
-	namespace fs = std::filesystem;
-#elif __cpp_lib_experimental_filesystem
-	namespace fs = std::experimental::filesystem;
-#else
-	namespace fs = std::__fs::filesystem;
-#endif
 
 class Array;
 class WordList;
@@ -205,7 +186,6 @@ typedef int Jid;
 
   #include "lex.hpp"
   #include "variable.hpp"
-  #include "string.hpp"
   #include "expr.cpp"
   #include "dispatch.hpp"
   #include "sighandler.hpp"
