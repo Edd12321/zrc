@@ -21,17 +21,6 @@
 }
 
 #define NO_QUOTES (!quote['\''] && !quote['"'] && !quote['`'])
-/** Get the variable of a string.
- * 
- * @param {string}str
- * @return string
- */
-static std::string
-get_var(std::string str)
-{
-	str_subst(str);
-	return getvar(str);
-}
 
 /** Performs word expansion/substitution.
  * 
@@ -144,7 +133,8 @@ str_subst(std::string& str)
 					str_subst(tmp1);
 					--i;
 				}
-				res += get_var(tmp1);
+				str_subst(tmp1);
+				res += getvar(tmp1);
 			}
 			break;
 

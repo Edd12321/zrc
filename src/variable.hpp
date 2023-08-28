@@ -8,15 +8,12 @@ enum Mode {
 typedef std::string Scalar;
 typedef std::string Variable;
 
-/* convert ints to string*/
-template<typename T>
-std::string S(T const& t)
-{
-	if constexpr (std::is_integral<T>::value)
-		return std::to_string(t);
-	else
-		return static_cast<std::string>(t);
-}
+template<typename T> std::string S(std::true_type, T const& t)
+	{ return std::to_string(t); }
+template<typename T> std::string S(std::false_type, T const& t)
+	{ return static_cast<std::string>(t); }
+template<typename T> std::string S(T const& t)
+	{ return S(std::integral_constant<bool, std::is_integral<T>::value>{}, t); }
 
 /** Associative array objects **/
 class Array
@@ -27,19 +24,27 @@ public:
 	//array length...
 	size_t size()
 		{ return hm.size(); }
-
 	//$...
 	template<typename T>
 	std::string get(T const& key)
-		{ return (hm.find(S(key)) != hm.end()) ? hm.at(S(key)) : ""; }
+	{
+		return (hm.find(S(key)) != hm.end())
+			? hm.at(S(key))
+			: "";
+	}
 	//set ... = ...
 	template<typename A, typename B>
 	void set(A const& key, B const& value)
-		{ hm[S(key)] = S(value); }
+	{
+		hm[S(key)] = S(value);
+	}
 	//unset ...
 	template<typename T>
 	void destroy(T const& key)
-		{ if (hm.find(S(key)) != hm.end()) { hm.erase(S(key)); } }
+	{
+		if (hm.find(S(key)) != hm.end())
+			hm.erase(S(key));
+	}
 };
 
 std::unordered_map<Variable, Scalar> s_hm;

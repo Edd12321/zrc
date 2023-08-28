@@ -80,6 +80,15 @@
     k = 0;                                        \
 } while (0)
 
+#if __cplusplus < 201703L
+	namespace std
+	{
+		typedef std::string const& string_view;    
+	};
+#else
+	using std::string_view;
+#endif
+
 class Array;
 class WordList;
 class NullIOSink;
@@ -148,7 +157,6 @@ typedef int Jid;
   Handle*                   signal2        (int, Handle*              );
   // SIGHANDLER.HPP
 
-  static std::string        get_var        (std::string_view          );
   void                      str_subst      (std::string&              );
   void                      rq             (std::string&              );
   // SUBST.HPP
