@@ -155,7 +155,7 @@ typedef int Jid;
   Handle*                   signal2        (int, Handle*              );
   // SIGHANDLER.HPP
 
-  void                      str_subst      (std::string&              );
+  bool                      str_subst      (std::string&              );
   // SUBST.HPP
 
   static inline bool        lassoc         (char                      );
@@ -227,7 +227,7 @@ glob(std::string_view s)
 	glob_t gvl;
 	int i, j, ok;
 	memset(&gvl, 0, sizeof(glob_t));
-	if (!glob(s.data(), GLOB_TILDE, NULL, &gvl))
+	if (!glob(s.data(), GLOB_TILDE|GLOB_NOESCAPE, NULL, &gvl))
 		for (i=0; i<gvl.gl_pathc; ++i)
 			wl.add_token(gvl.gl_pathv[i]);
 	if (!wl.size())
@@ -330,7 +330,8 @@ eval_stream(std::istream& in)
 					} else if (!k && aliases.find(*it) != aliases.end()){
 						sword = 0;
 						for (std::string& str : aliases[*it].wl) {
-							str_subst(str);
+							if (!str_subst(str))
+								can_runcmd = 0;
 							args[k++] = strdup(str.c_str());
 						}
 						continue;
@@ -338,6 +339,7 @@ eval_stream(std::istream& in)
 					/** Other words/globbing **/
 					} else {
 						sword = 0;
+						str_subst(*it); // Remove backslashes
 						gbzwl = glob(*it);
 						if (gbzwl.size() > 0)
 							glb = 1;
@@ -348,12 +350,14 @@ eval_stream(std::istream& in)
 				if (!glb && (!zwl.is_bare(CIND) || !sword)) {
 					/*!*/if (*it == "{*}"/* && it<zwl.wl.end()-1*/) {
 						sword = 1;
-						str_subst(*(++it));
+						if (!str_subst(*(++it)))
+							can_runcmd = 0;
 						spl = tokenize(*it, in);
 						for (std::string& str : spl.wl)
 							args[k++] = strdup(str.c_str());
 					} else {
-						str_subst(*it);
+						if (!str_subst(*it))
+							can_runcmd = 0;
 						args[k++] = strdup((*it).c_str());
 					}
 				}

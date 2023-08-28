@@ -19,10 +19,12 @@
 #define CHK_LINE {                                \
     CHK_ESC;                                      \
     while (i >= len) {                            \
-        zrc_read_line(in, line, ">")              \
-            or die("Unmatched bracket\n");        \
+        if (!zrc_read_line(in, line, ">")) {      \
+            std::cerr << errmsg << "Unmatched bracket\n";\
+            return wl;                            \
+        }                                         \
         i = 0, len = line.length(), tmp += '\n';  \
-    }	                                          \
+    }	                                            \
 }
 
 class WordList
@@ -93,20 +95,24 @@ tokenize(std::string line, std::istream& in)
 
 			for ever {
 				CHK_LINE;
-				if (line[i] == '\\'
-				&& (line[i+1] == q || line[i+1] == p)) {
-					tmp += "\\";
+				tmp += line[i];
+				if (line[i] == '\\') {
 					tmp += line[i+1];
 					i += 2;
 					continue;
 				}
+				if (q == '(') {
+					if ((line[i] == '$'|| line[i] == '[')
+					||  (i < len-1 && line[i] == '`' && line[i+1] == '{'))
+						wl.make_not_bare();
+				}
 				if (line[i] == q) ++cmpnd;
 				if (line[i] == p) --cmpnd;
-				tmp += line[i];
 				if (!cmpnd) break;
 				++i;
 			}
-			wl.make_not_bare();
+			if (q != '(')
+				wl.make_not_bare();
 			if (q == '{' && !subs)
 				wl.add_token(tmp);
 			break;
@@ -150,10 +156,8 @@ tokenize(std::string line, std::istream& in)
 		// -----Normal characters-----
 		default:
 			tmp += line[i];
-			if (line[i] == '\\') {
-				wl.make_not_bare();
+			if (line[i] == '\\')
 				tmp += line[++i];
-			}
 		}
 	}
 	wl.add_token(tmp);

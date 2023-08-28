@@ -5,8 +5,10 @@
 
 #define ITERATE_PAREN(X,Y) {                   \
     for (++i, cmpnd = 1; i < len; ++i) {       \
-        if (i == len-1 && str[i] != Y)         \
-            std::cerr << "Unmatched paren\n";  \
+        if (i == len-1 && str[i] != Y) {       \
+            std::cerr << errmsg << "Unmatched paren\n";\
+            return false;                      \
+        }                                      \
         if (str[i] == '\\') {                  \
           tmp2 += '\\';                        \
           tmp2 += str[++i];                    \
@@ -27,7 +29,7 @@
  * @param {string&}str
  * @return void
  */
-void
+bool
 str_subst(std::string& str)
 {
 	size_t i, len, pos, cmpnd;
@@ -42,7 +44,7 @@ str_subst(std::string& str)
 	if (str[0] == '{' && str.back() == '}') {
 		str.erase(0, 1);
 		str.pop_back();
-		return;
+		return true;
 	}
 
 	for (i = 0; i < len; ++i) {
@@ -159,5 +161,6 @@ str_subst(std::string& str)
 		}
 	}
 	str = res;
+	return true;
 }
 

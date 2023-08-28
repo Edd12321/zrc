@@ -90,7 +90,7 @@ are separated by whitespace. A word is a sequence of characters that can have su
 The substitutions present in zrc are:
 .PP
 .SS Variable substitution
-Inside a word, any sequence of characters beginning with a dollar sign and followed by alphanumeric characters, underscores, colons or even other variable substitutions (recursively handled) gets replaced with the value of the variable of the same name. There are some special cases, however:
+Inside a word, any sequence of characters beginning with a dollar sign and followed by alphanumeric characters, underscores, parens or even other variable substitutions (recursively handled) gets replaced with the value of the variable of the same name. There are some special cases, however:
 .EX
 	echo $scalar;
 	# We have accessed the value of a string variable.
@@ -252,10 +252,11 @@ grammar rules. This can theoretically be used to simulate lists.
 	# 'a''b''c'
 	printf '%s%s%s\\n' {*}"'a'  'b' 'c'"
 .EE
-.SS Globbing
-Tilde expansion and filename globbing is done on all "barewords" (aka, all words that don't have substitutions/expansions done on them).
+.SS Wildcards/Globbing
+Tilde expansion and filename globbing is done on all "barewords" (aka, all words that don't have substitutions/expansions done on them). Please note that words with backslashes and parens are still considedred "barewords".
 .EX
 	ls *
+	ls \*
 	ls ~root
 	cat ~/.zrc | wc -mlw
 
