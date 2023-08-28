@@ -73,7 +73,7 @@
         exec(k, args);                            \
         for (int i = 3; i <= 9; ++i)              \
             if (fcntl(i, F_GETFD) != -1 && errno != EBADF)\
-                close(i);                         \
+                dup2(o_fds[i], i);                \
         if (!bg_or_fg.empty())                    \
             bg_or_fg.pop_front();                 \
     }                                             \
