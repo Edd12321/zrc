@@ -80,13 +80,11 @@
     k = 0;                                        \
 } while (0)
 
-#if __cplusplus < 201703L
+#ifndef __cpp_lib_string_view
 	namespace std
 	{
-		typedef std::string const& string_view;    
+		typedef std::string const& string_view;
 	};
-#else
-	using std::string_view;
 #endif
 
 class Array;
@@ -158,7 +156,6 @@ typedef int Jid;
   // SIGHANDLER.HPP
 
   void                      str_subst      (std::string&              );
-  void                      rq             (std::string&              );
   // SUBST.HPP
 
   static inline bool        lassoc         (char                      );
@@ -201,13 +198,6 @@ typedef int Jid;
   #include "exec.hpp"
   #include "zlineedit.hpp"
 /***** FUNCTIONDECLS END *****/
-
-void
-rq(std::string& str)
-{
-	if (!str.empty()) str.erase(0, 1);
-	if (!str.empty()) str.pop_back();
-}
 
 static bool
 die(std::string_view err)

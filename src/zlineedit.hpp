@@ -191,7 +191,7 @@ namespace zlineshort
 		while (getline(iss, tmp, ':')) {
 			d = opendir(tmp.c_str());
 			if (d != NULL) {
-				while (entry = readdir(d)) {
+				while ((entry = readdir(d))) {
 					std::string s{entry->d_name};
 					if (!s.rfind(buf, 0))
 						vec.emplace_back(s);

@@ -40,7 +40,8 @@ str_subst(std::string& str)
 	// Brace quoting:
 	// No substitutions are performed!
 	if (str[0] == '{' && str.back() == '}') {
-		rq(str);
+		str.erase(0, 1);
+		str.pop_back();
 		return;
 	}
 

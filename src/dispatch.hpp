@@ -876,7 +876,7 @@ Command(rehash) {
 	while (getline(iss, tmp, ':')) {
 		d = opendir(tmp.c_str());
 		if (d != NULL) {
-			while (entry = readdir(d)) {
+			while ((entry = readdir(d))) {
 				char *nm = entry->d_name;
 				if (hctable.find(nm) == hctable.end())
 					hctable[nm] = zrc_fmt("%s/%s", tmp.c_str(), nm);
