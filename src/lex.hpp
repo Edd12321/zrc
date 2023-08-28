@@ -128,7 +128,7 @@ tokenize(std::string line, std::istream& in)
 		case '#':
 			for (++i; i < len && line[i] != '\n'; ++i)
 				;
-			[[fallthrough]];
+			/* FALLTHROUGH */
 
 		// -----Whitespace-----
 		case  ' ':
@@ -147,7 +147,7 @@ tokenize(std::string line, std::istream& in)
 			break;
 
 		// -----Normal characters-----
-		[[likely]] default:
+		default:
 			tmp += line[i];
 			if (line[i] == '\\') {
 				wl.make_not_bare();

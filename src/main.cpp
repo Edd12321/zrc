@@ -237,10 +237,10 @@ glob(std::string_view s)
 	glob_t gvl;
 	int i, j, ok;
 	memset(&gvl, 0, sizeof(glob_t));
-	if (!glob(s.data(), GLOB_TILDE, NULL, &gvl)) [[unlikely]]
+	if (!glob(s.data(), GLOB_TILDE, NULL, &gvl))
 		for (i=0; i<gvl.gl_pathc; ++i)
 			wl.add_token(gvl.gl_pathv[i]);
-	if (!wl.size()) [[likely]]
+	if (!wl.size())
 		wl.add_token(s);
 	globfree(&gvl);
 	return wl;
@@ -306,8 +306,8 @@ eval_stream(std::istream& in)
 				if (zwl.is_bare(CIND)) {
 					sword = 1;
 					/** I/O Aliases **/
-					if (*it == "^") [[unlikely]] *it = "2>"; if (*it == "^^") *it = "2>>";
-					if (*it == ">") [[unlikely]] *it = "1>"; if (*it == ">>") *it = "1>>";
+					if (*it == "^") *it = "2>"; if (*it == "^^") *it = "2>>";
+					if (*it == ">") *it = "1>"; if (*it == ">>") *it = "1>>";
 					auto len = (*it).length(); 
 					/** Separators **/
 					/*!*/if (*it == "&" || *it == ";")
