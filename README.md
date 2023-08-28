@@ -34,9 +34,9 @@ Zrc is just ~600KB in size because its implementation is to the point and simple
 - [X] Directory stack
 - [X] Pipelines
 - [X] Full redirection
-	- [X] Basic redirection (`>>`, `>`, `<`)
+	- [X] Basic redirection (`^`, `^^`, `>>`, `>`, `<`)
     - [X] Here(documents/strings) (`<<< STR`, `<< EOF[...]EOF`)
-	- [X] ~~Sometimes, fd syntax is broken (`>(2=1)`, `>(2=)`, `>(2)`)~~
+    - [X] File descriptors (`x>`, `x>>`, `x> &-`, `x> &y` or `x>> &y`)
 - [X] Non-I/O shell operators
 	- [X] `&&`
 	- [X] `||`
