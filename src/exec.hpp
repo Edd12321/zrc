@@ -154,9 +154,9 @@ exec(int argc, char *argv[])
 	}
 	
 	// Reset/cleanup everything for next command
-	dup2(o_fds[STDIN_FILENO], STDIN_FILENO);
-	dup2(o_fds[STDOUT_FILENO], STDOUT_FILENO);
-	dup2(o_fds[STDERR_FILENO], STDERR_FILENO);
+	dup2(o_in, STDIN_FILENO);
+	dup2(o_out, STDOUT_FILENO);
+	dup2(o_err, STDERR_FILENO);
 	for (i = 0; i < argc; ++i) {
 		free(argv[i]);
 		argv[i] = NULL;
@@ -253,16 +253,17 @@ io_left(std::string fn)
 
 /** Redirects Fd #n (can also append to a file).
  *
- * @param {string}exp,{int}fd,{bool}app
+ * @param {string}exp,{int}fd,{bool}app,{bool}noclob,{map<int,int>&}baks
  * @return void
  */
 bool
-io_right(std::string exp, int fd, bool app)
+io_right(std::string exp, int fd, bool app, bool noclob, std::map<int,int>& baks)
 {
 	auto len = exp.length();
 
 	/* close file descriptor (...> &-) */
 	if (exp == "&-") {
+		baks[fd] = dup2(fd, fd_offset+fd);
 		close(fd);
 		return 1;
 	}
@@ -274,17 +275,25 @@ io_right(std::string exp, int fd, bool app)
 			return 0;
 		}
 		exp[1] -= '0';
+		baks[fd] = dup2(fd, fd_offset+fd);
 		dup2(exp[1], fd);
 		return 1;
 	}
 
 	if (!str_subst_expect1(exp))
 		return 0;
-	if (app)
+	if (app) {
+		baks[fd] = dup2(fd, fd_offset+fd);
 		dup2(open(exp.data(), O_CREAT|O_APPEND|O_WRONLY, 0644), fd);
-	else
+		return 1;
+	} else if (noclob && !access(exp.data(), F_OK)) {
+		std::cerr << warnmsg << "The file " << exp.data() << " already exists\n";
+		return 0;
+	} else {
+		baks[fd] = dup2(fd, fd_offset+fd);
 		dup2(open(exp.data(), O_WRONLY|O_TRUNC|O_CREAT,  0600), fd);
-	return 1;
+		return 1;
+	}
 }
 
 /** Converts stdout to stdin.

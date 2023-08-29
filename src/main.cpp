@@ -38,9 +38,13 @@
 #include <unordered_map>
 #include <vector>
 
+/** See if we can print $PS1. **/
 #define REFRESH_TTY cin_eq_in = (&std::cin == &in)
+/** Current index (in WordList) **/
 #define CIND std::distance(zwl.wl.begin(), it)
+/** Expect a word + increment pointer. **/
 #define FAIL or (can_runcmd=0); ++it; continue;
+
 
 /**
  * Check escapes at the end of a line
@@ -70,15 +74,23 @@
     std::cin.clear();                             \
     if (can_runcmd) {                             \
         exec(k, args);                            \
-        for (int i = 3; i <= 9; ++i)              \
-            if (fcntl(i, F_GETFD) != -1 && errno != EBADF)\
-                dup2(o_fds[i], i);                \
+        RESET_FD;                                 \
+        baks.clear();                             \
         if (!bg_or_fg.empty())                    \
             bg_or_fg.pop_front();                 \
     }                                             \
     can_runcmd = X;                               \
     k = 0;                                        \
 } while (0)
+
+/**
+ * Undo redirections
+ */
+#define RESET_FD {                                \
+    for (auto const& it : baks) {                 \
+        dup2(it.second, it.first);                \
+    }                                             \
+}
 
 #ifndef __cpp_lib_string_view
 	namespace std
@@ -111,7 +123,7 @@ typedef int Jid;
 /***** GLOBAL VARIABLES BEGIN *****/
   extern char **environ;
 
-  int o_fds[10], fd_offset; 
+  int fd_offset, o_in, o_out, o_err;
   bool cin_eq_in, w, make_new_jobs = true, chk_exit;
   pid_t zrcpid = getpid();
   std::string ret_val;
@@ -169,7 +181,7 @@ typedef int Jid;
   std::string               io_cap         (std::string               );
   bool                     str_subst_expect(std::string  , std::istream&,bool);
   bool                      io_left        (std::string               );
-  bool                      io_right       (std::string  , int , bool );
+  bool                      io_right(std::string, int, bool, bool, std::map<int,int>&);
   bool                      io_hedoc       (std::string  , std::istream&,bool);
   void                      io_pipe        (int          , char**     );
   static inline void        run_function   (std::string const&        );
@@ -267,13 +279,15 @@ eval_stream(std::istream& in)
 	bool   ret = 0, brk = 0, con = 0;
 	long   k;
 	size_t len;
-	int o_fd2[10];
+  std::map<int, int> baks;
 	// Each "stack frame" restores its file descriptors
 	fd_offset += 10;
-	for (int i = 0; i <= 9; ++i) {
-		o_fd2[i] = o_fds[i];
-		o_fds[i] = dup2(i, fd_offset+i);
-	}
+  int o_in2 = o_in;
+  int o_out2 = o_out;
+  int o_err2 = o_err;
+  o_in = dup2(STDIN_FILENO, fd_offset+STDIN_FILENO);
+  o_out = dup2(STDOUT_FILENO, fd_offset+STDOUT_FILENO);
+  o_err = dup2(STDERR_FILENO, fd_offset+STDERR_FILENO);
 	REFRESH_TTY;
 
 	char **args = new char*[ARG_MAX];
@@ -296,8 +310,9 @@ eval_stream(std::istream& in)
 				if (zwl.is_bare(CIND)) {
 					sword = 1;
 					/** I/O Aliases **/
-					if (*it == "^") *it = "2>"; if (*it == "^^") *it = "2>>";
-					if (*it == ">") *it = "1>"; if (*it == ">>") *it = "1>>";
+					if (*it ==  "^") *it =  "2>"; if (*it == "^^") *it = "2>>";
+					if (*it ==  ">") *it =  "1>"; if (*it == ">>") *it = "1>>";
+					if (*it == "^?") *it = "2>?"; if (*it == ">?") *it = "1>?";
 					auto len = (*it).length(); 
 					/** Separators **/
 					/*!*/if (*it == "&" || *it == ";")
@@ -309,14 +324,16 @@ eval_stream(std::istream& in)
 
 					/** I/O redirection **/
 					/*!*/else if (len == 2 && isdigit((*it)[0]) && (*it)[1] == '>')
-						{ io_right(*(it+1), (*it)[0]-'0', 0) FAIL }
+						{ io_right(*(it+1), (*it)[0]-'0', 0, 0, baks) FAIL }
 					/*!*/else if (len == 3 && isdigit((*it)[0]) && (*it)[1] == '>' && (*it)[2] == '>')
-						{ io_right(*(it+1), (*it)[0]-'0', 1) FAIL }
-					/*!*/else if (*it == "<<" )
+						{ io_right(*(it+1), (*it)[0]-'0', 1, 0, baks) FAIL }
+					/*!*/else if (len == 3 && isdigit((*it)[0]) && (*it)[1] == '>' && (*it)[2] == '?')
+						{ io_right(*(it+1), (*it)[0]-'0', 0, 1, baks) FAIL }
+					/*!*/else if (*it == "<<")
 						{ io_hedoc(*(it+1), in, STDIN_FILENO) FAIL }
 					/*!*/else if (*it == "<<<")
 						{ io_hedoc(*(it+1), in, STDOUT_FILENO) FAIL }
-					/*!*/else if (*it == "<"  )
+					/*!*/else if (*it == "<")
 						{ io_left(*(it+1)) FAIL }
 					/** Pipes **/
 					/*!*/else if (*it == "|") {
@@ -324,6 +341,7 @@ eval_stream(std::istream& in)
 							continue;
 							args[k] = NULL;
 						io_pipe(k, args);
+						RESET_FD;
 						k = 0;
 
 					/** Alias **/
@@ -368,13 +386,13 @@ eval_stream(std::istream& in)
 	  catch    (ZrcBreakHandler ex) { brk = 1; }
 	  catch (ZrcContinueHandler ex) { con = 1; }
 	delete [] args;
-	for (int i = 0; i <= 9; ++i) {
-		if (fcntl(o_fds[i], F_GETFD) != -1 && errno != EBADF) {
-			dup2(o_fds[i], i);
-			close(o_fds[i]);
-		}
-		o_fds[i] = o_fd2[i];
-	}
+  close(o_in);
+  close(o_out);
+  close(o_err);
+  o_in = o_in2;
+  o_out = o_out2;
+  o_err = o_err2;
+  RESET_FD;
 	fd_offset -= 10;
 	in.clear();
 	if (ret) throw ZrcReturnHandler();
