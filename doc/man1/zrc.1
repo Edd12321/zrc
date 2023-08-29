@@ -62,15 +62,21 @@ for more information regarding that. There are slight differences in how they ar
 	# To append stderr to a file, use ^^ DESTINATION.
 	die Goodbye, again! ^^ output_file
 
+	# To avoid clobbering use >? DESTINATION or ^? DESTINATION.
+	echo Hello, yet again! >? DESTINATION
+	die Goodbye, yet again! ^? DESTINATION
+
 	
 	# "DESTINATION" may be:
 	# - A filename
 	# - An ampersand followed by a minus sign (&-), this closes the fd.
 	# - An ampersand followed by a digit (&0, &1... &9). This dups the fd.
 	
+
+	# All these redirections can also use digits.
 	echo 'This is now stderr.' 1> &2
 	echo 'This is silent.' 1> &-
-	echo 'This is in a file.' 1> file
+	echo 'This is in a file.' 1>? file
 
 	# This is the same everywhere (spaces matter, though):
 	dirname abc/def > output.txt
@@ -170,9 +176,14 @@ As opposed to traditional shells, Zrc supports
 , which means that functions and builtins (but not external programs) can return values other than the classic "status numbers" 0-255 (they can be any string). You can access the return value of a command by using square brackets:
 .EX
 	echo [ls -all]
-	echo [`{echo ls -all}]
+	echo [{*}`{echo ls -all}]
 	echo [[[]]] #echo's 127
 	echo $?
+.EE
+.SS Process subsitution
+Zrc supports process substitution using the regular rc shell syntax.
+.EX
+	cat -v <{ps aux}
 .EE
 .SS Escape sequences
 Currently,
@@ -256,7 +267,7 @@ grammar rules. This can theoretically be used to simulate lists.
 Tilde expansion and filename globbing is done on all "barewords" (aka, all words that don't have substitutions/expansions done on them). Please note that words with backslashes and parens are still considedred "barewords".
 .EX
 	ls *
-	ls \*
+	ls \\* #same effect
 	ls ~root
 	cat ~/.zrc | wc -mlw
 

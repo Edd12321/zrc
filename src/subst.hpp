@@ -33,12 +33,12 @@ bool
 str_subst(std::string& str)
 {
 	size_t i, len, pos, cmpnd;
-	std::string tmp1, tmp2, res = "";
-	std::map<char, bool> quote;
 	bool orig_f = false;
+	char ch;
+	std::string tmp1, tmp2, res = "", out;
+	std::map<char, bool> quote;
 
 	len = str.length();
-
 	// Brace quoting:
 	// No substitutions are performed!
 	if (str[0] == '{' && str.back() == '}') {
@@ -79,24 +79,32 @@ str_subst(std::string& str)
 			break;
 
 		case '`':
+		case '<':
 			tmp1.clear();
 			tmp2.clear();
-			/************************
-			 * Command substitution *
-			 ************************/
+			/********************************
+			 * Command/process substitution *
+			 ********************************/
 			if (i < len-1 && str[i+1] == '{') {
-				/*if NO_QUOTES ++i;*/ ++i;
-				ITERATE_PAREN('{','}');
-				orig_f = in_func;
-				in_func = false;
-				std::string out = io_cap(tmp2);
+				ch = str[i];
+				++i; ITERATE_PAREN('{','}');
+				orig_f = in_func; in_func = false;
+				if (ch == '`') {
+					// `{...}
+					out = io_cap(tmp2);
+				} else {
+					// <{...}
+					out = io_proc(tmp2);
+					if (out.empty())
+						return false;
+				}
 				in_func = orig_f;
 				// Remove trailing newline unless specified otherwise
 				if (NO_QUOTES && !out.empty() && out.back() == '\n')
 					out.pop_back();
 				res += out;
 			} else {
-				res += '`';
+				res += str[i];
 			}
 			break;
 

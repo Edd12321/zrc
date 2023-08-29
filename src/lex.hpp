@@ -84,7 +84,7 @@ tokenize(std::string line, std::istream& in)
 			if (q == '{') p = '}';
 			if (q == '(') p = ')';
 			
-			if (!tmp.empty() && strchr("$`", tmp.back()) && q == '{') {
+			if (!tmp.empty() && strchr("$`<", tmp.back()) && q == '{') {
 				char b = tmp.back();
 				tmp.pop_back();
 				tmp += b;
@@ -103,7 +103,7 @@ tokenize(std::string line, std::istream& in)
 				}
 				if (q == '(') {
 					if ((line[i] == '$'|| line[i] == '[')
-					||  (i < len-1 && line[i] == '`' && line[i+1] == '{'))
+					||  (i < len-1 && (line[i] == '<' || line[i] == '`') && line[i+1] == '{'))
 						wl.make_not_bare();
 				}
 				if (line[i] == q) ++cmpnd;

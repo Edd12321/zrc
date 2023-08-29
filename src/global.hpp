@@ -7,6 +7,7 @@
 #define NONE        3
 
 #define HTMP "/tmp/zhere-XXXXXX"
+#define PTMP "/tmp/zproc-XXXXXX"
 
 #define ld long double
 

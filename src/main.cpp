@@ -15,6 +15,7 @@
 #endif
 #include <libgen.h>
 #include <limits.h>
+#include <list>
 #include <math.h>
 #include <pwd.h>
 #include <stdarg.h>
@@ -38,13 +39,15 @@
 #include <unordered_map>
 #include <vector>
 
+#include "global.hpp"
+#include "config.hpp"
+
 /** See if we can print $PS1. **/
 #define REFRESH_TTY cin_eq_in = (&std::cin == &in)
 /** Current index (in WordList) **/
 #define CIND std::distance(zwl.wl.begin(), it)
 /** Expect a word + increment pointer. **/
 #define FAIL or (can_runcmd=0); ++it; continue;
-
 
 /**
  * Check escapes at the end of a line
@@ -87,9 +90,8 @@
  * Undo redirections
  */
 #define RESET_FD {                                \
-    for (auto const& it : baks) {                 \
+    for (auto const& it : baks)                   \
         dup2(it.second, it.first);                \
-    }                                             \
 }
 
 #ifndef __cpp_lib_string_view
@@ -113,6 +115,18 @@ public:
 	int overflow(int x) { return x; }
 };
 
+struct Fifo {
+	int eval_level;
+	pid_t pid;
+	std::string filename;
+
+	~Fifo()
+	{
+		//unlink(filename.data());
+		//rmdir(dirname(filename.data()));
+	}	
+};
+
 typedef std::string FunctionName;
 typedef std::string CodeBlock;
 typedef std::string AliasName;
@@ -128,9 +142,8 @@ typedef int Jid;
   pid_t zrcpid = getpid();
   std::string ret_val;
   std::deque<bool> bg_or_fg;
+	std::list<Fifo> fifos;
   long ch_mode;
-  #include "global.hpp"
-  #include "config.hpp"
 /***** GLOBAL VARIABLES END *****/
 
 /***** FUNCTIONDECLS BEGIN *****/
@@ -179,9 +192,11 @@ typedef int Jid;
   template<typename T> std::string  combine(int          , T, int     );
   extern void               exec           (int          , char**     );
   std::string               io_cap         (std::string               );
+	std::string               io_proc        (std::string               );
   bool                     str_subst_expect(std::string  , std::istream&,bool);
   bool                      io_left        (std::string               );
-  bool                      io_right(std::string, int, bool, bool, std::map<int,int>&);
+  bool                      io_right       (std::string  , int   , bool,
+	                                          bool         , std::map<int,int>&);
   bool                      io_hedoc       (std::string  , std::istream&,bool);
   void                      io_pipe        (int          , char**     );
   static inline void        run_function   (std::string const&        );
@@ -270,6 +285,7 @@ zrc_fmt(const char *fmt, Var... args)
  * @param {istream&}in
  * @return void
  */
+
 static std::string
 eval_stream(std::istream& in)
 {
@@ -280,7 +296,7 @@ eval_stream(std::istream& in)
 	long   k;
 	size_t len;
   std::map<int, int> baks;
-	// Each "stack frame" restores its file descriptors
+	// Each "eval level" restores its file descriptors
 	fd_offset += 10;
   int o_in2 = o_in;
   int o_out2 = o_out;

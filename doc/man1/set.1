@@ -31,7 +31,7 @@ When the equals sign is preceded by an arithmetic operator, the construct:
 .EE
 is equivalent to:
 .EX
-	set a = [expr (a)OP(b)]
+	set a = [expr ($a)OP($b)]
 .EE
 
 .SH EXAMPLES
@@ -43,5 +43,9 @@ is equivalent to:
 	set a -=  4  # a is now 1
 	set a *=  16 # a is now 16
 	set a >>= 1  # a is now 8
+
+	# Chaining assignments
+	set a = 1 \\
+		b = 2 c := 3 d &&= 5
 	# etc.
 .EE

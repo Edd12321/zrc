@@ -152,7 +152,9 @@ exec(int argc, char *argv[])
 			}
 		}
 	}
-	
+	fifos.remove_if([](Fifo const& f) {
+		return f.eval_level == fd_offset;
+	});	
 	// Reset/cleanup everything for next command
 	dup2(o_in, STDIN_FILENO);
 	dup2(o_out, STDOUT_FILENO);
@@ -171,7 +173,7 @@ exec(int argc, char *argv[])
 
 /** Captures a program fragment's standard output.
  *
- * @param {string} frag
+ * @param {string}frag
  * @return string
  */
 std::string
@@ -204,6 +206,44 @@ io_cap(std::string frag)
 	}
 	do {} while (wait(NULL) != -1);
 	return res;
+}
+
+/** Perform process substitution/pipeline branching.
+ * 
+ * @param {string}frag
+ * @return string
+ */
+std::string
+io_proc(std::string frag)
+{
+	char temp[PATH_MAX];
+#ifdef __ANDROID__
+	strcpy( temp, (geteuid()) != 0
+			? "/data/data/com.termux/files/usr" PTMP
+			: PTMP );
+#else
+	strcpy(temp, PTMP);
+#endif
+	char *dir = mkdtemp(temp);
+	char fifo[PATH_MAX];
+	pid_t pid;
+	if (!dir) {
+		perror("mkdtemp: ");
+		return "";
+	}
+	sprintf(fifo, "%s/fifo", dir);
+	mkdir(dir, 0755);
+	mkfifo(fifo, 0666);
+	pid = fork();
+	if (pid == 0) {
+		NO_SIGEXIT;
+		chk_exit = true;
+		dup2(open(fifo, O_WRONLY), STDOUT_FILENO);
+		eval(frag);
+		exit(0);
+	}
+	fifos.push_back({fd_offset, pid, fifo});
+	return fifo;
 }
 
 /** Substitute (and optionally glob) a word for use in redirects.

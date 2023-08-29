@@ -54,6 +54,7 @@ Zrc is just ~600KB in size because its implementation is to the point and simple
 		- [X] Separate envvar array (`$env(...)`)
 	- [X] Command substitution
 		- [X] Output (`` `{...} ``)
+        - [X] Process (`<{...}`)
 		- [X] Return value (`[...]`)
 - [X] Built-in commands (like `expr`, `jobs`, etc. but there are too many to list. View `dispatch.hpp`)
 - [X] Conditional logic/flow control with full C arithmetic operator set
