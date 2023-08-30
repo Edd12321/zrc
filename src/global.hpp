@@ -9,6 +9,9 @@
 #define HTMP "/tmp/zhere-XXXXXX"
 #define PTMP "/tmp/zproc-XXXXXX"
 
+// File descriptors
+#define ZRC_DEFAULT_FD_OFFSET 10
+
 #define ld long double
 
 // Special variables

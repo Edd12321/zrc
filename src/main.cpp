@@ -78,22 +78,14 @@
     std::cin.clear();                             \
     if (can_runcmd) {                             \
         exec(k, args);                            \
-        RESET_FD;                                 \
-        baks.clear();                             \
+        baks.~FdHelper();                         \
+        bak2.~FdHelper();                         \
         if (!bg_or_fg.empty())                    \
             bg_or_fg.pop_front();                 \
     }                                             \
     can_runcmd = X;                               \
     k = 0;                                        \
 } while (0)
-
-/**
- * Undo redirections
- */
-#define RESET_FD {                                \
-    for (auto const& it : baks)                   \
-        dup2(it.second, it.first);                \
-}
 
 #ifndef __cpp_lib_string_view
 	namespace std
@@ -109,6 +101,8 @@ class ZrcReturnHandler;
 class ZrcBreakHandler;
 class ZrcContinueHandler;
 class BlockHandler;
+class FdHelper;
+struct Fifo;
 
 class NullIOSink : public std::streambuf
 {
@@ -128,7 +122,11 @@ struct Fifo {
 	{
 		kill(pid, SIGKILL);
 		unlink(filename.data());
-		rmdir(dirname(filename.data()));
+
+		// ugly hack for old C++11 compilers
+		char *fn = strdup(filename.data());
+		rmdir(dirname(fn));
+		free(fn);
 	}	
 };
 
@@ -142,7 +140,7 @@ typedef int Jid;
 /***** GLOBAL VARIABLES BEGIN *****/
   extern char **environ;
 
-  int fd_offset, o_in, o_out, o_err;
+  int fd_offset;
   bool cin_eq_in, w, make_new_jobs = true, chk_exit;
   pid_t zrcpid = getpid();
   std::string ret_val;
@@ -198,12 +196,12 @@ typedef int Jid;
   extern void               exec            (int          , char**              );
   std::string               io_cap          (std::string                        );
   std::string               io_proc         (std::string                        );
-  bool                      str_subst_expect(std::string  ,  std::istream&, bool);
-  bool                      io_left         (std::string                        );
-  bool                      io_right        (std::string  , int  , bool , bool
-                                                          ,  std::map<int,int>& );
+  bool                      str_subst_expect(std::string  , std::istream& , bool);
+  bool                      io_left         (std::string  , FdHelper&           );
+  bool                      io_right        (std::string  , int  , bool , bool ,
+                                                                    FdHelper& );
   bool                      io_hedoc        (std::string  ,  std::istream&,bool );
-  void                      io_pipe         (int          ,  char**             );
+  void                      io_pipe         (int          ,  char** , FdHelper& );
   static inline void        run_function    (std::string const&                 );
   // EXEC.HPP
   
@@ -298,19 +296,13 @@ eval_stream(std::istream& in)
 	WordList    zwl, gbzwl, spl;
 	bool   sword, glb, can_runcmd=1;
 	bool   ret = 0, brk = 0, con = 0;
+	bool   found_pipe = 0;
 	long   k;
 	size_t len;
-  std::map<int, int> baks;
 	// Each "eval level" restores its file descriptors
-	fd_offset += 10;
-  int o_in2 = o_in;
-  int o_out2 = o_out;
-  int o_err2 = o_err;
-  o_in = dup2(STDIN_FILENO, fd_offset+STDIN_FILENO);
-  o_out = dup2(STDOUT_FILENO, fd_offset+STDOUT_FILENO);
-  o_err = dup2(STDERR_FILENO, fd_offset+STDERR_FILENO);
+	fd_offset += ZRC_DEFAULT_FD_OFFSET;
+	FdHelper baks, bak2;
 	REFRESH_TTY;
-
 	char **args = new char*[ARG_MAX];
 	try {
 		while (zrc_read_line(in, line)) {
@@ -351,22 +343,25 @@ eval_stream(std::istream& in)
 					/*!*/else if (len == 3 && isdigit((*it)[0]) && (*it)[1] == '>' && (*it)[2] == '?')
 						{ io_right(*(it+1), (*it)[0]-'0', 0, 1, baks) FAIL }
 					/*!*/else if (*it == "<<")
-						{ io_hedoc(*(it+1), in, STDIN_FILENO) FAIL }
+						{ io_hedoc(*(it+1), in, STDIN_FILENO, baks) FAIL }
 					/*!*/else if (*it == "<<<")
-						{ io_hedoc(*(it+1), in, STDOUT_FILENO) FAIL }
+						{ io_hedoc(*(it+1), in, STDOUT_FILENO, baks) FAIL }
 					/*!*/else if (*it == "<")
-						{ io_left(*(it+1)) FAIL }
+						{ io_left(*(it+1), baks) FAIL }
 					/** Pipes **/
 					/*!*/else if (*it == "|") {
 						if (!can_runcmd)
 							continue;
-							args[k] = NULL;
-						io_pipe(k, args);
-						RESET_FD;
+						if (!bak2.find(STDIN_FILENO))
+							bak2.add_fd(STDIN_FILENO);
+						if (!baks.find(STDOUT_FILENO))
+							baks.add_fd(STDOUT_FILENO);
+						args[k] = NULL;
+						io_pipe(k, args, baks);
 						k = 0;
 
 					/** Alias **/
-					} else if (!k && aliases.find(*it) != aliases.end()){
+					} else if (!k && aliases.find(*it) != aliases.end()) {
 						sword = 0;
 						for (std::string& str : aliases[*it].wl) {
 							if (!str_subst(str))
@@ -407,13 +402,6 @@ eval_stream(std::istream& in)
 	  catch    (ZrcBreakHandler ex) { brk = 1; }
 	  catch (ZrcContinueHandler ex) { con = 1; }
 	delete [] args;
-  close(o_in);
-  close(o_out);
-  close(o_err);
-  o_in = o_in2;
-  o_out = o_out2;
-  o_err = o_err2;
-  RESET_FD;
 	fd_offset -= 10;
 	in.clear();
 	if (ret) throw ZrcReturnHandler();

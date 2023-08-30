@@ -208,10 +208,10 @@ expr(std::string e, ExprType mode)
 				while (isnum(e[i]) && i < len)
 					buf += e[i++];
 				--i;
-				try {
-					nums.push(std::stold(buf));
-				} catch (std::exception& ex) 
-					{}
+				try
+					{ nums.push(std::stold(buf)); }
+				catch (std::exception& ex) 
+					{ }
 
 			/// opening paren
 			} else if (e[i] == '(') {
@@ -253,11 +253,10 @@ expr(std::string e, ExprType mode)
 		ld val;
 		while (ss >> tok) {
 			bool isop = false;
-			try {
-				val = std::stold(tok);
-			} catch (std::exception& ex) {
-				isop = true;
-			}
+			try 
+				{ val = std::stold(tok); }
+			catch (std::exception& ex)
+				{ isop = true; }
 			if (isop && !nums.empty()) {
 				if (!expr_op(tok[0], nums, ops))
 					INVALIDSYN;

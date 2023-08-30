@@ -28,6 +28,48 @@
     }
 #endif
 
+/** Utility class to undo redirections **/
+class FdHelper
+{
+private:
+	enum FdAct : signed int {
+		FD_ACT_NOP = -1, FD_ACT_CLOSE = -2
+	};
+
+	int baks[10];
+public:
+	FdHelper()
+		{ std::fill_n(baks, 10, FD_ACT_NOP); }
+	bool find(int fd)
+		{ return baks[fd] != FD_ACT_NOP; }
+
+	int
+	add_fd(int fd)
+	{
+		if (baks[fd] == FD_ACT_NOP) {
+			baks[fd] = (fcntl(fd, F_GETFD) != -1 || errno != EBADF)
+				? dup2(fd, fd+fd_offset)
+				: FdAct::FD_ACT_CLOSE;
+		}
+		return baks[fd];
+	}
+
+	~FdHelper()
+	{
+		for (int i = 0; i <= 9; ++i) {
+			if (baks[i] == FdAct::FD_ACT_CLOSE) {
+				close(i);
+			} else if (baks[i] != FdAct::FD_ACT_NOP) {
+				dup2(baks[i], i);
+				close(baks[i]);
+			}
+			baks[i] = FD_ACT_NOP;
+		}
+		if (tcgetpgrp(STDIN_FILENO) != zrcpid)
+			tcsetpgrp(STDIN_FILENO, zrcpid);
+	}
+};
+
 /** Converts an array into a space-separated string.
  * 
  * @param {int}c,{char**}v,{int}i
@@ -37,11 +79,11 @@ template<typename T> std::string
 combine(int c, T v, int i)
 {
     std::string buf = "";
-    for (int k = i; k < c; ++k) {
+    for (int k = i; k < c-1; ++k) {
         buf += v[k];
-        if (k < c-1)
-            buf += ' ';
+				buf += ' ';
     }
+		buf += v[c-1];
     return buf;
 }
 
@@ -54,10 +96,10 @@ static inline void
 run_function(std::string const& cmd)
 {
 	BlockHandler fh(&in_func);
-	try {
-		eval(funcs[cmd]);
-	} catch (ZrcReturnHandler ex)
-		{}
+	try
+		{ eval(funcs[cmd]); }
+	catch (ZrcReturnHandler ex)
+		{ }
 }
 
 /** Executes a list of words.
@@ -155,19 +197,11 @@ exec(int argc, char *argv[])
 	fifos.remove_if([](std::unique_ptr<Fifo> const& f) {
 		return f->eval_level == fd_offset;
 	});	
-	// Reset/cleanup everything for next command
-	dup2(o_in, STDIN_FILENO);
-	dup2(o_out, STDOUT_FILENO);
-	dup2(o_err, STDERR_FILENO);
 	for (i = 0; i < argc; ++i) {
 		free(argv[i]);
 		argv[i] = NULL;
 	}
 	make_new_jobs = false;
-
-	// set fg group ID
-	if (tcgetpgrp(STDIN_FILENO) != zrcpid)
-		tcsetpgrp(STDIN_FILENO, zrcpid);
 	setvar($RETURN, ret_val);
 }
 
@@ -228,7 +262,7 @@ io_proc(std::string frag)
 	char fifo[PATH_MAX];
 	pid_t pid;
 	if (!dir) {
-		perror("mkdtemp: ");
+		perror("mkdtemp");
 		return "";
 	}
 	sprintf(fifo, "%s/fifo", dir);
@@ -273,19 +307,22 @@ str_subst_expect1(std::string& str)
 
 /** Redirects standard input.
  *
- * @param {string}fn
+ * @param {string}fn,{FdHelper&}fdh
  * @return void
  */
 bool
-io_left(std::string fn)
+io_left(std::string fn, FdHelper& fdh)
 {
+	int fd;
+
 	if (!str_subst_expect1(fn))
 		return 0;
 	if (access(fn.c_str(), F_OK)) {
 		perror(fn.c_str());
 		return 0;
 	}
-	int fd = open(fn.data(), O_RDONLY);
+	fd = open(fn.data(), O_RDONLY);
+	fdh.add_fd(STDIN_FILENO);
 	dup2(fd, STDIN_FILENO);
 	close(fd);
 	return 1;
@@ -293,17 +330,22 @@ io_left(std::string fn)
 
 /** Redirects Fd #n (can also append to a file).
  *
- * @param {string}exp,{int}fd,{bool}app,{bool}noclob,{map<int,int>&}baks
+ * @param {string}exp,{int}fd,{bool}app,{bool}noclob,{FdHelper&}baks
  * @return void
  */
 bool
-io_right(std::string exp, int fd, bool app, bool noclob, std::map<int,int>& baks)
+io_right(std::string exp, int fd, bool app, bool noclob, FdHelper& fdh)
 {
 	auto len = exp.length();
+	int fd2;
+	if (exp == "&" || exp == ";" || exp == "&&" || exp == "||") {
+		std::cerr << errmsg << "Unexpected '" << exp << "'\n";
+		return 0;
+	}
 
 	/* close file descriptor (...> &-) */
 	if (exp == "&-") {
-		baks[fd] = dup2(fd, fd_offset+fd);
+		fdh.add_fd(fd);
 		close(fd);
 		return 1;
 	}
@@ -315,7 +357,13 @@ io_right(std::string exp, int fd, bool app, bool noclob, std::map<int,int>& baks
 			return 0;
 		}
 		exp[1] -= '0';
-		baks[fd] = dup2(fd, fd_offset+fd);
+		if (fcntl(exp[1], F_GETFL) < 0 && errno == EBADF) {
+			char s[2];
+			s[0] = exp[1]+'0', s[1] = '\0';
+			perror(s);
+			return 0;
+		}
+		fdh.add_fd(fd);
 		dup2(exp[1], fd);
 		return 1;
 	}
@@ -323,26 +371,32 @@ io_right(std::string exp, int fd, bool app, bool noclob, std::map<int,int>& baks
 	if (!str_subst_expect1(exp))
 		return 0;
 	if (app) {
-		baks[fd] = dup2(fd, fd_offset+fd);
-		dup2(open(exp.data(), O_CREAT|O_APPEND|O_WRONLY, 0644), fd);
+		fdh.add_fd(fd);
+		fd2 = open(exp.data(), O_CREAT|O_APPEND|O_WRONLY, 0644);
+		dup2(fd2, fd);
+		close(fd2);
 		return 1;
 	} else if (noclob && !access(exp.data(), F_OK)) {
 		std::cerr << warnmsg << "The file " << exp.data() << " already exists\n";
 		return 0;
 	} else {
-		baks[fd] = dup2(fd, fd_offset+fd);
-		dup2(open(exp.data(), O_WRONLY|O_TRUNC|O_CREAT,  0600), fd);
+		fdh.add_fd(fd);
+		fd2 = open(exp.data(), O_CREAT|O_TRUNC|O_WRONLY, 0600);
+		if (fd2 != fd) {
+			dup2(fd2, fd);
+			close(fd2);
+		}
 		return 1;
 	}
 }
 
 /** Converts stdout to stdin.
  * 
- * @param {int}argc,{char**}argv
+ * @param {int}argc,{char**}argv,{FdHelper&}fdh
  * @return void
  */
 void
-io_pipe(int argc, char *argv[])
+io_pipe(int argc, char *argv[], FdHelper& fdh)
 {
 	int pd[2];
 	pipe(pd);
@@ -351,17 +405,18 @@ io_pipe(int argc, char *argv[])
 
 	// Run
 	exec(argc, argv);
+	fdh.~FdHelper();
 	dup2(pd[0], STDIN_FILENO);
 	close(pd[0]);
 }
 
 /** Heredocs/herestrings support
  *
- * @param {string}hs,{istream&}in,bool mode
+ * @param {string}hs,{istream&}in,bool mode,{FdHelper&}fdh
  * @return void
  */
 bool
-io_hedoc(std::string hs, std::istream& in, bool mode)
+io_hedoc(std::string hs, std::istream& in, bool mode, FdHelper& fdh)
 {
 	std::string line, hs1;
 	int fd;
@@ -396,7 +451,7 @@ io_hedoc(std::string hs, std::istream& in, bool mode)
 		}
 	}
 	close(fd);
-	io_left(temp);
+	io_left(temp, fdh);
 	unlink(temp);
 	return 1;
 }

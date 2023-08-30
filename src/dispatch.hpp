@@ -872,6 +872,7 @@ Command(rehash) {
 	std::istringstream iss{getvar($PATH)};
 	std::string tmp;
 	struct dirent *entry;
+	struct stat sb;
 	DIR *d = NULL;
 	hctable.clear();
 	while (getline(iss, tmp, ':')) {
@@ -879,8 +880,12 @@ Command(rehash) {
 		if (d != NULL) {
 			while ((entry = readdir(d))) {
 				char *nm = entry->d_name;
-				if (hctable.find(nm) == hctable.end())
-					hctable[nm] = zrc_fmt("%s/%s", tmp.c_str(), nm);
+				char nm2[PATH_MAX];
+				sprintf(nm2, "%s/%s", tmp.c_str(), nm);
+				if (hctable.find(nm) == hctable.end()
+				&&  !stat(nm2, &sb)
+				&&  sb.st_mode & S_IXUSR)
+				  hctable[nm] = nm2;
 			}
 		}
 		closedir(d);

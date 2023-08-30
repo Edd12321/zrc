@@ -9,18 +9,18 @@
 #endif
 
 /** Moving cursor **/
-#define CURSOR_FWD(X) std::cout << "\033[" << X << "C"
-#define CURSOR_BWD(X) std::cout << "\033[" << X << "D"
+#define CURSOR_FWD(X) std::cerr << "\033[" << X << "C"
+#define CURSOR_BWD(X) std::cerr << "\033[" << X << "D"
 
 /* Display $PS1 */
 #define SHOW_PROMPT \
 	if (s_hm.find($PS1) != s_hm.end()) {\
 		char *argv[2];\
 		argv[0] = strdup("@");\
-		argv[1] = strdup((S("echo -n ")+getvar($PS1)).c_str());\
+		argv[1] = strdup((S("echo -n 1> &2 ")+getvar($PS1)).c_str());\
 		exec(2, argv);\
 	} else {\
-		std::cout << default_prompt << std::flush;\
+		std::cerr << default_prompt << std::flush;\
 	}
 
 #if defined USE_ZLINEEDIT && USE_ZLINEEDIT == 1
@@ -81,9 +81,9 @@ namespace zlineshort
 	histpos = (X);\
 	buf     = (histpos == histmax) ? "" : vec[histpos];\
 	if (cursor_pos) CURSOR_BWD(cursor_pos);\
-	for (long i = 0; i < len; ++i) std::cout << ' ';\
+	for (long i = 0; i < len; ++i) std::cerr << ' ';\
 	if (len) CURSOR_BWD(len);\
-	std::cout << buf;\
+	std::cerr << buf;\
 	cursor_pos = buf.length();\
 }
 	sub dn(std::string& buf)
@@ -114,7 +114,7 @@ namespace zlineshort
 		if (cursor_pos && cursor_pos <= len) {
 			CURSOR_BWD(cursor_pos);
 			buf.erase(--cursor_pos, 1);
-			std::cout << buf << ' ';
+			std::cerr << buf << ' ';
 			CURSOR_BWD(len-cursor_pos);
 		}
 	}
@@ -124,7 +124,7 @@ namespace zlineshort
 		if (cursor_pos)
 			CURSOR_BWD(cursor_pos);
 		buf.insert(cursor_pos++, 1, c);
-		std::cout << buf;
+		std::cerr << buf;
 		len = buf.length();
 		if (cursor_pos != len)
 			CURSOR_BWD(len-cursor_pos);
@@ -138,27 +138,27 @@ namespace zlineshort
 		size_t term_hi, term_wd;
 		/* init terminal screen size vars */
 		init_term(term_hi, term_wd);
-		std::cout << '\n';
+		std::cerr << '\n';
 		for (len = vec.size(); i < len; ++i) {
-			std::cout << std::setw(term_wd/3) << vec[i];
+			std::cerr << std::setw(term_wd/3) << vec[i];
 			if ((i+1) % 3 == 0) {
-				std::cout << '\n';
+				std::cerr << '\n';
 				if (term_hi*3-6 <= i) {
-					std::cout << "--More--";
+					std::cerr << "--More--";
 					char tmp;
 					while (zrawch(tmp)) {
 						if (tmp == 'q') {
-							std::cout << std::endl;
+							std::cerr << std::endl;
 							return (dp_list = i);
 						} else if (tmp == KEY_RETURN) {
-							std::cout << "\b \b\b \b\b \b\b \b\b \b\b \b\b \b\b \b";
+							std::cerr << "\b \b\b \b\b \b\b \b\b \b\b \b\b \b\b \b";
 							break;
 						}
 					}
 				}
 			}
 		}
-		std::cout << std::endl;
+		std::cerr << std::endl;
 		return (dp_list = i);
 	}
 	sub tab(std::string& buf)
@@ -168,10 +168,10 @@ namespace zlineshort
 		WordList wlist = tokenize(buf, fin);
 		WordList globbed = glob(wlist.back()+"*");
 		if (globbed.size() == 1) {
-			wlist.wl[wlist.size()-1] = globbed.wl[0];
+			wlist.wl.back() = globbed.wl[0];
 			buf = combine(wlist.size(), wlist.wl, 0);
 			CURSOR_BWD(cursor_pos);
-			std::cout << buf;
+			std::cerr << buf;
 			cursor_pos = buf.length();
 		} else if (globbed.size()) {
 			list(globbed.wl);
@@ -193,7 +193,7 @@ namespace zlineshort
 			if (d != NULL) {
 				while ((entry = readdir(d))) {
 					std::string s{entry->d_name};
-					if (!s.rfind(buf, 0))
+					if (s != "." && s != ".." && !s.rfind(buf, 0))
 						vec.emplace_back(s);
 				}
 				closedir(d);
@@ -206,7 +206,7 @@ namespace zlineshort
 		if (vec.size() == 1) {
 			buf = vec[0];
 			CURSOR_BWD(cursor_pos);
-			std::cout << buf;
+			std::cerr << buf;
 			cursor_pos = buf.length();
 		} else if (!vec.size()) {
 			tab(buf);
@@ -269,7 +269,7 @@ zlineedit(std::string& buf)
 #endif
 		
 		case KEY_RETURN:
-			std::cout << std::endl;
+			std::cerr << std::endl;
 			W(buf);
 			std::cin.clear();
 			return true;
@@ -286,7 +286,7 @@ zlineedit(std::string& buf)
 				cmd(buf);
 			if (dp_list) {
 				SHOW_PROMPT;
-				std::cout << buf;
+				std::cerr << buf;
 			}
 			dp_list = false;
 			break;
@@ -310,7 +310,7 @@ zrc_read_line(std::istream& in, std::string& buf, T const& prompt)
 {
 	//std::cin.clear();
 	if (TERMINAL) {
-		std::cout << prompt << std::flush;
+		std::cerr << prompt << std::flush;
 		return zlineedit(buf);
 	} else {
 		return !std::getline(in, buf).fail();
