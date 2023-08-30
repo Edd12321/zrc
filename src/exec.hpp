@@ -152,8 +152,8 @@ exec(int argc, char *argv[])
 			}
 		}
 	}
-	fifos.remove_if([](Fifo const& f) {
-		return f.eval_level == fd_offset;
+	fifos.remove_if([](std::unique_ptr<Fifo> const& f) {
+		return f->eval_level == fd_offset;
 	});	
 	// Reset/cleanup everything for next command
 	dup2(o_in, STDIN_FILENO);
@@ -242,7 +242,7 @@ io_proc(std::string frag)
 		eval(frag);
 		exit(0);
 	}
-	fifos.push_back({fd_offset, pid, fifo});
+	fifos.emplace_back(std::make_unique<Fifo>(fd_offset, pid, fifo));
 	return fifo;
 }
 

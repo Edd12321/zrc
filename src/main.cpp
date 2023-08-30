@@ -32,6 +32,7 @@
 #include <istream>
 #include <iomanip>
 #include <map>
+#include <memory>
 #include <regex>
 #include <sstream>
 #include <stack>
@@ -120,10 +121,14 @@ struct Fifo {
 	pid_t pid;
 	std::string filename;
 
+	Fifo(int eval_new, pid_t pid_new, std::string f_new)
+		{ eval_level = eval_new, pid = pid_new, filename = f_new; }
+
 	~Fifo()
 	{
-		//unlink(filename.data());
-		//rmdir(dirname(filename.data()));
+		kill(pid, SIGKILL);
+		unlink(filename.data());
+		rmdir(dirname(filename.data()));
 	}	
 };
 
@@ -142,7 +147,7 @@ typedef int Jid;
   pid_t zrcpid = getpid();
   std::string ret_val;
   std::deque<bool> bg_or_fg;
-	std::list<Fifo> fifos;
+	std::list<std::unique_ptr<Fifo> > fifos;
   long ch_mode;
 /***** GLOBAL VARIABLES END *****/
 
