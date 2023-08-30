@@ -152,73 +152,73 @@ typedef int Jid;
 /***** GLOBAL VARIABLES END *****/
 
 /***** FUNCTIONDECLS BEGIN *****/
-  static bool               die            (std::string_view          );
-  static inline bool        is_number      (std::string_view          );
-  WordList                  glob           (std::string_view          );
-  template<typename... Var> std::string zrc_fmt(const char *fmt, Var... args);
-  static std::string        eval_stream    (std::istream&             );
-  template<typename T>      std::string          eval(T const&        );
+  static bool               die             (std::string_view                   );
+  static inline bool        is_number       (std::string_view                   );
+  WordList                  glob            (std::string_view                   );
+  template<typename... Var> std::string zrc_fmt(const char *fmt , Var... args   );
+  static std::string        eval_stream     (std::istream&                      );
+  template<typename T>      std::string           eval(T const&                 );
   // MAIN.CPP
 
-  WordList                  tokenize       (std::string, std::istream&);
+  WordList                  tokenize        (std::string , std::istream&        );
   // LEX.HPP
 
-  long                      array_magic    (char* , int               );
-  std::string               array          (int   , char**            );
-  std::string               string         (int   , char**            );
-  int                       echo           (int   , char**            );
+  long                      array_magic     (char* , int                        );
+  std::string               array           (int   , char**                     );
+  std::string               string          (int   , char**                     );
+  int                       echo            (int   , char**                     );
   // ARRAY.HPP, STRING.HPP, READ.HPP
 
-  extern inline void        jobs           (void                      );
-  Jid                       addjob         (pid_t , int , int , char**);
-  static void               deljob         (Jid                       );
-  static pid_t              getfg          (void                      );
-  void                      upper          (char*                     );
-  void                      sigchld_handler(int                       );
-  void                      sigint_handler (int                       );
-  void                      sigtstp_handler(int                       );
-  void                      sigquit_handler(int                       );
-  static inline void        async_message  (int, int, int, const char*);
-  extern std::string        bg_fg          (int, char**               );
+  extern inline void        jobs            (void                               );
+  Jid                       addjob          (pid_t , int , int , char**         );
+  static void               deljob          (Jid                                );
+  static pid_t              getfg           (void                               );
+  void                      upper           (char*                              );
+  void                      sigchld_handler (int                                );
+  void                      sigint_handler  (int                                );
+  void                      sigtstp_handler (int                                );
+  void                      sigquit_handler (int                                );
+  static inline void        async_message   (int   , int , int , const char*    );
+  extern std::string        bg_fg           (int   , char**                     );
   
   typedef void Handle(int);
-  Handle*                   signal2        (int, Handle*              );
+  Handle*                   signal2         (int, Handle*                       );
   // SIGHANDLER.HPP
 
-  bool                      str_subst      (std::string&              );
+  bool                      str_subst       (std::string&                       );
   // SUBST.HPP
 
-  static inline bool        lassoc         (char                      );
-  static inline std::string ldtos          (ld                        );
-  extern inline bool        is_expr        (std::string_view          );
-	std::string               expr           (std::string               );
+  static inline bool        lassoc          (char                               );
+  static inline std::string ldtos           (ld                                 );
+  extern inline bool        is_expr         (std::string_view                   );
+  std::string               expr            (std::string                        );
   // EXPR.CPP, EXPR.HPP
 
-  template<typename T> std::string  combine(int          , T, int     );
-  extern void               exec           (int          , char**     );
-  std::string               io_cap         (std::string               );
-	std::string               io_proc        (std::string               );
-  bool                     str_subst_expect(std::string  , std::istream&,bool);
-  bool                      io_left        (std::string               );
-  bool                      io_right       (std::string  , int   , bool,
-	                                          bool         , std::map<int,int>&);
-  bool                      io_hedoc       (std::string  , std::istream&,bool);
-  void                      io_pipe        (int          , char**     );
-  static inline void        run_function   (std::string const&        );
-	// EXEC.HPP
+  template<typename T> std::string  combine (int          , T, int              );
+  extern void               exec            (int          , char**              );
+  std::string               io_cap          (std::string                        );
+  std::string               io_proc         (std::string                        );
+  bool                      str_subst_expect(std::string  ,  std::istream&, bool);
+  bool                      io_left         (std::string                        );
+  bool                      io_right        (std::string  , int  , bool , bool
+                                                          ,  std::map<int,int>& );
+  bool                      io_hedoc        (std::string  ,  std::istream&,bool );
+  void                      io_pipe         (int          ,  char**             );
+  static inline void        run_function    (std::string const&                 );
+  // EXEC.HPP
   
-  std::string               getvar         (std::string               );
-  void                      setvar         (std::string  , std::string);
-  void                      unsetvar       (std::string               );
+  std::string               getvar          (std::string                        );
+  void                      setvar          (std::string , std::string          );
+  void                      unsetvar        (std::string                        );
   // VARIABLE.HPP
   
-  inline bool               fd_parse       (std::string_view,size_t   );
+  inline bool               fd_parse        (std::string_view , size_t          );
   // FD.HPP
 
-  static inline bool        zrawch         (char&                     );
-  bool                      zlineedit      (std::string&              );
-  template<typename T> bool zrc_read_line  (std::istream&,std::string&,T const&);
-  inline bool               zrc_read_line  (std::istream&,std::string&);
+  static inline bool        zrawch          (char&                              );
+  bool                      zlineedit       (std::string&                       );
+  template<typename T> bool zrc_read_line   (std::istream&,std::string&,T const&);
+  inline bool               zrc_read_line   (std::istream&,std::string&         );
   // ZLINEEDIT.HPP
 
   #include "lex.hpp"
