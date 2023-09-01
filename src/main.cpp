@@ -18,6 +18,7 @@
 #include <list>
 #include <math.h>
 #include <pwd.h>
+#include <set>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,8 +48,18 @@
 #define REFRESH_TTY cin_eq_in = (&std::cin == &in)
 /** Current index (in WordList) **/
 #define CIND std::distance(zwl.wl.begin(), it)
-/** Expect a word + increment pointer. **/
-#define FAIL or (can_runcmd=0); ++it; continue;
+/** Expect a word pointer + increment pointer. **/
+#define FAILSAFE(X) {            \
+		auto x = it+1;               \
+		if (it+1 != zwl.wl.end() && std::set<std::string>{"&", ";", "&&", "||"}.count(*(it+1))) {\
+			std::cerr << errmsg << "Unexpected '" << *(it+1) << "'\n";\
+			can_runcmd = 0;						 \
+			continue;									 \
+		}                            \
+ 		X or (can_runcmd=0); 				 \
+		++it;												 \
+    continue;                    \
+}
 
 /**
  * Check escapes at the end of a line
@@ -337,17 +348,17 @@ eval_stream(std::istream& in)
 
 					/** I/O redirection **/
 					/*!*/else if (len == 2 && isdigit((*it)[0]) && (*it)[1] == '>')
-						{ io_right(*(it+1), (*it)[0]-'0', 0, 0, baks) FAIL }
+						{ FAILSAFE(io_right(*(it+1), (*it)[0]-'0', 0, 0, baks)) }
 					/*!*/else if (len == 3 && isdigit((*it)[0]) && (*it)[1] == '>' && (*it)[2] == '>')
-						{ io_right(*(it+1), (*it)[0]-'0', 1, 0, baks) FAIL }
+						{ FAILSAFE(io_right(*(it+1), (*it)[0]-'0', 1, 0, baks)) }
 					/*!*/else if (len == 3 && isdigit((*it)[0]) && (*it)[1] == '>' && (*it)[2] == '?')
-						{ io_right(*(it+1), (*it)[0]-'0', 0, 1, baks) FAIL }
+						{ FAILSAFE(io_right(*(it+1), (*it)[0]-'0', 0, 1, baks)) }
 					/*!*/else if (*it == "<<")
-						{ io_hedoc(*(it+1), in, STDIN_FILENO, baks) FAIL }
+						{ FAILSAFE(io_hedoc(*(it+1), in, STDIN_FILENO, baks)) }
 					/*!*/else if (*it == "<<<")
-						{ io_hedoc(*(it+1), in, STDOUT_FILENO, baks) FAIL }
+						{ FAILSAFE(io_hedoc(*(it+1), in, STDOUT_FILENO, baks)) }
 					/*!*/else if (*it == "<")
-						{ io_left(*(it+1), baks) FAIL }
+						{ FAILSAFE(io_left(*(it+1), baks)) }
 					/** Pipes **/
 					/*!*/else if (*it == "|") {
 						if (!can_runcmd)

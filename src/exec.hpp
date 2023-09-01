@@ -308,7 +308,7 @@ str_subst_expect1(std::string& str)
 /** Redirects standard input.
  *
  * @param {string}fn,{FdHelper&}fdh
- * @return void
+ * @return bool
  */
 bool
 io_left(std::string fn, FdHelper& fdh)
@@ -331,17 +331,13 @@ io_left(std::string fn, FdHelper& fdh)
 /** Redirects Fd #n (can also append to a file).
  *
  * @param {string}exp,{int}fd,{bool}app,{bool}noclob,{FdHelper&}baks
- * @return void
+ * @return bool
  */
 bool
 io_right(std::string exp, int fd, bool app, bool noclob, FdHelper& fdh)
 {
 	auto len = exp.length();
 	int fd2;
-	if (exp == "&" || exp == ";" || exp == "&&" || exp == "||") {
-		std::cerr << errmsg << "Unexpected '" << exp << "'\n";
-		return 0;
-	}
 
 	/* close file descriptor (...> &-) */
 	if (exp == "&-") {
@@ -369,7 +365,7 @@ io_right(std::string exp, int fd, bool app, bool noclob, FdHelper& fdh)
 	}
 
 	if (!str_subst_expect1(exp))
-		return 0;
+		return FD_SYNTAX_ERROR;
 	if (app) {
 		fdh.add_fd(fd);
 		fd2 = open(exp.data(), O_CREAT|O_APPEND|O_WRONLY, 0644);
@@ -413,7 +409,7 @@ io_pipe(int argc, char *argv[], FdHelper& fdh)
 /** Heredocs/herestrings support
  *
  * @param {string}hs,{istream&}in,bool mode,{FdHelper&}fdh
- * @return void
+ * @return bool
  */
 bool
 io_hedoc(std::string hs, std::istream& in, bool mode, FdHelper& fdh)
