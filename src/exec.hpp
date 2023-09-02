@@ -70,6 +70,87 @@ public:
 	}
 };
 
+/** Perform fd redirections one at a time **/
+class Redirector
+{
+private:
+	enum RedirTo : signed int {
+		TO_FILE = -1, FROM_FILE = -2, TO_FD = -3, TO_CLOSE = -4
+	};
+
+	struct RedirAct {
+		int fd;
+
+		struct Target {
+			RedirTo where;
+			int fd;
+			bool app;
+			bool noclob;
+			bool hedoc;
+			std::string filename;
+		} target;
+	};
+	std::vector<RedirAct> acts;
+public:
+	// Destructor gets magically called and fds get reset
+	FdHelper fdh;
+
+	/** Add redirections **/
+	void redir_tofile(int fd, bool app, bool noclob, std::string filename)
+		{ fdh.add_fd(fd); acts.push_back({fd, {TO_FILE, 0, app, noclob,0, filename}}); }
+	void redir_tofd(int fd1, int fd2)
+		{ fdh.add_fd(fd2); acts.push_back({fd1, {TO_FD, fd2, 0, 0, 0, ""}}); }
+	void redir_close(int fd)
+		{ fdh.add_fd(fd); acts.push_back({fd, {TO_CLOSE, 0, 0, 0, 0, ""}}); }
+	void redir_left(int fd, std::string filename, bool hedoc=false)
+		{ fdh.add_fd(fd); acts.push_back({fd, {FROM_FILE, 0, 0, 0, hedoc, filename}}); }
+
+	void
+	do_redirs()
+	{
+		int ffd;
+		for (auto it = acts.begin(); it != acts.end(); ++it) {
+			auto fd = it->fd; auto target = it->target;
+
+			switch (target.where) {
+			/* (x)>/>> y... */
+			case TO_FILE:
+				if (target.app)
+					ffd = open(target.filename.data(), O_CREAT|O_APPEND|O_WRONLY, 0644);
+				else if (!(target.noclob && !access(target.filename.data(), F_OK)))
+					ffd = open(target.filename.data(), O_CREAT|O_TRUNC|O_WRONLY, 0600);
+				else
+					std::cerr << warnmsg 
+						<< "The file "
+						<< target.filename.data()
+						<< " already exists\n";
+				dup2(ffd, fd);
+				close(ffd);
+				break;
+		
+			/* </<</<<< x ... */
+			case FROM_FILE:
+				ffd = open(target.filename.data(), O_RDONLY);
+				dup2(ffd, fd);
+				close(ffd);
+				if (target.hedoc)
+					unlink(target.filename.data());
+				break;
+
+			/* (x)> &y ...*/
+			case TO_FD:
+				dup2(fd, target.fd);
+				break;
+
+			/* (x)> &- ... */
+			case TO_CLOSE:
+				close(fd);
+			}
+		}
+		acts.clear();
+	}
+};
+
 /** Converts an array into a space-separated string.
  * 
  * @param {int}c,{char**}v,{int}i
@@ -307,11 +388,11 @@ str_subst_expect1(std::string& str)
 
 /** Redirects standard input.
  *
- * @param {string}fn,{FdHelper&}fdh
+ * @param {string}fn,{Redirector&}red,{bool}hedoc=false
  * @return bool
  */
 bool
-io_left(std::string fn, FdHelper& fdh)
+io_left(std::string fn, Redirector& red, bool hedoc=false)
 {
 	int fd;
 
@@ -321,28 +402,24 @@ io_left(std::string fn, FdHelper& fdh)
 		perror(fn.c_str());
 		return 0;
 	}
-	fd = open(fn.data(), O_RDONLY);
-	fdh.add_fd(STDIN_FILENO);
-	dup2(fd, STDIN_FILENO);
-	close(fd);
+	red.redir_left(STDIN_FILENO, fn, hedoc);
 	return 1;
 }
 
 /** Redirects Fd #n (can also append to a file).
  *
- * @param {string}exp,{int}fd,{bool}app,{bool}noclob,{FdHelper&}baks
+ * @param {string}exp,{int}fd,{bool}app,{bool}noclob,{Redirector&}red
  * @return bool
  */
 bool
-io_right(std::string exp, int fd, bool app, bool noclob, FdHelper& fdh)
+io_right(std::string exp, int fd, bool app, bool noclob, Redirector& red)
 {
 	auto len = exp.length();
 	int fd2;
 
 	/* close file descriptor (...> &-) */
 	if (exp == "&-") {
-		fdh.add_fd(fd);
-		close(fd);
+		red.redir_close(fd);
 		return 1;
 	}
 
@@ -359,40 +436,23 @@ io_right(std::string exp, int fd, bool app, bool noclob, FdHelper& fdh)
 			perror(s);
 			return 0;
 		}
-		fdh.add_fd(fd);
-		dup2(exp[1], fd);
+		red.redir_tofd(exp[1], fd);
 		return 1;
 	}
 
 	if (!str_subst_expect1(exp))
-		return FD_SYNTAX_ERROR;
-	if (app) {
-		fdh.add_fd(fd);
-		fd2 = open(exp.data(), O_CREAT|O_APPEND|O_WRONLY, 0644);
-		dup2(fd2, fd);
-		close(fd2);
-		return 1;
-	} else if (noclob && !access(exp.data(), F_OK)) {
-		std::cerr << warnmsg << "The file " << exp.data() << " already exists\n";
 		return 0;
-	} else {
-		fdh.add_fd(fd);
-		fd2 = open(exp.data(), O_CREAT|O_TRUNC|O_WRONLY, 0600);
-		if (fd2 != fd) {
-			dup2(fd2, fd);
-			close(fd2);
-		}
-		return 1;
-	}
+	red.redir_tofile(fd, app, noclob, exp.data());
+	return 1;
 }
 
 /** Converts stdout to stdin.
  * 
- * @param {int}argc,{char**}argv,{FdHelper&}fdh
+ * @param {int}argc,{char**}argv,{Redirector&}fdh
  * @return void
  */
 void
-io_pipe(int argc, char *argv[], FdHelper& fdh)
+io_pipe(int argc, char *argv[], Redirector& red)
 {
 	int pd[2];
 	pipe(pd);
@@ -400,19 +460,20 @@ io_pipe(int argc, char *argv[], FdHelper& fdh)
 	close(pd[1]);
 
 	// Run
+	red.do_redirs();
 	exec(argc, argv);
-	fdh.~FdHelper();
+	red.fdh.~FdHelper();
 	dup2(pd[0], STDIN_FILENO);
 	close(pd[0]);
 }
 
 /** Heredocs/herestrings support
  *
- * @param {string}hs,{istream&}in,bool mode,{FdHelper&}fdh
+ * @param {string}hs,{istream&}in,bool mode,{Redirector&}red
  * @return bool
  */
 bool
-io_hedoc(std::string hs, std::istream& in, bool mode, FdHelper& fdh)
+io_hedoc(std::string hs, std::istream& in, bool mode, Redirector& red)
 {
 	std::string line, hs1;
 	int fd;
@@ -447,7 +508,6 @@ io_hedoc(std::string hs, std::istream& in, bool mode, FdHelper& fdh)
 		}
 	}
 	close(fd);
-	io_left(temp, fdh);
-	unlink(temp);
+	io_left(temp, red, true);
 	return 1;
 }

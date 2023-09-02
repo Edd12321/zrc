@@ -50,14 +50,14 @@
 #define CIND std::distance(zwl.wl.begin(), it)
 /** Expect a word pointer + increment pointer. **/
 #define FAILSAFE(X) {            \
-		auto x = it+1;               \
-		if (it+1 != zwl.wl.end() && std::set<std::string>{"&", ";", "&&", "||"}.count(*(it+1))) {\
-			std::cerr << errmsg << "Unexpected '" << *(it+1) << "'\n";\
-			can_runcmd = 0;						 \
-			continue;									 \
-		}                            \
- 		X or (can_runcmd=0); 				 \
-		++it;												 \
+    auto x = it+1;               \
+    if (it+1 != zwl.wl.end() && std::set<std::string>{"&", ";", "&&", "||"}.count(*(it+1))) {\
+        std::cerr << errmsg << "Unexpected '" << *(it+1) << "'\n";\
+        can_runcmd = 0;          \
+        continue;                \
+    }                            \
+ 		X or (can_runcmd=0);         \
+		++it;                        \
     continue;                    \
 }
 
@@ -88,9 +88,10 @@
     args[k] = NULL;                               \
     std::cin.clear();                             \
     if (can_runcmd) {                             \
+        red.do_redirs();                          \
         exec(k, args);                            \
+        red.fdh.~FdHelper();                      \
         baks.~FdHelper();                         \
-        bak2.~FdHelper();                         \
         if (!bg_or_fg.empty())                    \
             bg_or_fg.pop_front();                 \
     }                                             \
@@ -312,7 +313,8 @@ eval_stream(std::istream& in)
 	size_t len;
 	// Each "eval level" restores its file descriptors
 	fd_offset += ZRC_DEFAULT_FD_OFFSET;
-	FdHelper baks, bak2;
+	FdHelper baks;
+	Redirector red;
 	REFRESH_TTY;
 	char **args = new char*[ARG_MAX];
 	try {
@@ -348,27 +350,27 @@ eval_stream(std::istream& in)
 
 					/** I/O redirection **/
 					/*!*/else if (len == 2 && isdigit((*it)[0]) && (*it)[1] == '>')
-						{ FAILSAFE(io_right(*(it+1), (*it)[0]-'0', 0, 0, baks)) }
+						{ FAILSAFE(io_right(*(it+1), (*it)[0]-'0', 0, 0, red)) }
 					/*!*/else if (len == 3 && isdigit((*it)[0]) && (*it)[1] == '>' && (*it)[2] == '>')
-						{ FAILSAFE(io_right(*(it+1), (*it)[0]-'0', 1, 0, baks)) }
+						{ FAILSAFE(io_right(*(it+1), (*it)[0]-'0', 1, 0, red)) }
 					/*!*/else if (len == 3 && isdigit((*it)[0]) && (*it)[1] == '>' && (*it)[2] == '?')
-						{ FAILSAFE(io_right(*(it+1), (*it)[0]-'0', 0, 1, baks)) }
+						{ FAILSAFE(io_right(*(it+1), (*it)[0]-'0', 0, 1, red)) }
 					/*!*/else if (*it == "<<")
-						{ FAILSAFE(io_hedoc(*(it+1), in, STDIN_FILENO, baks)) }
+						{ FAILSAFE(io_hedoc(*(it+1), in, STDIN_FILENO, red)) }
 					/*!*/else if (*it == "<<<")
-						{ FAILSAFE(io_hedoc(*(it+1), in, STDOUT_FILENO, baks)) }
+						{ FAILSAFE(io_hedoc(*(it+1), in, STDOUT_FILENO, red)) }
 					/*!*/else if (*it == "<")
-						{ FAILSAFE(io_left(*(it+1), baks)) }
+						{ FAILSAFE(io_left(*(it+1), red)) }
 					/** Pipes **/
 					/*!*/else if (*it == "|") {
 						if (!can_runcmd)
 							continue;
-						if (!bak2.find(STDIN_FILENO))
-							bak2.add_fd(STDIN_FILENO);
-						if (!baks.find(STDOUT_FILENO))
-							baks.add_fd(STDOUT_FILENO);
+						if (!red.fdh.find(STDOUT_FILENO))
+							red.fdh.add_fd(STDOUT_FILENO);
+						if (!baks.find(STDIN_FILENO))
+							baks.add_fd(STDIN_FILENO);
 						args[k] = NULL;
-						io_pipe(k, args, baks);
+						io_pipe(k, args, red);
 						k = 0;
 
 					/** Alias **/

@@ -70,7 +70,7 @@ sub deljob(Jid index)
 	if (it != jt.end()) {
 		// Avoid memory leak
 		for (i = 0; i < jt[index].argc; ++i)
-			delete [] jt[index].argv[i];
+			free(jt[index].argv[i]);
 		delete [] jt[index].argv;
 
 		jt.erase(it);
