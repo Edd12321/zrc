@@ -99,12 +99,18 @@
     k = 0;                                        \
 } while (0)
 
+namespace std
+{
 #ifndef __cpp_lib_string_view
-	namespace std
-	{
 		typedef std::string const& string_view;
-	};
 #endif
+#ifndef __cpp_lib_make_unique
+	// Thanks, stackoverflow!
+	template<typename T, typename... Var> std::unique_ptr<T>
+	make_unique(Var&&... v)
+		{ return std::unique_ptr<T>(new T(std::forward<Var>(v)...)); }
+#endif
+};
 
 class Array;
 class WordList;
