@@ -18,7 +18,6 @@ Adding /home/edward/.dots/work/etc/zrc.git/./src/global.hpp to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/lex.hpp to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/main.cpp to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/sighandler.hpp to src_top_dir
-Adding /home/edward/.dots/work/etc/zrc.git/./src/string.hpp to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/subst.hpp to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/variable.hpp to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/zlineedit.hpp to src_top_dir
@@ -41,6 +40,7 @@ WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/ip_tool.zrc has unkno
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/is_prime.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/lexical_scoping.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/loops.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/man.cgi.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/mandelbrot.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/mgcsquare.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/minesweeper.zrc has unknown start: #!../bin/zrc
@@ -51,21 +51,21 @@ WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/server.zrc has unknow
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/sierpinski.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/sieve.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/sleep_sort.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/speedtest.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/split.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/sum_fn.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/templating.zrc has unknown start: #!../bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/testredir.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/trig.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/truth_machine.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/unique.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/whereis.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/windowmgrmgr.zrc has unknown start: #!/usr/bin/env zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/zsms.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
-WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/man.cgi.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
-WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/speedtest.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/cfuncs.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/ipc.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/list.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/mathop.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
-WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/ipc.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
-WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/cfuncs.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
 Computing results.
 /usr/lib/zrc/bin
 /usr/lib/zrc/corebuf
@@ -76,7 +76,7 @@ Computing results.
 
 
 SLOC	Directory	SLOC-by-Language (Sorted)
-2664    src_top_dir     cpp=2664
+2850    src_top_dir     cpp=2850
 0       bin             (none)
 0       corebuf         (none)
 0       doc             (none)
@@ -87,18 +87,18 @@ SLOC	Directory	SLOC-by-Language (Sorted)
 
 
 Totals grouped by language (dominant language first):
-cpp:           2664 (100.00%)
+cpp:           2850 (100.00%)
 
 
 
 
-Total Physical Source Lines of Code (SLOC)                = 2,664
-Development Effort Estimate, Person-Years (Person-Months) = 0.56 (6.71)
+Total Physical Source Lines of Code (SLOC)                = 2,850
+Development Effort Estimate, Person-Years (Person-Months) = 0.60 (7.21)
  (Basic COCOMO model, Person-Months = 2.4 * (KSLOC**1.05))
-Schedule Estimate, Years (Months)                         = 0.43 (5.15)
+Schedule Estimate, Years (Months)                         = 0.44 (5.30)
  (Basic COCOMO model, Months = 2.5 * (person-months**0.38))
-Estimated Average Number of Developers (Effort/Schedule)  = 1.30
-Total Estimated Cost to Develop                           = $ 75,588
+Estimated Average Number of Developers (Effort/Schedule)  = 1.36
+Total Estimated Cost to Develop                           = $ 81,139
  (average salary = $56,286/year, overhead = 2.40).
 SLOCCount, Copyright (C) 2001-2004 David A. Wheeler
 SLOCCount is Open Source Software/Free Software, licensed under the GNU GPL.
