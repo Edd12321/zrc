@@ -124,15 +124,19 @@ public:
 						<< "The file "
 						<< target.filename.data()
 						<< " already exists\n";
-				dup2(ffd, fd);
-				close(ffd);
+				if (ffd != fd) {
+					dup2(ffd, fd);
+					close(ffd);
+				}
 				break;
 		
 			/* </<</<<< x ... */
 			case FROM_FILE:
 				ffd = open(target.filename.data(), O_RDONLY);
-				dup2(ffd, fd);
-				close(ffd);
+				if (ffd != fd) {
+					dup2(ffd, fd);
+					close(ffd);
+				}
 				if (target.hedoc)
 					unlink(target.filename.data());
 				break;
@@ -211,7 +215,7 @@ exec(int argc, char *argv[])
 		 **********************/
 			if (FOUND_FN(0)) {
 				// Copy original argc
-				std::string oa = getvar("argc");
+				std::string oa = getvar($ARGC);
 
 				// Copy original argv
 				Array bak = a_hm[$ARGV];
@@ -430,12 +434,14 @@ io_right(std::string exp, int fd, bool app, bool noclob, Redirector& red)
 			return 0;
 		}
 		exp[1] -= '0';
+		/*
 		if (fcntl(exp[1], F_GETFL) < 0 && errno == EBADF) {
 			char s[2];
 			s[0] = exp[1]+'0', s[1] = '\0';
 			perror(s);
 			return 0;
 		}
+		*/
 		red.redir_tofd(exp[1], fd);
 		return 1;
 	}
