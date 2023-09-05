@@ -1,10 +1,10 @@
 <img src="img/zrc.svg" width=100 height=auto />
 
-Zrc is a small scripting language for Linux,BSD,etc. written in C++ (core interpreter in a very small ~2000SLOC). It is a shell with syntax similar to Tcl/TK ([EIAS](https://wiki.tcl-lang.org/page/everything+is+a+string)). The code is quite small, but minimalism is not the main focus of Zrc (which is why it has way more "luxury features" compared to usual shells). Instead, the idea is to be a better alternative to `tclsh` that extends its syntax and adds features like job control, a custom line editor and more, while still almost keeping Tcl's "pure syntax".
+Zrc is a small scripting language for Linux, BSD, etc. written in C++ (core interpreter in a very small ~2000SLOC). It is a shell with syntax similar to Tcl/TK ([EIAS](https://wiki.tcl-lang.org/page/everything+is+a+string)). The code is quite small, but minimalism is not the main focus of Zrc (which is why it has way more "luxury features" compared to usual shells). Instead, the idea is to be a better alternative to `tclsh` that extends its syntax and adds features like job control, a custom line editor and more, while still almost keeping Tcl's "pure syntax".
 
-It was created because the old shell languages that I used weren't "programmable" like Tcl or Lisp, didn't have builtin expression evaluator, and were very basic. It is hard to write simple scripts in these usual shells because of the compilcated grammar rules. Zrc makes it easy to write even small programs, being a full programming language.
+It was created because the old shell languages that I used weren't "programmable" like Tcl or Lisp, didn't have a builtin expression evaluator, and were very basic. It is hard to write simple scripts in these usual shells because of the compilcated grammar rules. Zrc makes it easy to write even small programs, being a full programming language.
 
-Zrc is just ~600KB in size because its implementation is to the point and simple. The language doesn't even need a Backus -- Naur form (BNF). You can compile with -Os to make it even smaller, at the expense of performance !
+Zrc is just ~600KB in size because its implementation is to the point and simple. The language doesn't even need a Backus -- Naur form (BNF). You can compile with -Os to make it even smaller, at the expense of performance!
 
 ## Features left to implement:
 
@@ -59,6 +59,7 @@ Zrc is just ~600KB in size because its implementation is to the point and simple
 - [X] Built-in commands (like `expr`, `jobs`, etc. but there are too many to list. View `dispatch.hpp`)
 - [X] Conditional logic/flow control with full C arithmetic operator set
 	- [X] If/else
+    - [X] Unless
 	- [X] Do
 	- [X] While
 	- [X] Foreach
@@ -86,6 +87,7 @@ Zrc is just ~600KB in size because its implementation is to the point and simple
 	- [X] Line editor
 	- [X] Tab completion
 	- [ ] Syntax highlighting
+    - [ ] Keybindings
 
 As mentioned on [the Oil wiki's Alternative Shells list](https://github.com/oilshell/oil/wiki/Alternative-Shells).
 
