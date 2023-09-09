@@ -1,5 +1,5 @@
 /** Keyboard macros **/
-#define KEY_ESC 27
+//KEY_ESC and CTRL(X) defined in subst.hpp
 #define KEY_BACKSPACE 127
 #define KEY_ALTBSPACE 8
 #if defined(_WIN32)
@@ -77,12 +77,18 @@ namespace zlineshort
 
 #define ARROW_MACRO(X) {\
 	size_t len = buf.length();\
-	if (!histmax) return;\
+	if (!histmax)\
+		return;\
 	histpos = (X);\
-	buf     = (histpos == histmax) ? "" : vec[histpos];\
-	if (cursor_pos) CURSOR_BWD(cursor_pos);\
-	for (long i = 0; i < len; ++i) std::cerr << ' ';\
-	if (len) CURSOR_BWD(len);\
+	buf = (histpos == histmax)\
+		? ""\
+		: vec[histpos];\
+	if (cursor_pos)\
+		CURSOR_BWD(cursor_pos);\
+	for (long i = 0; i < len; ++i)\
+		std::cerr << ' ';\
+	if (len)\
+		CURSOR_BWD(len);\
 	std::cerr << buf;\
 	cursor_pos = buf.length();\
 }
@@ -146,7 +152,7 @@ namespace zlineshort
 				if (term_hi*3-6 <= i) {
 					std::cerr << "--More--";
 					char tmp;
-					while (zrawch(tmp)) {
+					while ((tmp = getchar()) != EOF) {
 						if (tmp == 'q') {
 							std::cerr << std::endl;
 							return (dp_list = i);
@@ -216,27 +222,33 @@ namespace zlineshort
 	}
 }
 
-static inline bool
-zrawch(char& ch)
+class RawInputMode
 {
+private:
 	struct termios term;
+public:
+	RawInputMode()
+	{
+		tcgetattr(STDIN_FILENO, &term);
+		term.c_lflag &= ~ICANON;
+		term.c_lflag &= ~ECHO;
+		tcsetattr(STDIN_FILENO, TCSANOW, &term);
+	}
 
-	tcgetattr(STDIN_FILENO, &term);
-	term.c_lflag &= ~(ICANON);
-	term.c_lflag &= ~(ECHO);
-	tcsetattr(STDIN_FILENO, TCSANOW, &term);
-	std::cin.get(ch);
-	term.c_lflag |= ICANON;
-	term.c_lflag |= ECHO;
-	tcsetattr(STDIN_FILENO, TCSADRAIN, &term);
-	return !std::cin.eof() && !std::cin.fail();
-}
+	~RawInputMode()
+	{
+		term.c_lflag |= ICANON;
+		term.c_lflag |= ECHO;
+		tcsetattr(STDIN_FILENO, TCSADRAIN, &term);
+	}
+};
 
 bool
 zlineedit(std::string& buf)
 {
 	/* Shortcut support */
 	using namespace zlineshort;
+	RawInputMode rm;
 	char c;
 	bool first_word = false;
 	dp_list = cursor_pos = 0;
@@ -244,12 +256,12 @@ zlineedit(std::string& buf)
 	buf.clear();
 	dn(buf);
 
-	while (zrawch(c)) {
+	while ((c = getchar()) != EOF) {
 		switch (c) {
 		/* The line editing part */
 #if defined(_WIN32)
 		case 224:
-			zrawch(c)
+			c = getchar();
 			if (c == 'H') up(buf);
 			if (c == 'P') dn(buf);
 			if (c == 'K') lt(buf);
@@ -257,9 +269,9 @@ zlineedit(std::string& buf)
 			break;
 #else
 		case KEY_ESC:
-			zrawch(c);
+			c = getchar();
 			if (c == '[') {
-				zrawch(c);
+				c = getchar();
 				if (c == 'A') up(buf);
 				if (c == 'B') dn(buf);
 				if (c == 'C') rt(buf);

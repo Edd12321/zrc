@@ -189,6 +189,8 @@ Zrc supports process substitution using the regular rc shell syntax.
 Currently,
 .I zrc
 supports all C escape sequences, with the exception of \\u... and \\x... If a character is escaped that is not part of an actual escape sequence, the backslash just dissapears.
+.PP
+Zrc also supports the \\cX (Ctrl) and \\e (Esc) sequences.
 .SS Parentheses
 Use them with 'expr' to avoid clobbering files by confusing operators such as ">" (greater-than) with redirection and to access array indices with spaces. Paren grouping is useful, but it can be escaped if it does not prove to be useful in a situation.
 .SS Quoting

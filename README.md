@@ -47,6 +47,7 @@ Zrc is just ~600KB in size because its implementation is to the point and simple
 	- [X] Regular quoting (`'`, `"`)
 - [ ] Escape sequences
 	- [X] Basic support (every other esc. code)
+    - [X] `\e`, `\cx`
 	- [ ] Full support (`\uhhh`, `\xhh`)
 - [X] Word substitution
 	- [X] Variable expansion

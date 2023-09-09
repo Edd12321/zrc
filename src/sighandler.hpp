@@ -2,11 +2,11 @@
 	#define WAIT_ANY -1
 #endif
 
-typedef struct {
+struct Job {
 	pid_t    pid;
 	int      argc, state;
 	char   **argv;
-} Job;
+};
 
 std::map<Jid, Job> jt;
 

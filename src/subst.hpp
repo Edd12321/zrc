@@ -1,3 +1,9 @@
+#define KEY_ESC 27
+/** \c... **/
+#ifndef CTRL
+	#define CTRL(X) ((X) & 037)
+#endif
+
 #define SCALAR "1234567890"\
                "$_("\
                "QWERTYUIOPASDFGHJKLZXCVBNM"\
@@ -56,6 +62,16 @@ str_subst(std::string& str)
 		case '\\':
 			if (i < len-1) {
 				switch(str[++i]) {
+				case 'c':
+					if (i >= len-1 || !isalpha(str[i+1])) {
+						std::cerr << errmsg << "Expected letter\n";
+						return false;
+					}
+					res += CTRL(str[++i]);
+					break;
+					
+				case 'e': res += KEY_ESC;break;
+
 				case 'a': res += '\a'  ; break;
 				case 'b': res += '\b'  ; break;
 				case 'f': res += '\f'  ; break;

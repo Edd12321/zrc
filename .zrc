@@ -9,9 +9,9 @@ echo 'The time is: `{date}'
 # Prompt variables
 set HOSTNAME = `{hostname}
 set USER     = `{whoami}
-set RBOLD = `{/bin/echo -ne {\e[1;31m}}
-set GREEN = `{/bin/echo -ne {\e[0;32m}}
-set RESET = `{/bin/echo -ne {\e[0m}}
+set RBOLD = `{echo -n "\e\[1;31m"}
+set GREEN = `{echo -n "\e\[0;32m"}
+set RESET = `{echo -n "\e\[0m"}
 
 #Other vars
 set ZRC = /usr/lib/zrc

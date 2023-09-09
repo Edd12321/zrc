@@ -120,7 +120,9 @@ class ZrcBreakHandler;
 class ZrcContinueHandler;
 class BlockHandler;
 class FdHelper;
+class RawInputMode;
 struct Fifo;
+struct Job;
 
 class NullIOSink : public std::streambuf
 {
