@@ -66,6 +66,26 @@ set PS1 = {[string cat [prompt_cmd]$GREEN $USER $RESET\@$HOSTNAME]\
 		$RESET \
 		`{__git_ps1} \
 		`{__status_ps1}% '\ '];return $status}
+
+# Key bindings
+bindkey -c "\cl" { 
+	eval {
+		clear
+		eval echo -n $PS1
+	} 1> &2
+}
+bindkey -c "\e?"  {
+	eval {
+		echo && l
+		eval echo -n $PS1
+	} 1> &2
+}
+bindkey -c "\cb"  {firefox &}
+bindkey -c "\ct"  {$env(TERMINAL) &}
+bindkey -c "\cf"  {doublecmd &}
+bindkey -c "\cft" {thunar &}
+bindkey -c "\en"  {archey3}
+
 # Aliases
 alias l       "ls -hF --color"
 alias lt      "ls -altrhF --color"

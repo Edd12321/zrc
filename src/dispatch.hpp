@@ -127,6 +127,8 @@ Command(array)  { return array(argc, argv); }
 Command(string) { return string(argc, argv); }
 /** Merge lists **/
 Command(concat) { return combine(argc, argv, 1); }
+/** Clear screen **/
+Command(clear)  { std::cout << CLRSCR; NoReturn; }
 
 /** Evaluates an arithmetic expression **/
 Command(expr) {
@@ -894,6 +896,46 @@ Command(rehash) {
 }
 #endif
 
+#if defined USE_ZLINEEDIT && USE_ZLINEEDIT == 1
+/** Key bindings **/
+Command(bindkey) {
+	Bind b;
+	if (argc != 1 && argc != 3 && argc != 4) 
+		syntax_error("[-c] [<seq> <cmd>]");
+	
+	if (argc == 1) {
+		for (auto const& it : keybinds) {
+			std::cout << "bindkey ";
+			if (it.second.zcmd)
+				std::cout << "-c ";
+			std::cout << '{' << it.first << "} {" << it.second.cmd << "}\n";
+		}
+		std::cout << std::flush;
+		NoReturn;
+	}
+
+	if (argc == 4 && !strcmp(argv[1], "-c")) {
+		b.zcmd = true;
+		--argc, ++argv;
+	} else {
+		b.zcmd = false;
+	}
+	b.cmd = argv[2];
+	keybinds[argv[1]] = std::move(b);
+	if (b.zcmd)
+		++argc, --argv;
+	NoReturn;
+}
+Command(unbindkey) {
+	if (argc != 2)
+		syntax_error("<seq>");
+	if (keybinds.find(argv[1]) == keybinds.end())
+		other_error("Key binding '"<<argv[1]<<"' not found", 2);
+	keybinds.erase(argv[1]);
+	NoReturn;
+}
+#endif
+
 Command(help);
 Command(builtin);
 
@@ -917,10 +959,14 @@ const OrderedDispatchTable<std::string, std::function<std::string(int, char**)>>
 	de(until)   , de(wait)   , de(while),
 	de(subst)   , de(break)  , de(continue),
 	de(concat)  , de(rlimit) , de(include),
-	de(builtin) ,
+	de(builtin) , de(clear)  ,
 	/* $PATH hashing */
 #if defined USE_HASHCACHE && USE_HASHCACHE == 1
 	de(unhash)  , de(rehash) ,
+#endif
+	/* Keyboard bindings */
+#if defined USE_ZLINEEDIT && USE_ZLINEEDIT == 1
+	de(bindkey) , de(unbindkey)
 #endif
 };
 

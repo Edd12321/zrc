@@ -41,6 +41,13 @@
 #include <unordered_map>
 #include <vector>
 
+typedef std::string FunctionName;
+typedef std::string CodeBlock;
+typedef std::string AliasName;
+typedef std::string Path;
+typedef int Jid;
+#define OrderedDispatchTable std::map
+#define DispatchTable std::unordered_map
 #include "global.hpp"
 #include "config.hpp"
 
@@ -123,6 +130,7 @@ class FdHelper;
 class RawInputMode;
 struct Fifo;
 struct Job;
+struct Bind;
 
 class NullIOSink : public std::streambuf
 {
@@ -150,13 +158,6 @@ struct Fifo {
 	}	
 };
 
-typedef std::string FunctionName;
-typedef std::string CodeBlock;
-typedef std::string AliasName;
-typedef std::string Path;
-typedef int Jid;
-#define OrderedDispatchTable std::map
-#define DispatchTable std::unordered_map
 /***** GLOBAL VARIABLES BEGIN *****/
   extern char **environ;
 
@@ -166,6 +167,8 @@ typedef int Jid;
   std::string ret_val;
   std::deque<bool> bg_or_fg;
 	std::list<std::unique_ptr<Fifo> > fifos;
+
+	extern bool w, cin_eq_in;
   long ch_mode;
 /***** GLOBAL VARIABLES END *****/
 
@@ -486,7 +489,7 @@ main(int argc, char *argv[])
 		//load user config file
 		pw = getpwuid(getuid());
 		filename += pw->pw_dir;
-		filename += "/.zrc";
+		filename += "/" ZCONF;
 		fp.open(filename, std::ios::in);
 		eval_stream(fp);
 		fp.close();

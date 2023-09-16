@@ -1,0 +1,65 @@
+.TH BINDKEY 1
+.SH NAME
+bindkey \- Bind a key sequence to a line editor command/zrc script.
+.SH SYNOPSIS
+.BI "bindkey [" -c "] [" "<seq> <cmd>" ] 
+.SH DESCRIPTION
+The
+.I bindkey
+utility binds a string sequence (seq) to an action. Upon getting this input from a keyboard (within a timeout period of ZRC_BIND_TIMEOUT, which can be set from the config.hpp file and recompiing), the line editor may either run a zrc script (using the -c flag as the first argument), or a line editor specific command.
+.PP
+The default keybindings that are automatically created can be also set up from config.hpp (suckless style), or via the .zrc file.
+.PP
+A list of commands is:
+.PP
+.B hist-go-down
+Goes down one unit in the histfile.
+.PP
+.B hist-go-up
+Goes up one unit in the histfile.
+.PP
+.B cursor-move-left
+Moves the text-cursor one cell to the left.
+.PP
+.B cursor-move-right
+Moves the text-cursor one cell to the right.
+.PP
+.B cursor-move-begin
+Moves the text-cursor to the beginning of the line.
+.PP
+.B cursor-move-end
+Moves the text-cursor to the end of the line.
+.PP
+.B cursor-erase
+Erases one char from the left of the cursor.
+.PP
+.B cursor-insert
+Inserts one char in the command line.
+.PP
+.B expand-word
+Auto-completes a bare word (note: currently, only barewords work).
+.PP
+.B key-return
+Sends the current command to the interpreter.
+.SH OPTIONS
+.TP
+.BR c
+Run a zrc script upon detecting key binding.
+.SH EXAMPLES
+.EX
+	# Taken from the default .zrc conf file
+	
+	# Ctrl-L, clear screen and show prompt
+	bindkey -c "\\cl" {
+		eval {
+			clear
+			eval echo -n $PS1
+		} 1> &2
+	}
+
+	# Alt/Esc-N, show archey3
+	bindkey -c "\\en" archey3
+
+	# Ctrl-A-X, enter new line
+	bindkey "\\cax" key-return
+.EE

@@ -188,7 +188,7 @@ Zrc supports process substitution using the regular rc shell syntax.
 .SS Escape sequences
 Currently,
 .I zrc
-supports all C escape sequences, with the exception of \\u... and \\x... If a character is escaped that is not part of an actual escape sequence, the backslash just dissapears.
+supports all basic C escape sequences (\\a, \\b, \\f, \\n, \\r, \\t, \\v), with the exception of \\u... and \\x... If a character is escaped that is not part of an actual escape sequence, the backslash just dissapears.
 .PP
 Zrc also supports the \\cX (Ctrl) and \\e (Esc) sequences.
 .SS Parentheses
@@ -276,6 +276,12 @@ Tilde expansion and filename globbing is done on all "barewords" (aka, all words
 	# Wrong
 	ls "*"
 .EE
+.SS Configuring Zrc
+Zrc automatically loads the
+.I ~/.zrc
+file upon startup. Some options can also only be configured from
+.I config.hpp ,
+by modifying the source code directly and recompiling, for the sake of the project's minimalist philosophy.
 .SS Shell builtin commands
 Each command has its own manpage, detailing its use and giving examples.
 .I Zrc
@@ -301,13 +307,17 @@ Work with arrays. See `man array` for more info.
 .br
 Move a job to the background.
 .HP
-.BI "builtin " "<arg1> <arg2>..."
+.BI "bindkey [" -c "] [" "<seq> <cmd>" ] 
 .br
-Run a command but choose the builtin over a function of the same name if it exists
+Configure keybindings.
 .HP
 .BI break
 .br
 Exit a loop structure.
+.HP
+.BI "builtin " "<arg1> <arg2>..."
+.br
+Run a command but choose the builtin over a function of the same name if it exists
 .HP
 .BI "cd [" <dir> ]
 .br
@@ -317,7 +327,11 @@ Change directory.
 .br
 Get a char's ASCII code.
 .HP
-.BI concat
+.B clear
+.br
+Reset the terminal.
+.HP
+.BI "concat [" "<w1> <w2>... <wn>" ]
 .br
 Concatenate lists
 .HP
@@ -460,6 +474,10 @@ Delete an alias.
 .BI "unless " "<expr> <block>"
 .br
 Conditional statement #3.
+.HP
+.BI "bindkey " <seq> 
+.br
+Delete keybindings.
 .HP
 .BI "unset " <name>
 .br

@@ -23,7 +23,9 @@ endif
 corebuf:
 	cd corebuf; \
 		./build.zrc
+config:
+	[ -f $(HOME) ] || cp .zrc $(HOME)
 clean:
 	rm bin/zrc
 
-.PHONY: corebuf
+.PHONY: corebuf config

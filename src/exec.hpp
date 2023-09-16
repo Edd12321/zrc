@@ -98,10 +98,13 @@ public:
 	/** Add redirections **/
 	void redir_tofile(int fd, bool app, bool noclob, std::string filename)
 		{ fdh.add_fd(fd); acts.push_back({fd, {TO_FILE, 0, app, noclob,0, filename}}); }
+
 	void redir_tofd(int fd1, int fd2)
 		{ fdh.add_fd(fd2); acts.push_back({fd1, {TO_FD, fd2, 0, 0, 0, ""}}); }
+	
 	void redir_close(int fd)
 		{ fdh.add_fd(fd); acts.push_back({fd, {TO_CLOSE, 0, 0, 0, 0, ""}}); }
+	
 	void redir_left(int fd, std::string filename, bool hedoc=false)
 		{ fdh.add_fd(fd); acts.push_back({fd, {FROM_FILE, 0, 0, 0, hedoc, filename}}); }
 
