@@ -41,6 +41,12 @@ std::string S(T const& t)
 inline std::string Sc(char t)
 	{ return S(t); } 
 
+/** \c... **/
+#define KEY_ESC 27
+#ifndef CTRL
+	#define CTRL(X) ((X) & 037)
+#endif
+
 #define NO_SIGEXIT \
 	chk_exit = 1;
 #define ever (;;)

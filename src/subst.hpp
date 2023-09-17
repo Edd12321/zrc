@@ -1,9 +1,3 @@
-#define KEY_ESC 27
-/** \c... **/
-#ifndef CTRL
-	#define CTRL(X) ((X) & 037)
-#endif
-
 #define SCALAR "1234567890"\
                "$_("\
                "QWERTYUIOPASDFGHJKLZXCVBNM"\
@@ -70,8 +64,7 @@ str_subst(std::string& str)
 					res += CTRL(str[++i]);
 					break;
 					
-				case 'e': res += KEY_ESC;break;
-
+				case 'e': res += '\e'  ; break;
 				case 'a': res += '\a'  ; break;
 				case 'b': res += '\b'  ; break;
 				case 'f': res += '\f'  ; break;
