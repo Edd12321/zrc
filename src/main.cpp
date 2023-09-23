@@ -387,7 +387,7 @@ eval_stream(std::istream& in)
 					/** Alias **/
 					} else if (!k && aliases.find(*it) != aliases.end()) {
 						sword = 0;
-						for (std::string& str : aliases[*it].wl) {
+						for (std::string str : aliases[*it].wl) {
 							if (!str_subst(str))
 								can_runcmd = 0;
 							args[k++] = strdup(str.c_str());

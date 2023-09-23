@@ -80,11 +80,16 @@ bindkey -c "\e?"  {
 		eval echo -n $PS1
 	} 1> &2
 }
+bindkey -c "\en"  {
+	eval {
+		archey3
+		eval echo -n $PS1
+	} 1> &2
+}
 bindkey -c "\cb"  {firefox &}
 bindkey -c "\ct"  {$env(TERMINAL) &}
 bindkey -c "\cf"  {doublecmd &}
 bindkey -c "\cft" {thunar &}
-bindkey -c "\en"  {archey3}
 
 # Aliases
 alias l       "ls -hF --color"

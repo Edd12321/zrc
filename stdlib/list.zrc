@@ -148,4 +148,32 @@ fn lappend {
 	}
 }
 
+###########################
+# Convert arrays to lists #
+#                         #
+# @param 1                #
+# @return list            #
+###########################
+fn arr2list {
+	if {$argc != 2 || ![strcmp $argv(1) 'argv']} {
+		zrcusage (not argv)
+		return {}
+	}
+	let {i r} {
+		for {set i = 0} {$i < [arr length $argv(1)]} {inc i} {
+			set r = [lappend $r [arr index $argv(1) $i]]
+		}
+		return $r
+	}
+}
+
+alias argv2list {
+	let {i r} {
+		for {set i = 0} {$i < $argc} {inc i} {
+			set r = [lappend $r $argv($i)]
+		}
+		return $r
+	}
+}
+
 }

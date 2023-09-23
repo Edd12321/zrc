@@ -372,7 +372,7 @@ Command(nf) {
 		ok = 1;
 	}
 	if (!FOUND_FN(1)) {
-		if (ok) {
+		if (!ok) {
 			--argv, ++argc;
 			other_error("Function not found", 2);
 		}
