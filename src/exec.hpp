@@ -56,7 +56,7 @@ public:
 
 	~FdHelper()
 	{
-		for (int i = 0; i <= 9; ++i) {
+		for (int i = 9; i >= 0; --i) {
 			if (baks[i] == FdAct::FD_ACT_CLOSE) {
 				close(i);
 			} else if (baks[i] != FdAct::FD_ACT_NOP) {
