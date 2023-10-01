@@ -426,7 +426,7 @@ eval_stream(std::istream& in)
 	  catch    (ZrcBreakHandler ex) { brk = 1; }
 	  catch (ZrcContinueHandler ex) { con = 1; }
 	delete [] args;
-	fd_offset -= 10;
+	fd_offset -= ZRC_DEFAULT_FD_OFFSET;
 	in.clear();
 	if (ret) throw ZrcReturnHandler();
 	if (brk) throw ZrcBreakHandler();

@@ -36,10 +36,10 @@ private:
 		FD_ACT_NOP = -1, FD_ACT_CLOSE = -2
 	};
 
-	int baks[10];
+	int baks[ZRC_DEFAULT_FD_OFFSET];
 public:
 	FdHelper()
-		{ std::fill_n(baks, 10, FD_ACT_NOP); }
+		{ std::fill_n(baks, ZRC_DEFAULT_FD_OFFSET, FD_ACT_NOP); }
 	bool find(int fd)
 		{ return baks[fd] != FD_ACT_NOP; }
 
@@ -56,7 +56,7 @@ public:
 
 	~FdHelper()
 	{
-		for (int i = 9; i >= 0; --i) {
+		for (int i = ZRC_DEFAULT_FD_OFFSET-1; i >= 0; --i) {
 			if (baks[i] == FdAct::FD_ACT_CLOSE) {
 				close(i);
 			} else if (baks[i] != FdAct::FD_ACT_NOP) {
