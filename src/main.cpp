@@ -103,7 +103,7 @@ typedef int Jid;
             bg_or_fg.pop_front();                 \
     }                                             \
     can_runcmd = X;                               \
-    k = 0;                                        \
+    alias = k = 0;                                \
 } while (0)
 
 namespace std
@@ -319,7 +319,7 @@ eval_stream(std::istream& in)
 	WordList    zwl, gbzwl, spl;
 	bool   sword, glb, can_runcmd=1;
 	bool   ret = 0, brk = 0, con = 0;
-	bool   found_pipe = 0;
+	bool   found_pipe = 0, alias = 0;
 	long   k;
 	size_t len;
 	// Each "eval level" restores its file descriptors
@@ -382,16 +382,16 @@ eval_stream(std::istream& in)
 							baks.add_fd(STDIN_FILENO);
 						args[k] = NULL;
 						io_pipe(k, args, red);
-						k = 0;
+						alias = k = 0;
 
 					/** Alias **/
-					} else if (!k && aliases.find(*it) != aliases.end()) {
-						sword = 0;
-						for (std::string str : aliases[*it].wl) {
-							if (!str_subst(str))
-								can_runcmd = 0;
-							args[k++] = strdup(str.c_str());
-						}
+					} else if (!k && !alias && aliases.find(*it) != aliases.end()) {
+						auto *al = &aliases[*it];
+						auto ind = CIND;
+
+						zwl.wl.insert(it+1, al->wl.begin(), al->wl.end());
+						it = zwl.wl.begin()+ind;
+						alias = 1;
 						continue;
 					
 					/** Other words/globbing **/
