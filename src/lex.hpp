@@ -35,10 +35,14 @@ private:
 public:
 	std::vector<std::string> wl;
 
-	inline size_t      is_bare      (size_t index) { return !not_bareword[index]; }
-	inline void        make_not_bare(            ) { not_bareword[len] = true;    }
-	inline std::string back         (            ) { return wl.back();            }
-	inline size_t      size         (            ) { return len;                  }
+	inline size_t is_bare(size_t index)
+		{ return !not_bareword[index]; }
+	inline void make_not_bare()
+		{ not_bareword[len] = true; }
+	inline std::string back()
+		{ return wl.back(); }
+	inline size_t size()
+		{ return len; }
 
 	void
 	add_token(std::string& tok)
@@ -102,9 +106,11 @@ tokenize(std::string line, std::istream& in)
 					continue;
 				}
 				if (q == '(') {
-					if ((line[i] == '$' || line[i] == '[')
-					|| (i < len-1 && (line[i] == '<' || line[i] == '`') && line[i+1] == '{'))
+					if (line[i] == '$' || line[i] == '[')
 						wl.make_not_bare();
+					else if (i < len-1)
+						if ((line[i] == '<' || line[i] == '`') && line[i+1] == '{')
+							wl.make_not_bare();
 				}
 				if (line[i] == q) ++cmpnd;
 				if (line[i] == p) --cmpnd;

@@ -13,6 +13,7 @@
 
 // File descriptors
 #define ZRC_DEFAULT_FD_OFFSET 10
+#define ZRC_DEFAULT_RETURN    "0"
 
 #define ld long double
 

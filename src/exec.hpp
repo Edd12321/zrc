@@ -96,17 +96,49 @@ public:
 	FdHelper fdh;
 
 	/** Add redirections **/
-	void redir_tofile(int fd, bool app, bool noclob, std::string filename)
-		{ fdh.add_fd(fd); acts.push_back({fd, {TO_FILE, 0, app, noclob,0, filename}}); }
+	void
+	redir_tofile(int fd, bool app, bool noclob, std::string filename)
+	{
+		fdh.add_fd(fd);
+		acts.push_back({fd, {
+				TO_FILE , 0 , app ,
+				noclob  , 0 , filename
+			}}
+		);
+	}
 
-	void redir_tofd(int fd1, int fd2)
-		{ fdh.add_fd(fd2); acts.push_back({fd1, {TO_FD, fd2, 0, 0, 0, ""}}); }
+	void
+	redir_tofd(int fd1, int fd2)
+	{
+		fdh.add_fd(fd2);
+		acts.push_back({fd1, {
+				TO_FD , fd2 , 0 ,
+				0     , 0   , "" 
+			}}
+		);
+	}
 	
-	void redir_close(int fd)
-		{ fdh.add_fd(fd); acts.push_back({fd, {TO_CLOSE, 0, 0, 0, 0, ""}}); }
+	void
+	redir_close(int fd)
+	{
+		fdh.add_fd(fd);
+		acts.push_back({fd, {
+				TO_CLOSE , 0 , 0 ,
+				0        , 0 , ""
+			}}
+		);
+	}
 	
-	void redir_left(int fd, std::string filename, bool hedoc=false)
-		{ fdh.add_fd(fd); acts.push_back({fd, {FROM_FILE, 0, 0, 0, hedoc, filename}}); }
+	void
+	redir_left(int fd, std::string filename, bool hedoc=false)
+	{
+		fdh.add_fd(fd);
+		acts.push_back({fd, {
+				FROM_FILE , 0 , 0 ,
+				0 , hedoc , filename
+			}}
+		);
+	}
 
 	void
 	do_redirs()
@@ -119,14 +151,19 @@ public:
 			/* (x)>/>> y... */
 			case TO_FILE:
 				if (target.app)
-					ffd = open(target.filename.data(), O_CREAT|O_APPEND|O_WRONLY, 0644);
+					ffd = open(target.filename.data(),
+							O_CREAT|O_APPEND|O_WRONLY,
+							0644);
 				else if (!(target.noclob && !access(target.filename.data(), F_OK)))
-					ffd = open(target.filename.data(), O_CREAT|O_TRUNC|O_WRONLY, 0600);
+					ffd = open(target.filename.data(),
+							O_CREAT|O_TRUNC|O_WRONLY,
+							0600);
 				else
 					std::cerr << warnmsg 
 						<< "The file "
 						<< target.filename.data()
 						<< " already exists\n";
+
 				if (ffd != fd) {
 					dup2(ffd, fd);
 					close(ffd);
@@ -190,6 +227,21 @@ run_function(std::string const& cmd)
 		{ }
 }
 
+static inline void
+sigmask_block_sigchld(sigset_t& mask)
+{
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGCHLD);
+	sigprocmask(SIG_BLOCK, &mask, NULL);	
+}
+
+static inline void
+sigmask_unblock_sigchld(sigset_t& mask)
+{
+	sigprocmask(SIG_UNBLOCK, &mask, NULL);
+	return;
+}
+
 /** Executes a list of words.
  *
  * @param {int}argc,{char**}argv
@@ -204,13 +256,8 @@ exec(int argc, char *argv[])
 	size_t        i, siz;
 	sigset_t      mask;
 	w = (bg_or_fg.front() == FG);
-	ret_val = "0";
 
-#define SIGSET_INITIALIZE \
-	sigemptyset(&mask);\
-	sigaddset(&mask, SIGCHLD);\
-	sigprocmask(SIG_BLOCK, &mask, NULL);
-
+	ret_val = ZRC_DEFAULT_RETURN;
 	if (argc > 0) {
 		if (w) {
 		/**********************
@@ -229,7 +276,7 @@ exec(int argc, char *argv[])
 				a_hm[$ARGV] = bak;
 			
 			} else if (!builtin_check(argc, argv)) {
-				SIGSET_INITIALIZE;
+				sigmask_block_sigchld(mask);
 				if ((pid = fork()) < 0)
 					die("fork");
 				
@@ -237,13 +284,13 @@ exec(int argc, char *argv[])
 					NO_SIGEXIT;
 					setpgid(0, 0);
 					tcsetpgrp(STDIN_FILENO, getpgrp());
-					sigprocmask(SIG_UNBLOCK, &mask, NULL);
+					sigmask_unblock_sigchld(mask);
 					RUNCMD;
 				
 				} else {
 					if (make_new_jobs)
 						addjob(pid, FG, argc, argv);
-					sigprocmask(SIG_UNBLOCK, &mask, NULL);
+					sigmask_unblock_sigchld(mask);
 					setvar($LPID, itoa(pid));
 					waitproc(pid);
 				}
@@ -253,14 +300,14 @@ exec(int argc, char *argv[])
 		 * Background process *
 		 **********************/
 		} else {
-			SIGSET_INITIALIZE;
+			sigmask_block_sigchld(mask);
 			if ((pid = fork()) < 0)
 				die("fork");
 
 			if (pid == 0) {
 				NO_SIGEXIT;
 				setpgid(0, 0);
-				sigprocmask(SIG_UNBLOCK, &mask, NULL);
+				sigmask_unblock_sigchld(mask);
 				if (FOUND_FN(0)) {
 					a_hm.erase($ARGV);
 					INIT_ZRC_ARGS;
@@ -277,7 +324,7 @@ exec(int argc, char *argv[])
 					if (TERMINAL)
 						async_message(index, pid, "");
 				}
-				sigprocmask(SIG_UNBLOCK, &mask, NULL);
+				sigmask_unblock_sigchld(mask);
 				setvar($LPID, itoa(pid));
 			}
 		}
