@@ -184,15 +184,13 @@ Command(while) {
 	if (argc != 3)
 		syntax_error("<expr> <block>");
 	BlockHandler lh(&in_loop);
+_repeat_while:
 	try {
 		while (OK(argv[1]))
 			eval(argv[2]);
 	} catch (ZrcBreakHandler ex) {
-	} catch (ZrcContinueHandler ex) {
-		//just do again
-		while (OK(argv[1]))
-			eval(argv[2]);
-	}
+	} catch (ZrcContinueHandler ex)
+		{ goto _repeat_while; }
 	NoReturn;
 }
 
@@ -201,14 +199,13 @@ Command(until) {
 	if (argc != 3)
 		syntax_error("<expr> <block>");
 	BlockHandler lh(&in_loop);
+_repeat_until:
 	try {
 		until(OK(argv[1]))
 			eval(argv[2]);
 	} catch (ZrcBreakHandler ex) {
-	} catch (ZrcContinueHandler ex) {
-		until(OK(argv[1]))
-			eval(argv[2]);
-	}
+	} catch (ZrcContinueHandler ex)
+		{ goto _repeat_until; }
 	NoReturn;
 }
 
@@ -217,14 +214,23 @@ Command(for) {
 	if (argc != 5)
 		syntax_error("<block> <expr> <block> <block>");
 	BlockHandler lh(&in_loop);
+	bool freed = false;
+_repeat_for:
 	try {
 		for (eval(argv[1]); OK(argv[2]); eval(argv[3]))
 			eval(argv[4]);
 	} catch (ZrcBreakHandler ex) {
 	} catch (ZrcContinueHandler ex) {
-		for (eval(argv[3]); OK(argv[2]); eval(argv[3]))
-			eval(argv[4]);
+		if (!freed) {
+			freed = true;
+			free(argv[1]);
+			argv[1] = argv[3];
+		}
+		goto _repeat_for;
 	}
+	// Avoid double free(2) in exec
+	if (freed)
+		argv[1] = nullptr;
 	NoReturn;
 }
 
@@ -234,18 +240,15 @@ Command(foreach) {
 		syntax_error("<var> <list1> <list2...> <block>");
 	BlockHandler lh(&in_loop);
 	int i = 2;
+_repeat_foreach:
 	try {
 		for (; i < argc-1; ++i) {
 			setvar(argv[1], argv[i]);
 			eval(argv[argc-1]);
 		}
 	} catch (ZrcBreakHandler ex) {
-	} catch (ZrcContinueHandler ex) {
-		for (++i; i < argc-1; ++i) {
-			setvar(argv[1], argv[i]);
-			eval(argv[argc-1]);
-		}
-	}
+	} catch (ZrcContinueHandler ex)
+		{ ++i; goto _repeat_foreach; }
 	NoReturn;
 }
 
@@ -258,6 +261,7 @@ Command(do) {
 		syntax_error("<block> while|until <expr>");
 
 	BlockHandler lh(&in_loop);
+_repeat_do:
 	try {
 		if (w)
 			do eval(argv[1]);
@@ -266,15 +270,8 @@ Command(do) {
 			do eval(argv[1]);
 			until(OK(argv[3]));
 	} catch (ZrcBreakHandler ex) {
-	} catch (ZrcContinueHandler ex) {
-		//same thing again
-		if (w)
-			do eval(argv[1]);
-			while (OK(argv[3]));
-		else
-			do eval(argv[1]);
-		until(OK(argv[3]));
-	}
+	} catch (ZrcContinueHandler ex)
+		{ goto _repeat_do; }
 	NoReturn;
 }
 

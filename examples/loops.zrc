@@ -15,3 +15,11 @@ do {
 	if {$i == 3} continue
 	echo $i
 } until {$i == 10}
+
+echo "All odd numbers:"
+for {set i = 0} {$i <= 10} {inc i} {
+	if {$i % 2 == 0} {
+		continue
+	}
+	echo $i
+}
