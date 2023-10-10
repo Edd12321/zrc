@@ -15,7 +15,7 @@
 #define NoReturn return ret_val
 #define syntax_error(X) {\
 	std::cerr << errmsg << "(" << argv[0] << ") " << X << '\n';\
-	return "1";\
+	return ZRC_ERRONE_RETURN;\
 }
 #define other_error(X, C) do {\
 	std::cerr << argv[0] << ": " << X << "!\n";\
@@ -115,11 +115,11 @@ prints(std::stack<Path> sp)
 /** Closes the Zrc session **/
 Command(exit)   { EXIT_SESSION; }
 /** Displays a job table **/
-Command(jobs)   { jobs(); return "0"; }
+Command(jobs)   { jobs(); NoReturn; }
 /** Waits for child processes to finish **/
-Command(wait)   { while (wait(NULL) > 0){} return "0"; }
+Command(wait)   { while (wait(NULL) > 0) ; NoReturn; }
 /** Closes with an error message **/
-Command(die)    { die(argv[1]); return "1"; }
+Command(die)    { die(argv[1]); return ZRC_ERRONE_RETURN; }
 /** Evalues its arguments as a script **/
 Command(eval)   { return eval(combine(argc, argv, 1)); }
 /** Variable type commands **/
@@ -332,7 +332,7 @@ Command(return) {
 		syntax_error("[<val>]");
 	ret_val = (argc == 2)
 		? combine(argc, argv, 1)
-		: "0";
+		: ZRC_DEFAULT_RETURN;
 	if (in_func)
 		throw ZrcReturnHandler();
 	NoReturn;
@@ -356,7 +356,7 @@ Command(fn) {
 					eval(it.first);
 		});
 	}
-	return "0";
+	NoReturn;
 }
 
 /** Undefines a function**/
@@ -396,7 +396,7 @@ Command(nf) {
 			signal2(txt2sig.at(argv[1]), SIG_DFL);
 	}
 	--argv, ++argc;
-	return "0";
+	NoReturn;
 }
 
 /** Changes the current dir **/
@@ -424,7 +424,7 @@ Command(cd) {
 				}
 			}
 			perror(argv[1]);
-			return "1";
+			return ZRC_ERRONE_RETURN;
 		}
 	}
 	//Placeholder
@@ -476,7 +476,7 @@ Command(echo) {
 		std::cout << '\n';
 	++argc, --argv;
 	std::cout << std::flush;
-	return "0";	
+	NoReturn;
 }
 
 /** Reads from stdin **/
@@ -519,7 +519,7 @@ Command(read) {
         int ok;                     \
         ok = read(fd, &c, 1);       \
         if (ok != 1)                \
-            return "1";             \
+          return ZRC_ERRONE_RETURN; \
         buf += c;                   \
         for ever {                  \
             ok = read(fd, &c, 1);   \
@@ -529,7 +529,7 @@ Command(read) {
         }                           \
     } else {                        \
         if (read(fd, b, n) != n)    \
-            return "1";             \
+          return ZRC_ERRONE_RETURN; \
         b[n] = '\0';                \
         buf += b;                   \
     }
@@ -541,7 +541,7 @@ Command(read) {
 		GET_INPUT;
 		setvar(argv[optind], buf);
 	}
-	return "0";
+	NoReturn;
 }
 
 /** Increment by a value **/
@@ -569,7 +569,7 @@ Command(set) {
 	for (int i = 2; i < argc; i += 3) {
 		if (!strcmp(argv[i], "=")) {
 			setvar(argv[i-1], argv[i+1]);
-			//ret_val = "0";
+			//ret_val = ZRC_DEFAULT_RETURN;
 		} else if (!strcmp(argv[i], ":=")) {
 			setvar(argv[i-1], argv[i+1]);
 			ret_val = argv[i+1];
@@ -619,7 +619,7 @@ Command(alias) {
 	} else {
 		syntax_error("[<name> <alias>]");
 	}
-	return "0";
+	NoReturn;
 }
 
 Command(unalias) {
@@ -628,7 +628,7 @@ Command(unalias) {
 	if (aliases.find(argv[1]) == aliases.end())
 		other_error("Alias not found", 2);
 	aliases.erase(argv[1]);
-	return "0";
+	NoReturn;
 }
 
 /** Lexical scoping **/
@@ -685,10 +685,10 @@ Command(source) {
 			eval_stream(fin);
 		} else {
 			perror(argv[1]);
-			return "2";
+			return ZRC_ERRTWO_RETURN;
 		}
 	}
-	return "0";
+	NoReturn;
 }
 
 /** Shorthand for including headers **/
@@ -712,13 +712,15 @@ Command(unset) {
 	if (argc != 2)
 		syntax_error("<var>");
 	unsetvar(argv[1]);
-	return "0";
+	NoReturn;
 }
 
 /** Invert a command's return value **/
 Command(not) {
 	exec(--argc, ++argv);
-	ret_val = (ret_val=="0")?"1":"0";
+	ret_val = (ret_val==ZRC_DEFAULT_RETURN)
+		? ZRC_ERRONE_RETURN
+		: ZRC_ERRTWO_RETURN;
 	setvar($RETURN, ret_val);
 	++argc, --argv;
 	NoReturn;
@@ -756,7 +758,7 @@ Command(pushd) {
 		pstack.push(p);
 	}
 	prints(pstack);
-	return "0";
+	NoReturn;
 }
 
 Command(popd) {
@@ -766,7 +768,7 @@ Command(popd) {
 		other_error("Directory stack empty", 2);
 	pstack.pop();
 	prints(pstack);
-	return "0";
+	NoReturn;
 }
 
 /** regex **/
@@ -778,9 +780,9 @@ Command(regexp) {
 	std::smatch res;
 	std::string txt = argv[2];
 	std::string::const_iterator it(txt.cbegin());
-	ret_val = "2";
+	ret_val = ZRC_ERRTWO_RETURN;
 	while (std::regex_search(it, txt.cend(), res, rexp)) {
-		ret_val = "0";
+		ret_val = ZRC_DEFAULT_RETURN;
 		if (k >= argc)
 			NoReturn;
 		setvar(argv[k++], res[0]);
@@ -972,7 +974,7 @@ Command(help) {
 	for (auto& it : dispatch_table)
 		std::cout << it.first << ' ';
 	std::cout << std::endl;
-	return "0";
+	NoReturn;
 }
 
 /** Execute command, but prioritize builtins **/

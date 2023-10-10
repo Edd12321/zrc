@@ -10,7 +10,7 @@
             rv = execvp(*argv, argv);   \
         if (rv < 0) {                   \
           perror(*argv);                \
-          exit(127);                    \
+          exit(ZRC_NOTFOUND);           \
         } else {                        \
           exit(rv);                     \
         }                               \
@@ -21,7 +21,7 @@
         int rv = execvp(*argv, argv);   \
         if (rv < 0) {                   \
             perror(*argv);              \
-            exit(127);                  \
+            exit(ZRC_NOTFOUND);         \
         } else {                        \
             exit(rv);                   \
         }                               \
@@ -203,13 +203,13 @@ public:
 template<typename T> std::string
 combine(int c, T v, int i)
 {
-    std::string buf = "";
-    for (int k = i; k < c-1; ++k) {
-        buf += v[k];
-				buf += ' ';
-    }
-		buf += v[c-1];
-    return buf;
+	std::string buf = "";
+	for (int k = i; k < c-1; ++k) {
+		buf += v[k];
+		buf += ' ';
+	}
+	buf += v[c-1];
+	return buf;
 }
 
 /** Execute a proc/function with a `return` handler.
