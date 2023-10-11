@@ -5,7 +5,7 @@
 #define isnum(X) (isdigit(X) || X == '.' || islower(X))
 #define INVALIDSYN {\
 	syn << old << '\n';\
-	return "nan";\
+	return NAN;\
 }
 
 /** Checks if a string contains only mathematical chars.
@@ -165,7 +165,7 @@ expr_op(char op, std::stack<ld>& nums, std::stack<char>& ops)
  * @param  void
  * @return void
  */
-std::string
+ld
 expr(std::string e, ExprType mode)
 {
 	std::stack<char> ops;
@@ -193,7 +193,6 @@ expr(std::string e, ExprType mode)
 	//=====alt=====
 	REP("and"  , AND);
 	REP("or"   , OR );
-	REP("nan"  , '0');
 	REP("false", '0');
 	REP("true" , '1');
 
@@ -266,11 +265,11 @@ expr(std::string e, ExprType mode)
 	}
 
 	if (!nums.empty())
-		return ldtos(nums.top());
+		return nums.top();
 	else
-		return "nan";
+		INVALIDSYN;
 }
 
 // Default action
 std::string expr(std::string e)
-	{ return expr(e, ExprType::INFIX); }
+	{ return itoa(expr(e, ExprType::INFIX)); }

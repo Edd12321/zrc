@@ -212,7 +212,7 @@ struct Fifo {
   static inline bool        lassoc          (char                               );
   static inline std::string ldtos           (ld                                 );
   extern inline bool        is_expr         (std::string_view                   );
-  std::string               expr            (std::string                        );
+	std::string               expr            (std::string                        );
   // EXPR.CPP, EXPR.HPP
 
   template<typename T> std::string  combine (int          , T, int              );

@@ -33,6 +33,8 @@
 
 // Ugly hack for forcing inline functions
 #define Inline inline __attribute__((always_inline))
+// Number to str
+#define itoa ldtos
 /** Stringify anything **/
 template<typename T> Inline
 std::string S(T const& t)

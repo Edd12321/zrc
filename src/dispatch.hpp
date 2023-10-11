@@ -1,7 +1,6 @@
 // Macro for laziness
 #define FOUND_FN(X) (funcs.find(argv[X]) != funcs.end())
-#define itoa ldtos
-#define OK(X) std::stold(expr(X))
+#define OK(X) expr(X, ExprType::INFIX)
 #define de(X)   { #X, zrc_builtin_##X }
 #define ce(X,Y) { #X, zrc_builtin_##Y }, { #Y, zrc_builtin_##Y }
 
@@ -136,7 +135,7 @@ Command(expr) {
 	if (argc > 1 && !strcmp(argv[1], "-r"))
 		et = RPN,
 		--argc, ++argv;
-	return expr(combine(argc, argv, 1), et);
+	return itoa(expr(combine(argc, argv, 1), et));
 }
 
 /** Executes a block if an expression evaluates non-zero **/
@@ -201,7 +200,7 @@ Command(until) {
 	BlockHandler lh(&in_loop);
 _repeat_until:
 	try {
-		until(OK(argv[1]))
+		until (OK(argv[1]))
 			eval(argv[2]);
 	} catch (ZrcBreakHandler ex) {
 	} catch (ZrcContinueHandler ex)
@@ -345,9 +344,7 @@ Command(fn) {
 	if (+FOUND_FN(1))
 		other_error("Function exists", 2);
 	funcs[argv[1]] = argv[2];
-	if (txt2sig.find(argv[1]) != txt2sig.end()
-	&& (strcmp(argv[1], "sigexit")))
-	{
+	if (txt2sig.find(argv[1]) != txt2sig.end() && (strcmp(argv[1], "sigexit")))
 		signal2(txt2sig.at(argv[1]), [](int sig){
 			// We have to re-traverse the hashmap, because lambdas can't be passed as
 			// function pointers if they capture argv[]...
@@ -355,7 +352,6 @@ Command(fn) {
 				if (it.second == sig && funcs.find(it.first) != funcs.end())
 					eval(it.first);
 		});
-	}
 	NoReturn;
 }
 
@@ -718,7 +714,7 @@ Command(unset) {
 /** Invert a command's return value **/
 Command(not) {
 	exec(--argc, ++argv);
-	ret_val = (ret_val==ZRC_DEFAULT_RETURN)
+	ret_val = (ret_val == ZRC_DEFAULT_RETURN)
 		? ZRC_ERRONE_RETURN
 		: ZRC_ERRTWO_RETURN;
 	setvar($RETURN, ret_val);
@@ -883,9 +879,7 @@ Command(rehash) {
 				char *nm = entry->d_name;
 				char nm2[PATH_MAX];
 				sprintf(nm2, "%s/%s", tmp.c_str(), nm);
-				if (hctable.find(nm) == hctable.end()
-				&&  !stat(nm2, &sb)
-				&&  sb.st_mode & S_IXUSR)
+				if (hctable.find(nm) == hctable.end() && !stat(nm2, &sb) && sb.st_mode & S_IXUSR)
 				  hctable[nm] = nm2;
 			}
 		}
