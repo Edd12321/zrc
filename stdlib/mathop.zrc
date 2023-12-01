@@ -61,19 +61,27 @@ __MakeMathOp '||'
 __MakeMathOp 'and'
 __MakeMathOp 'or'
 
-# Functions
+# Functions (general purpose)
 __MakeMathFunc log10
 __MakeMathFunc log2
 __MakeMathFunc log
 __MakeMathFunc sin
-__MakeMathFunc cos
-__MakeMathFunc ctg
-__MakeMathFunc tg
 __MakeMathFunc floor
+__MakeMathFunc trunc
 __MakeMathFunc ceil
 __MakeMathFunc abs
 __MakeMathFunc round
 __MakeMathFunc sqrt
+
+# Functions (trigonometry)
+__MakeMathFunc cos
+__MakeMathFunc ctg;  __MakeMathFunc cot
+__MakeMathFunc  tg;  __MakeMathFunc tan
+__MakeMathFunc csc;  __MakeMathFunc cosec
+__MakeMathFunc acsc; __MakeMathFunc arccsc; __MakeMathFunc acosec; __MakeMathFunc arccosec
+__MakeMathFunc atg;  __MakeMathFunc arctg;  __MakeMathFunc atan;   __MakeMathFunc arctan
+__MakeMathFunc asin; __MakeMathFunc arcsin
+__MakeMathFunc acos; __MakeMathFunc arccos
 
 nf -s __MakeMathOp
 nf -s __MakeMathFunc

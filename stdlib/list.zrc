@@ -52,7 +52,7 @@ fn lindex {
 		let {tmp k res} {
 			set k = 0
 			foreach tmp {*}$argv(1) {
-				if {![strcmp $k $argv(2)]} {
+				if {$k == $argv(2)} {
 					set res = [subst $tmp]
 					break
 				}
