@@ -1,3 +1,14 @@
+typedef std::string FunctionName;
+typedef std::string CodeBlock;
+typedef std::string AliasName;
+typedef std::string Path;
+typedef int Jid;
+typedef long long ll;
+typedef unsigned long long ull;
+typedef long double ld;
+#define OrderedDispatchTable std::map
+#define DispatchTable std::unordered_map
+
 #define TERMINAL    isatty(fileno(stdin)) && cin_eq_in
 #define NORMAL_MODE 0
 #define JOB_MODE    1
@@ -35,17 +46,7 @@
 #define Inline inline __attribute__((always_inline))
 // Number to str
 #define itoa ldtos
-/** Stringify anything **/
-template<typename T> Inline
-std::string S(T const& t)
-{
-	std::ostringstream ss;
-	ss << t;
-	return ss.str();
-}
-
-inline std::string Sc(char t)
-	{ return S(t); } 
+#define syn std::cerr << errmsg
 
 /** \c... **/
 #define KEY_ESC 27
@@ -57,43 +58,3 @@ inline std::string Sc(char t)
 	chk_exit = 1;
 #define ever (;;)
 #define sub static Inline void
-
-#define REP(X, Y) {\
-	char y[2];\
-	y[0] = Y;\
-	y[1] = '\0';\
-	for (size_t pos = 0;;pos += strlen(y)) {\
-		pos = e.find(X, pos);\
-		if (pos == std::string::npos)\
-			break;\
-		e.erase(pos, strlen(X));\
-		e.insert(pos, y);\
-	}\
-}
-
-// ugly kludge
-// don't ever do this type of thing
-#define LOG10 'Q'
-#define LOG2  'W'
-#define LOG   'E'
-#define SQRT  'R'
-#define SIN   'T'
-#define COS   'Y'
-#define CTG   'U'
-#define TG    'I'
-#define FLOOR 'O'
-#define CEIL  'P'
-#define ROUND 'V'
-
-#define AND   'A'
-#define OR    'S'
-#define SHL   'D'
-#define SHR   'F'
-#define SPC   'G'
-#define LEQ   'H'
-#define GEQ   'J'
-#define EQU   'K'
-#define NEQ   'L'
-#define POW   'Z'
-#define ABS   'X'
-#define IND   'C'

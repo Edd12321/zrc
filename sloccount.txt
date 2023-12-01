@@ -13,13 +13,17 @@ Have a non-directory at the top, so creating directory src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/config.hpp to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/dispatch.hpp to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/exec.hpp to src_top_dir
-Adding /home/edward/.dots/work/etc/zrc.git/./src/expr.cpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/expr.l to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/expr.y to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/global.hpp to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/lex.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/lex.yy.c to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/main.cpp to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/sighandler.hpp to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/subst.hpp to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/variable.hpp to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/y.tab.c to src_top_dir
+Adding /home/edward/.dots/work/etc/zrc.git/./src/y.tab.h to src_top_dir
 Adding /home/edward/.dots/work/etc/zrc.git/./src/zlineedit.hpp to src_top_dir
 Categorizing files.
 Finding a working MD5 command....
@@ -41,7 +45,6 @@ WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/is_prime.zrc has unkn
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/lexical_scoping.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/loops.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/man.cgi.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
-WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/mandelbrot.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/mgcsquare.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/minesweeper.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/oji_arhitect.zrc has unknown start: #!../bin/zrc
@@ -62,6 +65,7 @@ WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/unique.zrc has unknow
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/whereis.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/windowmgrmgr.zrc has unknown start: #!/usr/bin/env zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/zsms.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
+WARNING! File /home/edward/.dots/work/etc/zrc.git/examples/mandelbrot.zrc has unknown start: #!../bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/cfuncs.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/ipc.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
 WARNING! File /home/edward/.dots/work/etc/zrc.git/stdlib/list.zrc has unknown start: #!/usr/lib/zrc/bin/zrc
@@ -76,7 +80,7 @@ Computing results.
 
 
 SLOC	Directory	SLOC-by-Language (Sorted)
-3034    src_top_dir     cpp=3034
+3022    src_top_dir     cpp=2851,lex=87,yacc=84
 0       bin             (none)
 0       corebuf         (none)
 0       doc             (none)
@@ -87,18 +91,20 @@ SLOC	Directory	SLOC-by-Language (Sorted)
 
 
 Totals grouped by language (dominant language first):
-cpp:           3034 (100.00%)
+cpp:           2851 (94.34%)
+lex:             87 (2.88%)
+yacc:            84 (2.78%)
 
 
 
 
-Total Physical Source Lines of Code (SLOC)                = 3,034
-Development Effort Estimate, Person-Years (Person-Months) = 0.64 (7.70)
+Total Physical Source Lines of Code (SLOC)                = 3,022
+Development Effort Estimate, Person-Years (Person-Months) = 0.64 (7.67)
  (Basic COCOMO model, Person-Months = 2.4 * (KSLOC**1.05))
-Schedule Estimate, Years (Months)                         = 0.45 (5.43)
+Schedule Estimate, Years (Months)                         = 0.45 (5.42)
  (Basic COCOMO model, Months = 2.5 * (person-months**0.38))
-Estimated Average Number of Developers (Effort/Schedule)  = 1.42
-Total Estimated Cost to Develop                           = $ 86,648
+Estimated Average Number of Developers (Effort/Schedule)  = 1.41
+Total Estimated Cost to Develop                           = $ 86,288
  (average salary = $56,286/year, overhead = 2.40).
 SLOCCount, Copyright (C) 2001-2004 David A. Wheeler
 SLOCCount is Open Source Software/Free Software, licensed under the GNU GPL.

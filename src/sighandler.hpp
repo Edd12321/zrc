@@ -151,14 +151,14 @@ bg_fg(int argc, char *argv[])
 	if (argc != 2 || (!isdigit(*argv[1]) && *argv[1] != '%'))
 		syntax_error("<pid>|<%jid>");
 	if (*argv[1] == '%') {
-		int num = atoi(&argv[1][1]);
+		int num = (ull)expr(argv[1]+1);
 		if (jt.find(num) != jt.end()) {
 			j = &jt[num];
 			index = num;
 		}
 	} else {
 		for (auto& it : jt) {
-			if (it.second.pid == atoi(argv[1])) {
+			if (it.second.pid == (ull)expr(argv[1])) {
 				j = &it.second;
 				index = it.first;
 				break;

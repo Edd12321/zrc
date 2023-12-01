@@ -233,7 +233,7 @@ string(int argc, char *argv[])
 	if (!strcmp(argv[1], "index")) {
 		if (argc != 4)
 			USAGE
-		return std::string(1, argv[2][atoi(argv[3])]);
+		return std::string(1, argv[2][(ull)expr(argv[3])]);
 	}
 	// % string length <str>
 	if (!strcmp(argv[1], "length")) return std::to_string(strlen(argv[2]));
@@ -258,7 +258,7 @@ string(int argc, char *argv[])
 		if (argc != 5)
 			USAGE
 		std::string temp = argv[2];
-		temp[std::stoi(argv[3])] = argv[4][0];
+		temp[(ull)expr(argv[3])] = argv[4][0];
 		return temp;
 	}
 
@@ -268,8 +268,8 @@ string(int argc, char *argv[])
 			USAGE
 		std::string temp = argv[2];
 
-		int i1 = atoi(argv[3]);
-		int i2 = atoi(argv[4]);
+		int i1 = (ull)expr(argv[3]);
+		int i2 = (ull)expr(argv[4]);
 		if (i1 < 0)
 			i1 = 0;
 		if (i2 > temp.length())

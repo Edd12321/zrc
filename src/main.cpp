@@ -41,14 +41,18 @@
 #include <unordered_map>
 #include <vector>
 
-typedef std::string FunctionName;
-typedef std::string CodeBlock;
-typedef std::string AliasName;
-typedef std::string Path;
-typedef int Jid;
-#define OrderedDispatchTable std::map
-#define DispatchTable std::unordered_map
 #include "global.hpp"
+/** Stringify anything (macro hack) **/
+template<typename T> Inline
+std::string S(T const& t)
+{
+	std::ostringstream ss;
+	ss << t;
+	return ss.str();
+}
+
+Inline std::string Sc(char t)
+	{ return S(t); } 
 #include "config.hpp"
 
 /** See if we can print $PS1. **/
@@ -209,10 +213,7 @@ struct Fifo {
   bool                      str_subst       (std::string&                       );
   // SUBST.HPP
 
-  static inline bool        lassoc          (char                               );
-  static inline std::string ldtos           (ld                                 );
-  extern inline bool        is_expr         (std::string_view                   );
-	std::string               expr            (std::string                        );
+	extern ld                 expr            (std::string                        );
   // EXPR.CPP, EXPR.HPP
 
   template<typename T> std::string  combine (int          , T, int              );
@@ -244,7 +245,6 @@ struct Fifo {
 
   #include "lex.hpp"
   #include "variable.hpp"
-  #include "expr.cpp"
   #include "dispatch.hpp"
   #include "sighandler.hpp"
   #include "subst.hpp"

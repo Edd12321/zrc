@@ -1,6 +1,6 @@
 // Macro for laziness
 #define FOUND_FN(X) (funcs.find(argv[X]) != funcs.end())
-#define OK(X) expr(X, ExprType::INFIX)
+#define OK(X) expr(X)
 #define de(X)   { #X, zrc_builtin_##X }
 #define ce(X,Y) { #X, zrc_builtin_##Y }, { #Y, zrc_builtin_##Y }
 
@@ -92,6 +92,35 @@ public:
 	}
 };
 
+/** Converts a number to a std::string object.
+ *
+ * @param  void
+ * @return void
+ */
+Inline std::string
+ldtos(long double x)
+{
+	std::string str;
+	size_t len;
+	/* empty */ {
+		std::stringstream ss;
+		ss << std::fixed << x;
+		str = ss.str();
+	}
+	if (str.find('.') != std::string::npos) {
+		while (!str.empty() && str.back() == '0')
+			str.pop_back();
+		if (!str.empty() && str.back() == '.')
+			str.pop_back();
+	}
+	return str;
+}
+
+/** Print directory stack contents.
+ *
+ * @param {stack<Path>}sp
+ * @return void
+ */
 static inline void
 prints(std::stack<Path> sp)
 {
@@ -107,7 +136,7 @@ prints(std::stack<Path> sp)
 #define EXIT_SESSION \
 	ret_val = getvar($RETURN);\
 	exit((is_number(ret_val) && !ret_val.empty())\
-			  ? std::stoi(ret_val)\
+			  ? expr(ret_val)\
 			  : EXIT_SUCCESS)\
 
 
@@ -128,15 +157,8 @@ Command(string) { return string(argc, argv); }
 Command(concat) { return combine(argc, argv, 1); }
 /** Clear screen **/
 Command(clear)  { std::cout << CLRSCR; NoReturn; }
-
 /** Evaluates an arithmetic expression **/
-Command(expr) {
-	ExprType et = INFIX;
-	if (argc > 1 && !strcmp(argv[1], "-r"))
-		et = RPN,
-		--argc, ++argv;
-	return itoa(expr(combine(argc, argv, 1), et));
-}
+Command(expr) { return ldtos(expr(combine(argc, argv, 1))); }
 
 /** Executes a block if an expression evaluates non-zero **/
 Command(if) {
@@ -494,10 +516,10 @@ Command(read) {
 		case 'n':
 			if (d != '\n')
 				syntax_error(se);
-			n = atoi(optarg);
+			n = (ull)expr(optarg);
 			break;
 		case 'f':
-			fd = atoi(optarg);
+			fd = (ull)expr(optarg);
 			break;
 		case 'p':
 			std::cout << optarg << std::flush;
@@ -549,9 +571,9 @@ Command(inc) {
 	if (argc < 2)
 		syntax_error("<var> [val]");
 	if (argc >= 3)
-		val = expr(combine(argc, argv, 2));
+		val = combine(argc, argv, 2);
 	var = getvar(argv[1]);
-	ret_val = expr(zrc_fmt("(%s)+(%s)", var.data(), val.data()));
+	ret_val = ldtos(expr(zrc_fmt("(%s)+(%s)", var.data(), val.data())));
 	setvar(argv[1], ret_val);
 	NoReturn;
 }
@@ -573,10 +595,10 @@ Command(set) {
 			size_t len = strlen(argv[i]);
 			if (argv[i][len-1] == '=') {
 				argv[i][len-1] = '\0';
-				setvar(argv[i-1], expr(zrc_fmt("(%s)%s(%s)",
+				setvar(argv[i-1], ldtos(expr(zrc_fmt("(%s)%s(%s)",
 						getvar(argv[i-1]).data(),
 						argv[i],
-						argv[i+1])));
+						argv[i+1]))));
 			} else syntax_error(se);
 		}
 	}
@@ -589,8 +611,8 @@ Command(chr) {
 		syntax_error("<o>");
 	std::string t;
 	auto ret = expr(combine(argc, argv, 1));
-	if (is_number(ret))
-		t += (char)std::stoi(ret);
+	if (ret != NAN)
+		t += (char)ret;
 	return t;
 }
 Command(ord) { 
@@ -795,7 +817,7 @@ Command(shift) {
 	if (argc  > 2)
 		syntax_error("[<n>]");
 	if (argc == 2)
-		howmuch = atoi(argv[1]);
+		howmuch = (ull)expr(argv[1]);
 	
 	//shift to left
 	for (i = 0; i < len-howmuch; ++i)
@@ -831,7 +853,7 @@ Command(rlimit) {
 	if (argc != 2)
 		syntax_error("<n>");
 
-	rlim_t memory = std::stoull(argv[1]);
+	rlim_t memory = (ull)expr(argv[1]);
 	struct rlimit rlm;
 	int err;
 	short exp = 0;

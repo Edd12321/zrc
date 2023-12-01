@@ -37,7 +37,7 @@ which writes to stdout, so square brackets should be used to access it.
 .RB * , / , // , % ;
 .SS Precedence level 13: implicit
 .SS Functions
-.RB log10 , log2 , log , sqrt , sin , cos , ctg , tg , floor , ceil , abs , round;
+.RB log10 , log2 , ln / log , sqrt , sin , asin / arcsin , cos , acos / arccos , ctg / cot , actg / acot / arcctg / arccot , tg / tan , atg / atan / arctg / arctan , sec , arcsec / asec , csc / cosec , acsc / acosec / arccsc / arccosec / floor , ceil , abs , round , trunc;
 .SS Other words
 .RB nan , false , true ;
 .SS Unary operators
@@ -58,7 +58,7 @@ to not clobber files. (and other obvious reasons, like double substitution. See 
 	echo [expr 1&&2||(1?2:0)+5&(3<<1)]
 	echo [expr 1    +  2/ 3 +     4]
 
-	# RPN expression
+	# RPN expressions used to be supported, but now they have been removed.
 	echo [expr -r {1 2 + 3 '*' 2 '<<'}]
 	echo [expr {((1+2)*3)<<2}]
 	
