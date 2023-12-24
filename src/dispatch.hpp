@@ -765,7 +765,10 @@ Command(pushd) {
 			other_error("Could not stat "<<argv[1], 2);
 		if (!S_ISDIR(strat.st_mode))
 			other_error(argv[1]<<" is not a directory", 3);
-		pstack.push(argv[1]);
+		
+		char *rp = realpath(argv[1], nullptr);
+		pstack.push(rp);
+		free(rp);
 	
 	} else {
 		if (pstack.size() == 1)

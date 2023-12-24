@@ -170,9 +170,9 @@ struct Fifo {
   pid_t zrcpid = getpid();
   std::string ret_val;
   std::deque<bool> bg_or_fg;
-	std::list<std::unique_ptr<Fifo> > fifos;
+  std::list<std::unique_ptr<Fifo> > fifos;
 
-	extern bool w, cin_eq_in;
+  extern bool w, cin_eq_in;
   long ch_mode;
 /***** GLOBAL VARIABLES END *****/
 
@@ -213,7 +213,7 @@ struct Fifo {
   bool                      str_subst       (std::string&                       );
   // SUBST.HPP
 
-	extern ld                 expr            (std::string                        );
+  extern ld                 expr            (std::string                        );
   // EXPR.CPP, EXPR.HPP
 
   template<typename T> std::string  combine (int          , T, int              );
