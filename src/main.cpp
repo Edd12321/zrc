@@ -390,6 +390,7 @@ eval_stream(std::istream& in)
 						auto ind = CIND;
 
 						zwl.wl.insert(it+1, al->wl.begin(), al->wl.end());
+						zwl.nb.insert(zwl.nb.begin()+ind+1, al->nb.begin(), al->nb.end());
 						it = zwl.wl.begin()+ind;
 						alias = 1;
 						continue;

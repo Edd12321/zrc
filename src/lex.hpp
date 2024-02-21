@@ -30,15 +30,19 @@
 class WordList
 {
 private:
-	std::unordered_map<size_t, bool> not_bareword;
 	size_t len = 0;
+	enum WordType {
+		BARE,
+		SUBSTITUTED
+	} curr {};
 public:
 	std::vector<std::string> wl;
+	std::vector<WordType> nb;
 
 	inline size_t is_bare(size_t index)
-		{ return !not_bareword[index]; }
+		{ return nb[index] == WordType::BARE; }
 	inline void make_not_bare()
-		{ not_bareword[len] = true; }
+		{ curr = WordType::SUBSTITUTED; }
 	inline std::string back()
 		{ return wl.back(); }
 	inline size_t size()
@@ -49,6 +53,8 @@ public:
 	{
 		if (!tok.empty()) {
 			wl.emplace_back(tok);
+			nb.emplace_back(curr);
+			curr = WordType::BARE;
 			if (tok == ";") bg_or_fg.push_back(FG);
 			if (tok == "&") bg_or_fg.push_back(BG);
 			tok.clear();
