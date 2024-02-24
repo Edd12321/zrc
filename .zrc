@@ -19,7 +19,7 @@ set ZRC = /usr/lib/zrc
 # Load standard library
 eval . $ZRC/stdlib/*
 # Path envvars
-set env('PATH') = $ZRC/corebuf/bin:$env('PATH')
+#set env('PATH') = $ZRC/corebuf/bin:$env('PATH')
 set env('MANPATH') = $ZRC/doc:$env('MANPATH')
 # Cdpath
 eval set env('CDPATH') = $ZRC:~/.dots/work:/$env('CDPATH')
@@ -80,17 +80,34 @@ bindkey -c "\e?"  {
 		eval echo -n $PS1
 	} 1> &2
 }
+bindkey -c "\en"  {
+	eval {
+		archey3
+		eval echo -n $PS1
+	} 1> &2
+}
 bindkey -c "\cb"  {firefox &}
 bindkey -c "\ct"  {$env(TERMINAL) &}
 bindkey -c "\cf"  {doublecmd &}
 bindkey -c "\cft" {thunar &}
-bindkey -c "\en"  {archey3}
+
+# Show ls icons because I'm lazy
+fn enable_lsd {
+	if {!($__use_lsd) && ![which lsd ^ &- > &-]} {
+		alias l "lsd -hF"
+		alias lt "lsd -altrhF"
+		alias la "lsd -all"
+		set __use_lsd = 1
+	} else {
+		alias l "ls -hF --color"
+		alias lt "ls -altrhF --color"
+		alias la "ls -all"
+		set __use_lsd = 0
+	}
+}
 
 # Aliases
-alias l       "ls -hF --color"
-alias lt      "ls -altrhF --color"
-alias la      "ls -all"
-alias l.      "eval ls -d .*"
+enable_lsd
 alias c       "clear"
 alias mkd     "mkdir -pv"
 alias rmd     "rmdir -pv"
@@ -101,6 +118,7 @@ alias ..      "cd .."
 alias ...     "cd ../.."
 alias ....    "cd ../../.."
 alias .....   "cd ../../../.."
+alias .....   "cd ../../../../.."
 alias sha1    "openssl sha1"
 alias ports   "netstat -tulanp"
 alias net     "\$env(AUTH) systemctl restart NetworkManager"
@@ -127,6 +145,9 @@ alias 644     "chmod 644"
 alias 666     "chmod 666"
 alias 755     "chmod 755"
 alias 777     "chmod 777"
+
+# Ctrl flow
+alias forever "while 1"
 
 fn mkcd { mkdir $argv(1) && cd $argv(1); }
 fn lcd  { cd $argv(1) && l }
