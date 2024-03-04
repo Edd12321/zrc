@@ -11,8 +11,10 @@ Note that this command actually returns a value, as opposted to POSIX
 which writes to stdout, so square brackets should be used to access it. NOTE that the interpreter obviously has no idea if you want to bit shift or redirect, so if you use bit manipulation operators, remember to
 .I brace your expr-essions
 to not clobber files. (and other obvious reasons, like double substitution. See the Tcler's Wiki, it all applies to Zrc too :-) )
-.SS Precedence level 0
+.SS Precedence level -1
 .RB ( , ) ;
+.SS Precedence level 0
+.RB , (comma operator);
 .SS Precedence level 1 (ternary operator)
 .RB ? , : ;
 .SS Precedence level 2

@@ -17,6 +17,7 @@ void yyerror(const char *msg)
 %token NUM
 %token LOG10 LOG2 LN SQRT SIN COS CTG TG SEC CSC ARCSIN ARCCOS ARCCTG ARCTG ARCSEC ARCCSC FLOOR TRUNC CEIL ABS ROUND
 
+%left ','
 %right '?' ':'
 %left OR
 %left AND
@@ -33,10 +34,11 @@ void yyerror(const char *msg)
 %left '(' ')'
 %%
 goal : expr YYEOF { last_ret = $1; YYACCEPT; }
-		 | YYEOF      { last_ret = 0; YYACCEPT; }
-		 ;
+     | YYEOF      { last_ret = 0; YYACCEPT; }
+     ;
 
-expr : expr '+' expr           { $$ = $1 + $3; }
+expr : expr ',' expr           { $$ = $3; }
+     | expr '+' expr           { $$ = $1 + $3; }
      | expr '-' expr           { $$ = $1 - $3; }
      | expr '*' expr           { $$ = $1 * $3; }
      | expr '/' expr           { $$ = $1 / $3; }
@@ -74,7 +76,7 @@ expr : expr '+' expr           { $$ = $1 + $3; }
      | ARCSEC expr             { $$ = acos(1.0/$2); }
      | ARCCSC expr             { $$ = asin(1.0/$2); }
      | FLOOR expr              { $$ = floor($2); }
-		 | TRUNC expr              { $$ = trunc($2); }
+     | TRUNC expr              { $$ = trunc($2); }
      | CEIL expr               { $$ = ceil($2); }
      | ABS expr                { $$ = abs($2); }
      | ROUND expr              { $$ = round($2); }
@@ -84,7 +86,7 @@ expr : expr '+' expr           { $$ = $1 + $3; }
      | '~' expr                { $$ = ~(ll)$2; }
      | expr '?' expr ':' expr  { $$ = $1 ? $3 : $5; }
      | '(' expr ')'            { $$ = $2; }
-		 | '(' ')'                 { $$ = 0; }
-		 | NUM                     { $$ = $1; }
+     | '(' ')'                 { $$ = 0; }
+     | NUM                     { $$ = $1; }
      ;
 %%
