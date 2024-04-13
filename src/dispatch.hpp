@@ -500,9 +500,9 @@ Command(echo) {
 /** Reads from stdin **/
 Command(read) {
 	const char *se = "[-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...]";
-	std::string buf;
+	std::string buf, d = "\n";
 	long n = -1, i;
-	char d = '\n';
+	bool dflag = false;
 	optind = 0;
 	int opt;
 	int fd = STDIN_FILENO;
@@ -511,10 +511,10 @@ Command(read) {
 		case 'd':
 			if (n != -1)
 				syntax_error(se);
-			d = *optarg;
+			d = optarg, dflag = true;
 			break;
 		case 'n':
-			if (d != '\n')
+			if (dflag)
 				syntax_error(se);
 			n = (ull)expr(optarg);
 			break;
@@ -538,10 +538,11 @@ Command(read) {
         ok = read(fd, &c, 1);       \
         if (ok != 1)                \
           return ZRC_ERRONE_RETURN; \
-        buf += c;                   \
+        if (d.find(c) == std::string::npos)\
+            buf += c;               \
         for ever {                  \
             ok = read(fd, &c, 1);   \
-            if (ok != 1 || c == d)  \
+            if (ok != 1 || d.find(c) != std::string::npos)  \
                 break;              \
             buf += c;               \
         }                           \
