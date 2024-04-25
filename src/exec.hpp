@@ -39,9 +39,13 @@ private:
 	int baks[ZRC_DEFAULT_FD_OFFSET];
 public:
 	FdHelper()
-		{ std::fill_n(baks, ZRC_DEFAULT_FD_OFFSET, FD_ACT_NOP); }
+	{
+		std::fill_n(baks, ZRC_DEFAULT_FD_OFFSET, FD_ACT_NOP);
+	}
 	bool find(int fd)
-		{ return baks[fd] != FD_ACT_NOP; }
+	{
+		return baks[fd] != FD_ACT_NOP;
+	}
 
 	int
 	add_fd(int fd)
@@ -100,44 +104,28 @@ public:
 	redir_tofile(int fd, bool app, bool noclob, std::string filename)
 	{
 		fdh.add_fd(fd);
-		acts.push_back({fd, {
-				TO_FILE , 0 , app ,
-				noclob  , 0 , filename
-			}}
-		);
+		acts.push_back({fd, {TO_FILE, 0, app, noclob, 0, filename}});
 	}
 
 	void
 	redir_tofd(int fd1, int fd2)
 	{
 		fdh.add_fd(fd2);
-		acts.push_back({fd1, {
-				TO_FD , fd2 , 0 ,
-				0     , 0   , "" 
-			}}
-		);
+		acts.push_back({fd1, {TO_FD, fd2, 0, 0, 0, ""}});
 	}
 	
 	void
 	redir_close(int fd)
 	{
 		fdh.add_fd(fd);
-		acts.push_back({fd, {
-				TO_CLOSE , 0 , 0 ,
-				0        , 0 , ""
-			}}
-		);
+		acts.push_back({fd, {TO_CLOSE, 0, 0, 0, 0, ""}});
 	}
 	
 	void
 	redir_left(int fd, std::string filename, bool hedoc=false)
 	{
 		fdh.add_fd(fd);
-		acts.push_back({fd, {
-				FROM_FILE , 0 , 0 ,
-				0 , hedoc , filename
-			}}
-		);
+		acts.push_back({fd, {FROM_FILE, 0, 0, 0, hedoc, filename}});
 	}
 
 	void
@@ -155,14 +143,9 @@ public:
 							O_CREAT|O_APPEND|O_WRONLY,
 							0644);
 				else if (!(target.noclob && !access(target.filename.data(), F_OK)))
-					ffd = open(target.filename.data(),
-							O_CREAT|O_TRUNC|O_WRONLY,
-							0600);
+					ffd = open(target.filename.data(), O_CREAT|O_TRUNC|O_WRONLY, 0600);
 				else
-					std::cerr << warnmsg 
-						<< "The file "
-						<< target.filename.data()
-						<< " already exists\n";
+					std::cerr << warnmsg << "The file " << target.filename.data() << " already exists\n";
 
 				if (ffd != fd) {
 					dup2(ffd, fd);
@@ -250,11 +233,11 @@ sigmask_unblock_sigchld(sigset_t& mask)
 extern void
 exec(int argc, char *argv[])
 {
-	char         *ret_buf[BUFSIZ];
-	pid_t         pid;
-	int           cs;
-	size_t        i, siz;
-	sigset_t      mask;
+	char *ret_buf[BUFSIZ];
+	pid_t pid;
+	int cs;
+	size_t i, siz;
+	sigset_t mask;
 	w = (bg_or_fg.front() == FG);
 
 	ret_val = ZRC_DEFAULT_RETURN;
@@ -387,9 +370,8 @@ io_proc(std::string frag)
 {
 	char temp[PATH_MAX];
 #ifdef __ANDROID__
-	strcpy( temp, (geteuid()) != 0
-			? "/data/data/com.termux/files/usr" PTMP
-			: PTMP );
+	strcpy(temp, (geteuid()) ? "/data/data/com.termux/files/usr" : "");
+	strcat(temp, PTMP);
 #else
 	strcpy(temp, PTMP);
 #endif
@@ -536,9 +518,7 @@ io_hedoc(std::string hs, std::istream& in, bool mode, Redirector& red)
 	char temp[PATH_MAX];
 
 #ifdef __ANDROID__
-	strcpy( temp, (geteuid()) != 0
-			? "/data/data/com.termux/files/usr" HTMP
-			: HTMP );
+	strcpy(temp, (geteuid()) ? "/data/data/com.termux/files/usr" HTMP : HTMP );
 #else
 	strcpy(temp, HTMP);
 #endif
