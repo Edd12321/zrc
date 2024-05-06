@@ -1,0 +1,13 @@
+#!/usr/lib/zrc/bin/zrc
+set text = $argv(2)
+set opt = `{echo "Open\nEdit\nRead\nMake QR" | dmenu -p "Plumb $text to?"}
+switch $opt {
+	case 'Open' { xdg-open $text }
+	case 'Edit' { $env(EDITOR) $text }
+	case 'Read' { zathura $text }
+	case 'Make QR' {
+		set tmp = `{mktemp}
+		echo -n $text | qrencode -o $tmp
+		sxiv $tmp && rm -f $tmp
+	}
+}

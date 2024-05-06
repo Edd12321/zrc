@@ -1,24 +1,27 @@
 #!/usr/bin/env zrc
 # Personal script
 set WM  = `{echo "awesome\nxfwm4" | dmenu | tr -d '\n'}
-set CMD = "xfconf-query -c xfce4-panel -np /panels/panel-3/autohide-behavior -t int -s"
+fn panel_hide {
+	xfconf-query -c xfce4-panel -np /panels/panel-3/autohide-behavior -t int -s $argv(1)
+}
+fn panel_struts {
+	xfconf-query -c xfce4-panel -np /panels/panel-2/enable-struts -t bool -s $argv(1)
+}
+
+
 
 switch $WM {
 	case "awesome" {
 		killall xfwm4
-		killall xfce4-panel
 		picom & awesome --replace &
-		eval $CMD 2
-		xfce4-panel &
+		panel_hide 2
+		panel_struts false
 	}
 	case "xfwm4" {
 		killall picom
 		killall awesome
-		killall xfce4-panel
 		xfwm4 --replace &
-		eval $CMD 0
-		xfce4-panel &
+		panel_hide 0
+		panel_struts true
 	}
 }
-#xfce-panel -r
-return 0

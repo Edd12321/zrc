@@ -1,0 +1,50 @@
+#!/usr/lib/zrc/bin/zrc
+alias forever {while 1}
+
+if {$argc != 3} { die 'usage: $argv(1) <problem-id>' }
+
+foreach w {*}`{curl https://www.pbinfo.ro/probleme/$argv(2)} {
+	if {![regexp {(.*)\.in} $w tmp]} {
+		set infile = $w
+		break
+	}
+}
+if {![string length [set problem := `{basename $infile .in}]]} {
+	die 'Invalid problem'
+}
+if {[test -f $problem.cpp]} {
+	echo -n '#pragma GCC optimize("Ofast")
+#include <bits/stdc++.h>
+std::ifstream f("$problem.in");
+std::ofstream g("$problem.out");
+
+int
+main()
+{
+}' > $problem.cpp
+
+}
+forever {
+	clear
+	cat << EOF
+p.rogram i.nput o.utput r.un c.ompile q.uit
+-------------------------------------------
+> 
+EOF
+	switch `{stty raw; read -n 1; stty cooked} {
+		case p { vi $problem.cpp }
+		case i { vi $problem.in }
+		case o { vi $problem.out }
+		case r { ./a.out }
+		case c {
+			set compiler_log = `{mktemp}
+			echo Compiling...
+			g++ $problem.cpp 2> $compiler_log; set ret = $?
+			if {$ret} {
+				most $compiler_log
+			}
+			rm $compiler_log
+		}
+		case q { die 'Goodbye!' }
+	}
+}
