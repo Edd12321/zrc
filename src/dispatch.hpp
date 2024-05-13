@@ -104,7 +104,7 @@ ldtos(long double x)
 	size_t len;
 	/* empty */ {
 		std::stringstream ss;
-		ss << std::fixed << x;
+		ss << std::fixed << std::setprecision(std::numeric_limits<long double>::digits10 + 1) << x;
 		str = ss.str();
 	}
 	if (str.find('.') != std::string::npos) {
