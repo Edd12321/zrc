@@ -72,4 +72,4 @@ static std::string errmsg         = "syntax error: ";
 static std::string warnmsg        = "warning: ";
 static char here_prompt           = '>';
 static std::string default_prompt = "zrc% ";
-static std::string ver            = "zrc v0.9b";
+static std::string ver            = "zrc v1.0";
