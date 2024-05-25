@@ -277,7 +277,7 @@ string(int argc, char *argv[])
 		if (i2 <= i1)
 			return "";
 
-		return temp.substr(i1, i2);
+		return temp.substr(i1, i2-i1);
 	}
 
 	return "";

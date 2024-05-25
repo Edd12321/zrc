@@ -1,4 +1,4 @@
-#!/usr/bin/env zrc
+#!/usr/lib/zrc/bin/zrc
 # Personal script
 set WM  = `{echo "awesome\nxfwm4" | dmenu | tr -d '\n'}
 fn panel_hide {
