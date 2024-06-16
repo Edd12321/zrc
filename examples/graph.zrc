@@ -55,10 +55,10 @@ fn show_grid {
 }
 
 fn main {
-	read func -p 'Which function to graph? (sin,cos,etc.) '
+	read func -p {Which function/expression to graph? (sin($x),cos($x),etc.) }
 	init_grid
 	for {set x = -$PI} {$x <= $PI} {inc x 0.1} {
-		set y = [$func $x]
+		set y = [expr $func]
 		plot [round {$x*10}] [round {$y*8}]
 	}
 	show_grid

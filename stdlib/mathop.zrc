@@ -81,6 +81,7 @@ __MakeMathFunc csc;  __MakeMathFunc cosec
 __MakeMathFunc acsc; __MakeMathFunc arccsc; __MakeMathFunc acosec; __MakeMathFunc arccosec
 __MakeMathFunc atg;  __MakeMathFunc arctg;  __MakeMathFunc atan;   __MakeMathFunc arctan
 __MakeMathFunc asin; __MakeMathFunc arcsin
+__MakeMathFunc actg; __MakeMathFunc arcctg; __MakeMathFunc acot;   __MakeMathFunc arccot;
 __MakeMathFunc acos; __MakeMathFunc arccos
 
 nf -s __MakeMathOp
