@@ -1,0 +1,30 @@
+#!/usr/lib/zrc/bin/zrc
+include cfuncs
+include list
+
+# Example of a complex struct, with fields and arrays.
+#
+struct {
+	field x
+	field y
+	field z = 100
+	'field' a\\ 
+	
+	field v = 2
+	array arr = { "1" "2" 3 4 }
+} abc def ghi;
+
+echo fields:
+foreach it {*}${abc.fields?} {
+	set it = [subst $it]
+	echo "$it = [list $$it]"
+}
+
+echo arrays:
+foreach it {*}${abc.arrays?} {
+	set it = [subst $it]
+	echo "$it:"
+	for {set i = 0} {$i < [array length $it]} {inc i} {
+		echo \t$it\($i) = [array index $it $i]
+	}
+}

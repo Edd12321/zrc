@@ -34,7 +34,6 @@ alias sizeof { array length }
 # Other #
 #########
 alias puts { echo }
-alias new  { malloc char } 
 
 ########################################
 # "Allocate" memory to a string buffer #
@@ -78,6 +77,77 @@ fn chrcmp {
 	} else {
 		expr {[ord $argv(1)] <=> [ord $argv(2)]}
 	}
+}
+
+##################
+# C-style struct #
+##################
+
+# Use list to handle weirder field names
+include list
+
+fn struct {
+	let {errmsg i j len ok name set_cmd_prefix list_name interpret_block cmds_run A,arr} {
+		set errmsg = {{{[field <f> [= <def>]|array <a> [= {<w1> <w2> ...}]]...}} <var1> <var2>...\nuse \${<struct name>.fields?} to list all fields.\nuse \${<struct name>.arrays?} to list all arrays.}
+		if {$argc < 3} {
+			zrcusage $errmsg
+			return -1
+		}
+		set interpret_block = {
+			if {$i == $len-1} {
+				zrcusage $errmsg
+				return -1
+			}
+			set ok = 0 # have we reached an equals sign?
+			set name = $arr([inc i])
+			for {set j = 2} {$j < $argc} {inc j} {
+				# Store variables to be set in an eval-block
+				# It will only get evaluated if the syntax provided to the proc is 100% correct.
+				set cmds_run = "$cmds_run
+					set $argv($j).$list_name = \[lappend \${$argv($j).$list_name} [list $argv($j).$name]]
+				"
+				if {![chrcmp $arr([expr $i+1]) '=']} {
+					if {$i+1 == $len-1} {
+						zrcusage $errmsg
+						return -1
+					}
+					# Same thing as before
+					set ok = true
+					set cmds_run = "$cmds_run
+						$set_cmd_prefix $argv($j).$name = [list $arr([expr $i+2])]
+					"
+				}
+			}
+			if {$ok} {
+				inc i 2
+			}
+		}
+		array set arr = $argv(1)
+		for {set i = 0 len = [sizeof arr]} {$i < $len} {inc i} {
+			set $arr($i) = [subst $arr($i)]
+			switch $arr($i) {
+				# Regular scalar values/plain strings. Denoted by `field`.
+				case "field" {
+					set set_cmd_prefix = set
+					set list_name = {fields\?}
+					eval $interpret_block
+				}
+				case "array" {
+					set set_cmd_prefix = {array set}
+					set list_name = {arrays\?}
+					eval $interpret_block
+				}
+				# Unknown field type
+				default {
+					echo test $arr($i)
+					zrcusage $arr($i) $errmsg
+					return -1
+				}
+			}
+		}
+		eval $cmds_run
+	}
+	return 0
 }
 
 }

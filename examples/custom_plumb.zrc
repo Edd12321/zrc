@@ -1,6 +1,7 @@
 #!/usr/lib/zrc/bin/zrc
+. ~/.zrc
 set text = $argv(2)
-set opt = `{echo "Open\nEdit\nRead\nMake QR" | dmenu -p "Plumb $text to?"}
+set opt = `{echo "Open\nEdit\nRead\nMake QR\nGoogle\n" | dmenu -p "Plumb $text to?"}
 switch $opt {
 	case 'Open' { xdg-open $text }
 	case 'Edit' { $env(EDITOR) $text }
@@ -9,5 +10,8 @@ switch $opt {
 		set tmp = `{mktemp}
 		echo -n $text | qrencode -o $tmp
 		sxiv $tmp && rm -f $tmp
+	}
+	case 'Google' {
+		$env(BROWSER) https://google.com/search?q=$text
 	}
 }

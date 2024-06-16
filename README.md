@@ -15,7 +15,7 @@ Zrc is just ~600KB in size because its implementation is to the point and simple
         - [X] Basic utility library
         - [X] Math.h equivalent
         - [ ] Formatted I/O
-        - [ ] Classes/objects, structs
+        - [X] <s>Classes/objects,</s> structs
         - [ ] More?
 - [X] Path hashing/caching
 - [X] Cdpath support
