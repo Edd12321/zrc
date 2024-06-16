@@ -6,9 +6,10 @@
 # https://c-for-dummies.com/blog/?p=831 #
 #########################################
 include mathop
-set PI     = 3.14159
-set WIDTH  = 60
-set HEIGHT = 20
+include cfuncs
+set LIM    = 3.14159
+set WIDTH  = 120
+set HEIGHT = 40
 set X      = [expr {$WIDTH>>1}]
 set Y      = [expr {$HEIGHT>>1}]
 set XMAX   = [expr {$WIDTH-$X-1}]
@@ -55,9 +56,20 @@ fn show_grid {
 }
 
 fn main {
-	read func -p {Which function/expression to graph? (sin($x),cos($x),etc.) }
+	read func_old -p 'Which function/expression to graph? (sin(x),cos(x),etc.) '
+	set func_old = [subst $func_old]
+	if {[$func_old ^ /dev/null] != 127} {
+		set func = ${func_old}(\$x)
+	} else for {set i = 0 len = [string length $func_old]} {$i < $len} {inc i} {
+		set ch = [string index $func_old $i]
+		if {![chrcmp $ch 'x']} {
+			set func = [string cat $func {($x)}]
+		} else {
+			set func = [string cat $func $ch]
+		}
+	}
 	init_grid
-	for {set x = -$PI} {$x <= $PI} {inc x 0.1} {
+	for {set x = -$LIM*2} {$x <= $LIM*2} {inc x 0.1} {
 		set y = [expr $func]
 		plot [round {$x*10}] [round {$y*8}]
 	}
