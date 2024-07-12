@@ -1,0 +1,21 @@
+#!/usr/lib/zrc/bin/zrc
+shift; # scapam de "zrc" 
+shift; # scapam de "aur.zrc"
+while {$argc} {
+	# mi-e lene sa scriu
+	set 1 = $argv(0)
+	regexp {~} $1 --; set ok &&= $?
+	regexp {/} $1 --; set ok &&= $?
+	if {!$ok} {
+		> &2 env echo -e {\e[3mError:}$1 is not a valid package name{\e[0m}
+		exit 1
+	}
+	git clone https://aur.archlinux.org/$1
+	if {![test -d $1]} {
+		cd $1
+		makepkg -si
+		cd ..
+		rm -rf $1
+		shift
+	} else exit 1
+}

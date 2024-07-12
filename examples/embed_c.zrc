@@ -1,0 +1,39 @@
+#!/usr/lib/zrc/bin/zrc
+set srcfile = `{mktemp};
+
+fn c:include {
+	shift; while {$argc} {
+		echo "#include <$argv(0).h>" >> $srcfile.c
+		shift
+	}
+}
+
+fn c:fn {
+	echo "$argv(1) $argv(2)($argv(3)){$argv(4)}" >> $srcfile.c
+}
+
+fn c:done {
+	gcc $srcfile.c -o $srcfile.o && $srcfile.o
+	rm $srcfile.c
+}
+
+c:include stdio stdlib stdbool
+
+c:fn int is_prime{int x} {
+	if (x < 2) return false;
+	if (x == 2) return true;
+	if (x % 2 == 0) return false;
+	for (int i = 3; i < x; i += 2)
+		if (x % i == 0)
+			return false;
+	return true;
+}
+
+c:fn int main{} {
+	int x;
+	puts("Please input a number:");
+	scanf("%d", &x);
+	printf("x is %sprime!\n", is_prime(x)?" ":"not ");
+}
+
+c:done
