@@ -73,6 +73,12 @@ __MakeMathFunc abs
 __MakeMathFunc round
 __MakeMathFunc sqrt
 
+# Functions (calculus)
+__MakeMathFunc erf
+__MakeMathFunc erfc
+__MakeMathFunc tgamma
+__MakeMathFunc lgamma
+
 # Functions (trigonometry)
 __MakeMathFunc cos
 __MakeMathFunc ctg;  __MakeMathFunc cot

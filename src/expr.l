@@ -54,6 +54,10 @@ trunc                       return TRUNC;
 ceil                        return CEIL;
 abs                         return ABS;
 round                       return ROUND;
+erf                         return ERF;
+erfc                        return ERFC;
+lgamma                      return LGAMMA;
+tgamma                      return TGAMMA;
 %%
 #include <string.h>
 #include <math.h>

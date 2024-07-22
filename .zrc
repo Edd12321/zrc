@@ -106,6 +106,10 @@ fn enable_lsd {
 	}
 }
 
+fn soundchk {
+	timeout 0.15 aplay /dev/random
+}
+
 # Aliases
 enable_lsd
 alias c       "clear"
