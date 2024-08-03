@@ -2,7 +2,7 @@
 .SH NAME
 set \- Set multiple variables' values
 .SH SYNOPSIS
-.BI "set " "<var> " [ +-*/%|^&: ][ ** ][ || ][ && ][ // ][ << ][ >> ] "= <val>..."
+.BI "set " "<var> " [ op ] "= <val>..."
 .SH DESCRIPTION
 The
 .I set
@@ -27,11 +27,11 @@ val), the assigned value is also returned via
 .PP
 When the equals sign is preceded by an arithmetic operator, the construct:
 .EX
-	set a OP= b #(where OP is an operator)
+	set a OP= EXP #(where OP is an operator, and EXP is an expression)
 .EE
 is equivalent to:
 .EX
-	set a = [expr ($a)OP($b)]
+	set a = [expr {($a)OP(EXP)}]
 .EE
 
 .SH EXAMPLES

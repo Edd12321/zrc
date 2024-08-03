@@ -22,7 +22,7 @@ eval . $ZRC/stdlib/*
 #set env('PATH') = $ZRC/corebuf/bin:$env('PATH')
 set env('MANPATH') = $ZRC/doc:$env('MANPATH')
 # Cdpath
-eval set env('CDPATH') = $ZRC:~/.dots/work:/$env('CDPATH')
+eval set env('CDPATH') = .:$ZRC:~/.dots/work:/$env('CDPATH')
 # Refresh internal hash table
 rehash ^ &-
 
@@ -106,9 +106,8 @@ fn enable_lsd {
 	}
 }
 
-fn soundchk {
-	timeout 0.15 aplay /dev/random
-}
+fn soundchk {timeout 0.15 aplay /dev/random}
+fn life {ffplay -f lavfi -i life}
 
 # Aliases
 enable_lsd
