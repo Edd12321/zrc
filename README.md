@@ -73,6 +73,7 @@ Zrc is just ~600KB in size because its implementation is to the point and simple
     - [X] Return
     - [X] Continue
     - [X] Break
+    - [X] Fallthrough
 - [X] Full job control
 	- [X] Job table support
 	- [X] Job listing command
