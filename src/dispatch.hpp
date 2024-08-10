@@ -202,9 +202,9 @@ Command(continue) {
 	throw ZrcContinueHandler();
 }
 Command(fallthrough) {
-  if (!in_switch)
-    other_error("Cannot fallthrough, not in a switch statement", 1);
-  throw ZrcFallthroughHandler();
+	if (!in_switch)
+		other_error("Cannot fallthrough, not in a switch statement", 1);
+	throw ZrcFallthroughHandler();
 }
 
 /** Executes a block while an expression evaluates zero **/
@@ -337,7 +337,7 @@ _yet_again:
 					fell = true;
 					goto _next_case;
 				}
-				/* Default action for unmatched case */
+				/* Default action for matched case */
 				NoReturn;
 			} else {
 _next_case:
@@ -354,7 +354,7 @@ _next_case:
 					fell = true;
 					goto _next_reg;
 				}
-				/* Default action for unmatched regex */
+				/* Default action for matched regex */
 				NoReturn;
 			} else {
 _next_reg:
