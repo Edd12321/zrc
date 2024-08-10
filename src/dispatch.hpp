@@ -66,12 +66,14 @@ const DispatchTable<FunctionName, int> txt2sig = {
 ExceptionClass(Return);
 ExceptionClass(Break);
 ExceptionClass(Continue);
+ExceptionClass(Fallthrough);
 
 /****
- * Check if we can break/continue
+ * Check if we can break/continue/return/fallthrough
  ****/
-bool in_loop = false;
-bool in_func = false;
+bool in_loop   = false;
+bool in_func   = false;
+bool in_switch = false;
 
 class BlockHandler
 {
@@ -199,6 +201,11 @@ Command(continue) {
 		other_error("Cannot continue, not in a loop", 1);
 	throw ZrcContinueHandler();
 }
+Command(fallthrough) {
+  if (!in_switch)
+    other_error("Cannot fallthrough, not in a switch statement", 1);
+  throw ZrcFallthroughHandler();
+}
 
 /** Executes a block while an expression evaluates zero **/
 Command(while) {
@@ -298,52 +305,89 @@ _repeat_do:
 
 /** Switch statement implementation **/
 Command(switch) {
-	std::string def_cmd;
-	std::string se = "<value> {<case <c> cmd|reg <r>|default <block>...}";
+	std::string se = "<value> {case <c>|reg <r>|default <cmd>...}";
+	if (argc != 3) syntax_error(se);
+
+	auto to_match = argv[1];
+
+	/* Setup syntax check */
 	WordList args;
-	if (argc != 3)
-		syntax_error(se);
-	/* empty */ {
+	auto& s = args.wl;
+	ssize_t len, def_index = -1, i = 0;
+	{
 		NullIOSink ns;
 		std::istream fin(&ns);
-		args = tokenize(argv[2], fin);
+		args = tokenize(argv[2], fin), len = args.size();
 	}
 	std::for_each(args.wl.begin(), args.wl.end(), &str_subst);
 
-	for (int i = 0; i < args.size(); ) {
-		if (args.wl[i] == "case") {
-			if (i >= args.size()-2)
-				syntax_error(se);
-			if (argv[1] == args.wl[i+1]) {
-				eval(args.wl[i+2]);
+	/* Handle `fallthrough` statements */
+	BlockHandler sh(&in_switch);
+
+	bool fell = 0; /* Have we fallen through the switch? */
+	bool matched_once = 0; /* Can we call default? */
+_yet_again:
+	for (; i < len;) {
+		if (s[i] == "case" && i < len-2) {
+			if (fell || (matched_once |= (s[i+1] == to_match))) {
+				try {
+					fell = false;
+					eval(s[i+2]);
+				} catch (ZrcFallthroughHandler ex) {
+					fell = true;
+					goto _next_case;
+				}
+				/* Default action for unmatched case */
 				NoReturn;
+			} else {
+_next_case:
+				i += 3;
 			}
-			i += 3;
-		}
-		
-		else if (args.wl[i] == "reg") {
-			if (i >= args.size()-2)
-				syntax_error(se);
-			std::regex sr{args.wl[i+1]};
-			if (std::regex_match(argv[1], sr)) {
-				eval(args.wl[i+2]);
+		} else
+
+		if (s[i] == "reg" && i < len-2) {
+			if (fell || (matched_once |= std::regex_match(to_match, std::regex(s[i+1])))) {
+				try {
+					fell = false;
+					eval(s[i+2]);
+				} catch (ZrcFallthroughHandler ex) {
+					fell = true;
+					goto _next_reg;
+				}
+				/* Default action for unmatched regex */
 				NoReturn;
+			} else {
+_next_reg:
+				i += 3;
 			}
-			i += 3;
-		}
-	
-		else if (args.wl[i] == "default") {
-			if (i >= args.size()-1)
-				syntax_error(se);
-			def_cmd = args.wl[i+1];
-			i += 2;
+		} else
+
+		if (s[i] == "default" && i < len-1) {
+			def_index = i+1;
+_default:
+			if (fell) {
+				try {
+					fell = false;
+					eval(s[i+1]);
+				} catch (ZrcFallthroughHandler ex) {
+					fell = true;
+					goto _next_default;
+				}
+				/* Default action for default */
+				NoReturn;
+			} else {
+_next_default:
+				i += 2;
+			}
 		}
 
-		else {
-			syntax_error(se);
-		}
+		else syntax_error(se);
 	}
-	eval(def_cmd);
+
+	if (def_index != -1 && !matched_once) {
+		fell = true, i = def_index-1;
+		goto _default;
+	}
 	NoReturn;
 }
 
@@ -351,9 +395,7 @@ Command(switch) {
 Command(return) {
 	if (argc > 2)
 		syntax_error("[<val>]");
-	ret_val = (argc == 2)
-		? combine(argc, argv, 1)
-		: ZRC_DEFAULT_RETURN;
+	ret_val = (argc == 2)	? argv[1] : ZRC_DEFAULT_RETURN;
 	if (in_func)
 		throw ZrcReturnHandler();
 	NoReturn;
@@ -658,7 +700,7 @@ Command(let) {
 	WordList vars;
 	std::map<std::string, Array> a_hm_bak;
 	std::map<std::string, Scalar> s_hm_bak;
-	bool ret=0, brk=0, con=0;
+	bool ret=0, brk=0, con=0, fal=0;
 	/* empty */ {
 		NullIOSink ns;
 		std::istream fin(&ns);
@@ -676,9 +718,10 @@ Command(let) {
 	try {
 		//BlockHandler xh(&in_func);
 		eval(argv[2]);
-	} catch   (ZrcReturnHandler ex) { ret = 1; }
-	  catch    (ZrcBreakHandler ex) { brk = 1; }
-	  catch (ZrcContinueHandler ex) { con = 1; }
+	} catch      (ZrcReturnHandler ex) { ret = 1; }
+	  catch       (ZrcBreakHandler ex) { brk = 1; }
+	  catch    (ZrcContinueHandler ex) { con = 1; }
+		catch (ZrcFallthroughHandler ex) { fal = 1; }
 	
 	for (Variable& str : vars.wl) {
 		if (str[0] == 'A' && str[1] == ',') {
@@ -691,6 +734,7 @@ Command(let) {
 	if (ret) throw ZrcReturnHandler();
 	if (brk) throw ZrcReturnHandler();
 	if (con) throw ZrcContinueHandler();
+	if (fal) throw ZrcFallthroughHandler();
 	NoReturn;
 }
 
@@ -978,7 +1022,7 @@ const OrderedDispatchTable<std::string, std::function<std::string(int, char**)>>
 	de(until)   , de(wait)   , de(while),
 	de(subst)   , de(break)  , de(continue),
 	de(concat)  , de(rlimit) , de(include),
-	de(builtin) , de(clear)  ,
+	de(builtin) , de(clear)  , de(fallthrough),
 	/* $PATH hashing */
 #if defined USE_HASHCACHE && USE_HASHCACHE == 1
 	de(unhash)  , de(rehash) ,

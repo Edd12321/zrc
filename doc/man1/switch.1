@@ -25,6 +25,7 @@ If the word is
 then the utility changes the default fallback compound block to the one found next to the
 .B default
 word. If, at the end of this scanning process, no case statement short-circuited the switch command, the fallback compound block (initally empty) executes.
+Coupled with the fallthrough command, this utility can have somewhat similar behaviour to a traditional switch statement.
 .SH EXAMPLES
 .EX
 	echo -n "What's your name? "
@@ -35,9 +36,12 @@ word. If, at the end of this scanning process, no case statement short-circuited
 		}
 		case Bob {
 			echo What's up, Bob?
+			fallthrough
 		}
 		default {
 			echo Hello, stranger!
 		}
 	}
 .EE
+.SH SEE ALSO
+fallthrough

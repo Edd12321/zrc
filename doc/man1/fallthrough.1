@@ -1,0 +1,26 @@
+.TH FALLTHROUGH 1
+.SH NAME
+fallthrough \- Execute the next body in a switch statement
+.SH SYNOPSIS
+.B fallthrough
+.SH DESCRIPTION
+The
+.I fallthrough
+utility will make the execution flow of the current switch statement "fall through" into the next case/regex/default block. It is similar to how switches usually work in C, except you can jump in the middle of a block (like with goto), and it is explicit.
+.SH EXAMPLES
+.EX
+set a = "abc"
+switch $a {
+	reg .+ {
+		echo "Matched regex!"
+		fallthrough
+	}
+	case a {
+		echo "Matched this as well!"
+	}
+	default {
+		# This will never run!
+		# The previous case implicitly breaks out.
+	}
+}
+.EE

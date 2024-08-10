@@ -1,0 +1,35 @@
+#!../bin/zrc
+set var = "abcdef"
+#set var = 22
+
+switch $var {
+	reg {[0-9]+} {
+		echo "Numeric!"
+	}
+	case "abcdef" {
+		echo "Matched abcdef"
+		for {set i = 0} {$i < 5} {inc i} {
+			echo $i
+		}
+		fallthrough
+		echo "This should never run!"
+	}
+	case "xyz" {
+		echo "Fell through"
+		fallthrough
+	}
+	case "abc" {
+		fallthrough
+		echo "This should also never run!"
+	}
+}
+set cmd = asdfgh
+switch $cmd {
+	case wc { wc -nlw }
+	case grep { history | grep 123 }
+	default { ls -all; echo "Falling through... (#2)"
+	          fallthrough
+	}
+	case ashhssgvgsgsgssvvskl { echo yay; fallthrough }
+	case sbsvsgsvsvddbddbsjsj { echo nay }
+}
