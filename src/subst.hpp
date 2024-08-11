@@ -32,7 +32,7 @@
 bool
 str_subst(std::string& str)
 {
-	size_t i, len, pos, cmpnd;
+	size_t i, len, cmpnd;
 	bool orig_f = false;
 	char ch;
 	std::string tmp1, tmp2, res = "", out;

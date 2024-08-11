@@ -233,10 +233,8 @@ sigmask_unblock_sigchld(sigset_t& mask)
 extern void
 exec(int argc, char *argv[])
 {
-	char *ret_buf[BUFSIZ];
 	pid_t pid;
-	int cs;
-	size_t i, siz;
+	size_t i;
 	sigset_t mask;
 	w = (bg_or_fg.front() == FG);
 
@@ -430,8 +428,6 @@ str_subst_expect1(std::string& str)
 bool
 io_left(std::string fn, Redirector& red, bool hedoc=false)
 {
-	int fd;
-
 	if (!str_subst_expect1(fn))
 		return 0;
 	if (access(fn.c_str(), F_OK)) {
@@ -451,8 +447,6 @@ bool
 io_right(std::string exp, int fd, bool app, bool noclob, Redirector& red)
 {
 	auto len = exp.length();
-	int fd2;
-
 	/* close file descriptor (...> &-) */
 	if (exp == "&-") {
 		red.redir_close(fd);

@@ -127,7 +127,7 @@ namespace zlineshort
 		},
 		/* Modify input buffer */
 		{ "cursor-erase"     , [](std::string& buf, char c) {
-				size_t i, len = buf.length();
+				size_t len = buf.length();
 				if (cursor_pos && cursor_pos <= len) {
 					CURSOR_BWD(cursor_pos);
 					buf.erase(--cursor_pos, 1);
@@ -188,7 +188,7 @@ namespace zlineshort
 				std::cerr << '\n';
 				if (term_hi*3-6 <= i) {
 					std::cerr << "--More--";
-					char tmp;
+					int tmp;
 					while ((tmp = getchar()) != EOF) {
 						if (tmp == 'q') {
 							std::cerr << std::endl;

@@ -10,7 +10,7 @@ struct Job {
 
 std::map<Jid, Job> jt;
 
-extern inline void
+void
 jobs()
 {
 	int i;
@@ -40,7 +40,7 @@ jobs()
 Jid
 addjob(pid_t pid, int state, int argc, char *argv[])
 {
-	int index, i, size;
+	int index, i;
 	if (jt.empty())
 		index = 1;
 	else
@@ -61,7 +61,8 @@ addjob(pid_t pid, int state, int argc, char *argv[])
  * @param {Job*}job
  * @return void
  */
-sub deljob(Jid index)
+void
+deljob(Jid index)
 {
 	std::map<Jid, Job>::iterator it;
 	int i;
@@ -96,7 +97,7 @@ getfg()
  * @param {pid_t}pid
  * @return void
  */
-extern inline void
+inline void
 waitproc(pid_t pid)
 {
 	sigset_t mask;
@@ -114,7 +115,8 @@ waitproc(pid_t pid)
  * @return none
  */
 const auto dig_max = (int)log10(INT_MAX)+1;
-sub async_message(int index, int pid, const char *msg)
+void
+async_message(int index, int pid, const char *msg)
 {
 	static std::function<void(char*, int)> itoa2 = [] (char *num, int x) {
 		long k = int(log10(x));
@@ -143,7 +145,7 @@ sub async_message(int index, int pid, const char *msg)
  */
 //void upper(char *s) { while (*s) *s = toupper(*s++); }
 
-extern std::string
+std::string
 bg_fg(int argc, char *argv[])
 {
 	Job *j;

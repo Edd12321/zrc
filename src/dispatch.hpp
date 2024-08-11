@@ -103,7 +103,6 @@ Inline std::string
 ldtos(long double x)
 {
 	std::string str;
-	size_t len;
 	/* empty */ {
 		std::stringstream ss;
 		ss << std::fixed << std::setprecision(std::numeric_limits<long double>::digits10 + 1) << x;
@@ -147,7 +146,7 @@ Command(exit)   { EXIT_SESSION; }
 /** Displays a job table **/
 Command(jobs)   { jobs(); NoReturn; }
 /** Waits for child processes to finish **/
-Command(wait)   { while (wait(NULL) > 0) ; NoReturn; }
+Command(wait)   { while (wait(NULL) > 0) {}; NoReturn; }
 /** Closes with an error message **/
 Command(die)    { die(argv[1]); return ZRC_ERRONE_RETURN; }
 /** Evalues its arguments as a script **/
@@ -326,7 +325,6 @@ Command(switch) {
 
 	bool fell = 0; /* Have we fallen through the switch? */
 	bool matched_once = 0; /* Can we call default? */
-_yet_again:
 	for (; i < len;) {
 		if (s[i] == "case" && i < len-2) {
 			if (fell || (matched_once |= (s[i+1] == to_match))) {
@@ -543,11 +541,11 @@ Command(echo) {
 Command(read) {
 	const char *se = "[-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...]";
 	std::string buf, d = "\n";
-	long n = -1, i;
+	long n = -1;
 	bool dflag = false;
+	int opt, fd = STDIN_FILENO;
+
 	optind = 0;
-	int opt;
-	int fd = STDIN_FILENO;
 	while ((opt = getopt(argc, argv, "d:n:p:f:")) != -1) {
 		switch (opt) {
 		case 'd':
@@ -797,7 +795,6 @@ Command(fg) { return bg_fg(argc, argv); }
 std::stack<Path> pstack;
 Command(pushd) {
 	struct stat strat;
-	char wd[PATH_MAX];
 	if (argc > 2)
 		syntax_error("[<dir>]");
 	if (pstack.empty()) {
@@ -903,7 +900,6 @@ Command(rlimit) {
 
 	rlim_t memory = (ull)expr(argv[1]);
 	struct rlimit rlm;
-	int err;
 	short exp = 0;
 	switch (argv[1][strlen(argv[1])-1]) {
 	case 'K': exp =  10; break;

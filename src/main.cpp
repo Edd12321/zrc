@@ -61,14 +61,13 @@ Inline std::string Sc(char t)
 #define CIND std::distance(zwl.wl.begin(), it)
 /** Expect a word pointer + increment pointer. **/
 #define FAILSAFE(X) {            \
-    auto x = it+1;               \
     if (it+1 != zwl.wl.end() && std::set<std::string>{"&", ";", "&&", "||"}.count(*(it+1))) {\
         std::cerr << errmsg << "Unexpected '" << *(it+1) << "'\n";\
         can_runcmd = 0;          \
         continue;                \
     }                            \
- 		X or (can_runcmd=0);         \
-		++it;                        \
+    X or (can_runcmd=0);         \
+    ++it;                        \
     continue;                    \
 }
 
@@ -172,7 +171,6 @@ struct Fifo {
   std::deque<bool> bg_or_fg;
   std::list<std::unique_ptr<Fifo> > fifos;
 
-  extern bool w, cin_eq_in;
   long ch_mode;
 /***** GLOBAL VARIABLES END *****/
 
@@ -194,7 +192,7 @@ struct Fifo {
   int                       echo            (int   , char**                     );
   // ARRAY.HPP, STRING.HPP, READ.HPP
 
-  extern inline void        jobs            (void                               );
+  void                      jobs            (void                               );
   Jid                       addjob          (pid_t , int , int , char**         );
   static void               deljob          (Jid                                );
   static pid_t              getfg           (void                               );
@@ -203,8 +201,8 @@ struct Fifo {
   void                      sigint_handler  (int                                );
   void                      sigtstp_handler (int                                );
   void                      sigquit_handler (int                                );
-  static inline void        async_message   (int   , int , int , const char*    );
-  extern std::string        bg_fg           (int   , char**                     );
+  void                      async_message   (int   , int , int , const char*    );
+  std::string               bg_fg           (int   , char**                     );
   
   typedef void Handle(int);
   Handle*                   signal2         (int, Handle*                       );
@@ -237,7 +235,6 @@ struct Fifo {
   inline bool               fd_parse        (std::string_view , size_t          );
   // FD.HPP
 
-  static inline bool        zrawch          (char&                              );
   bool                      zlineedit       (std::string&                       );
   template<typename T> bool zrc_read_line   (std::istream&,std::string&,T const&);
   inline bool               zrc_read_line   (std::istream&,std::string&         );
@@ -278,10 +275,9 @@ glob(std::string_view s)
 {
 	WordList wl;
 	glob_t gvl;
-	int i, j, ok;
 	memset(&gvl, 0, sizeof(glob_t));
 	if (!glob(s.data(), GLOB_TILDE|GLOB_NOESCAPE, NULL, &gvl))
-		for (i=0; i<gvl.gl_pathc; ++i)
+		for (int i = 0; i < gvl.gl_pathc; ++i)
 			wl.add_token(gvl.gl_pathv[i]);
 	if (!wl.size())
 		wl.add_token(s);
@@ -317,11 +313,10 @@ eval_stream(std::istream& in)
 {
 	std::string line, ltmp;
 	WordList    zwl, gbzwl, spl;
-	bool   sword, glb, can_runcmd=1;
-	bool   ret = 0, brk = 0, con = 0;
-	bool   found_pipe = 0, alias = 0;
+	bool   sword, glb, can_runcmd = 1, ret = 0, brk = 0, con = 0, alias = 0;
 	long   k;
-	size_t len;
+	size_t len
+		;
 	// Each "eval level" restores its file descriptors
 	fd_offset += ZRC_DEFAULT_FD_OFFSET;
 	FdHelper baks;
@@ -511,9 +506,8 @@ main(int argc, char *argv[])
 			fp.close();
 		} else {
 			perror(argv[1]);
-			goto _err;
+			return EXIT_FAILURE;
 		}
 	}
-_suc: EXIT_SESSION; 
-_err: return EXIT_FAILURE;
+	EXIT_SESSION; 
 }
