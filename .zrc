@@ -1,0 +1,125 @@
+#!/usr/bin/env zrc
+echo "Welcome to Zrc!"
+echo "The time is: `{date}"
+
+fn prompt {
+	set green = "\e\[0;32m"
+	set rbold = "\e\[1;31m"
+	set reset = "\e\[0m"
+
+	echo -n $green`{whoami}$reset@`{hostname} $green`{pwd} $reset%\ 
+}
+
+bindkey -c "\cl" {
+	>& 1 2 eval {
+		clear; prompt
+	}
+}
+bindkey -c "\e?" {
+	>& 1 2 eval {
+		echo && l; prompt
+	}
+}
+bindkey -c "\en" {
+	>& 1 2 eval {
+		archey3; prompt
+	}
+}
+bindkey -c "\cb"  { firefox & }
+bindkey -c "\ct"  { $TERMINAL & }
+bindkey -c "\cf"  { doublecmd & }
+bindkey -c "\cft" { thunar & }
+
+fn enable_lsd {
+	if {!($__use_lsd) && ![>&- 2 >&- which lsd]} {
+		alias l "lsd -hF"
+		alias lt "lsd -althrF"
+		alias la "lsd -all"
+		set __use_lsd = 1
+	} else {
+		alias l "ls -hF --color"
+		alias lt "ls -altrhF --color"
+		alias la "ls -all"
+		set __use_lsd = 0
+	}
+}
+
+fn soundchk { timeout 0.15 aplay /dev/random }
+fn life { ffplay -f lavfi -i life }
+
+# Aliases
+enable_lsd
+alias c       "clear"
+alias mkd     "mkdir -pv"
+alias rmd     "rmdir -pv"
+alias j       "jobs"
+alias p       "ps -l"
+alias du      "du -k"
+alias ..      "cd .."
+alias ...     "cd ../.."
+alias ....    "cd ../../.."
+alias .....   "cd ../../../.."
+alias ......  "cd ../../../../.."
+alias sha1    "openssl sha1"
+alias ports   "netstat -tulanp"
+alias net     "\$AUTH systemctl restart NetworkManager"
+alias mkdir   "mkdir -pv"
+alias pacman  "\$AUTH pacman"
+alias calc    "bc -ql"
+alias emacs   "emacs -nw"
+alias history "eval \$env(PAGER) ~/.zrc_history"
+alias da      "date '+%Y-%m-%d %A %T %Z'"
+
+# Modify original cmds
+alias cp      "cp -i"
+alias mv      "mv -i"
+alias rm      "rm -iv"
+alias mkdir   "mkdir -pv"
+alias rmdir   "rmdir -pv"
+alias ps      "ps auxf"
+alias ping    "ping -c 5"
+
+# Chmod alias
+alias mx      "chmod a+x"
+alias 000     "chmod 000"
+alias 644     "chmod 644"
+alias 666     "chmod 666"
+alias 755     "chmod 755"
+alias 777     "chmod 777"
+
+# Ctrl flow
+alias forever "while 1"
+
+fn mkcd { mkdir ${argv 1} && cd ${argv 1} }
+fn lcd  { cd ${argv 1} && l }
+
+# Rot13 is a very common cipher for some reason
+fn rot13 {
+	if {$argc == 1} {
+		tr '\[a-m]\[n-z]\[A-M]\[N-Z]' '\[n-z]\[a-m]\[N-Z]\[A-M]'
+	} else {
+		for {set i = 1} {$i < $argc} {inc i} {
+			echo ${argv $i}
+		} | rot13
+	}
+}
+
+# go up n times
+fn up {
+	for {set i = 0} {$i < ${argv 1}} {inc i} ..
+}
+
+# Function from Xmodulo
+fn kernelgraph {
+	lsmod | perl -e {
+		print "digraph \"lsmod\" {";
+		<>;
+		while(<>){
+			@_=split/\s+/;
+			print "\"$_[0]\" -> \"$_\"\n" for split/,/,$_[3]
+		}
+		print "}"
+	} | dot -Tpng | display -;
+}
+
+set AUTH = doas; export AUTH

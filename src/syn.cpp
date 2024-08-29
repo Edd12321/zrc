@@ -238,16 +238,16 @@ token_list lex(const char *p, lexer_flags flags)
 			case '\\':
 				curr.bareword = false;
 				switch (*++p) {
-			  	case 'a': text += '\a'              ; break;
-			  	case 'b': text += '\b'              ; break;
-			  	case 'e': text += '\033'            ; break;
+			  		case 'a': text += '\a'              ; break;
+			  		case 'b': text += '\b'              ; break;
+			  		case 'e': text += '\033'            ; break;
 					case 'f': text += '\f'              ; break;
 					case 'n': text += '\n'              ; break;
 					case 'r': text += '\r'              ; break;
 					case 't': text += '\t'              ; break;
 					case 'v': text += '\v'              ; break;
 					case 'c': if (*++p) text += CTRL(*p); break;
-			  	default : text += *p                ; break;
+			  		default : text += *p                ; break;
 				}
 				break;
 			
