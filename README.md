@@ -1,5 +1,6 @@
 <img src="img/zrc.svg" width=100 height=auto />
-(This is the new, better and REWRITTEN version of Zrc (master branch)! It has way less bugs, a better codebase, nicer syntax, etc. It also no longer has job control. I plan to add it again.
+**This is the new, better and REWRITTEN version of Zrc (master branch)! It has way less bugs, a better codebase, nicer syntax, etc. It also no longer has job control. I plan to add it again.**
+
 
 Zrc is a small scripting language for Linux, BSD, etc. written in C++ (core interpreter in a very small ~3000SLOC). It is a shell with syntax similar to Tcl/TK ([EIAS](https://wiki.tcl-lang.org/page/everything+is+a+string)). The code is quite small, but minimalism is not the main focus of Zrc (which is why it has way more "luxury features" compared to usual shells). Instead, the idea is to be a better alternative to `tclsh` that extends its syntax and adds features like job control, a custom line editor and more, while still almost keeping Tcl's "pure syntax".
 
@@ -31,7 +32,6 @@ git checkout legacy
 - [X] Pipelines
 - [X] Full redirection
 	- [X] Basic redirection (`^`, `^?`, `^^`, `>>`, `>`, `>?`, `<`)
-    - [X] Here(documents/strings) (`<<< STR`, `<< EOF[...]EOF`)
     - [X] File descriptors (`> x`, `>> x`, `>&- x`, `>& x y` or `>? x`)
 - [X] Non-I/O shell operators
 	- [X] `&&`
