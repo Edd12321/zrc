@@ -358,58 +358,73 @@ COMMAND(read)
 	optind = 0;
 	int opt;
 
-	auto help = "[-d <delim>|-n <nchars>] [-p <prompt>] [<var1> <var2>...]";
+	auto help = "[-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...]";
 
-	std::string d = "\n", prompt;
-	int n = -1;
-	bool nflag = false, dflag = false, valid_return = true;
+	std::string d = "\n", prompt, buf;
+	char c;
+	int n = -1, fd = STDIN_FILENO;
+	bool dflag = false, valid_return = true;
 
-	while ((opt = getopt(argc, argv, "d:n:p:")) != -1) {
+	while ((opt = getopt(argc, argv, "d:n:p:f:")) != -1) {
 		switch (opt) {
 			case 'd':
-				if (nflag) SYNTAX_ERROR
+				if (n != -1) SYNTAX_ERROR
 				d = optarg, dflag = true;
 				break;
 			
 			case 'n':
 				if (dflag) SYNTAX_ERROR
 				n = expr(optarg);
-				if (isnan(n)) SYNTAX_ERROR
-				nflag = true;
+				if (isnan(n) || n < 0) SYNTAX_ERROR
 				break;
 
 			case 'p':
 				prompt = optarg;
 				break;
 
+			case 'f':
+				fd = expr(optarg);
+				if (fd < 0 || fd > FD_MAX) SYNTAX_ERROR
+				break;
+
 			case '?':
 				SYNTAX_ERROR
 		}
 	}
-
 	std::cerr << prompt;
-	auto readstr = [&]()
-	{
-		valid_return &= !feof(stdin);
+	
+#define READSTR   if (n < 0) {                                                       \
+                    if (read(fd, &c, 1) != 1)                                        \
+                      goto _fail_read;                                               \
+                    if (d.find(c) == std::string::npos)                              \
+                      buf += c;                                                      \
+                    for (;;) {                                                       \
+                      if ((read(fd, &c, 1)) != 1 || d.find(c) != std::string::npos)  \
+                        break;                                                       \
+                      buf += c;                                                      \
+                    }                                                                \
+                  } else {                                                           \
+                    char *b = new char[(n > 0) ? (n + 1) : 1];                       \
+                    if (read(fd, b, n) != n) {                                       \
+                      delete [] b;                                                   \
+                      goto _fail_read;                                               \
+                    }                                                                \
+                    b[n] = '\0';                                                     \
+                    buf += b;                                                        \
+                  }
 
-		std::string str;
-		char ch;
-		while (std::cin >> std::noskipws >> ch) {
-			if (nflag && ch == n)
-				break;
-			else if (d.find(ch) != std::string::npos)
-				break;
-			str += ch;
-		}
-		return str;
-	};
+	if (optind >= argc) {
+		READSTR
+		std::cout << buf << '\n';
+	} else for (; optind < argc; ++optind) {
+		READSTR
+		setvar(argv[optind], buf);
+	}
 
-	if (optind >= argc)
-		std::cout << readstr() << '\n';
-	else for (; optind < argc; ++optind)
-		setvar(argv[optind], readstr());
-
-	return numtos(valid_return);
+_corr_read:
+	return "0";
+_fail_read:
+	return "2";
 END
 
 // Aliases

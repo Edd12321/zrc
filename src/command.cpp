@@ -55,15 +55,13 @@ _syn_error_redir:
 
 	if (flags & OPTFD_Y) {
 		auto x = stonum(argv[1]);
-		if (!isnan(x)) {
-			fd = x, --argc, ++argv;
-			if (argc < 2)
-				goto _syn_error_redir;
-			if (!good_fd(x)) {
-				std::cerr << "error: Bad file descriptor " << x << std::endl;
-				return 2;
-			}
+		if (isnan(x) || x < 0 || x > FD_MAX) {
+			std::cerr << "error: Bad file descriptor " << x << '\n';
+			return 2;
 		}
+		fd = x, --argc, ++argv;
+		if (argc < 2)
+			goto _syn_error_redir;
 	}
 
 	if ((flags & NO_CLOBBER) && access(argv[1], F_OK)) {
@@ -254,6 +252,7 @@ inline bool pipeline::execute_fg()
 {
 	int input = STDIN_FILENO;
 	new_fd old_input(input);
+	std::vector<int> to_close;
 	size_t i;
 	for (i = 0; i < cmds.size()-1; ++i) {
 		int pd[2];
@@ -263,19 +262,21 @@ inline bool pipeline::execute_fg()
 		if (pid == 0) {
 			dup2(input,  STDIN_FILENO); close(input);
 			dup2(pd[1], STDOUT_FILENO); close(pd[1]);
+			close(pd[0]);
 			exec(cmds[i]);
 			_exit(0);
 		} else {
 			close(pd[1]);
 			input = pd[0];
+			to_close.push_back(input);
 		}
 	}
 	dup2(input, STDIN_FILENO);
 	exec(cmds[i]);
-	close(input);
+	for (auto const& fd : to_close)
+		close(fd);
 	dup2(old_input, STDIN_FILENO);
 	close(old_input);
-
 	return true; /* DUMMY */
 }
 
