@@ -26,9 +26,9 @@ typedef long double zrc_num;
 #define FLAG_TYPE(x, y)                                                       \
   enum x##_flags : unsigned char { y };                                       \
   inline x##_flags operator|(x##_flags a, x##_flags b)                        \
-	{                                                                           \
-		return static_cast<x##_flags>(static_cast<int>(a) | static_cast<int>(b)); \
-	}
+  {                                                                           \
+    return static_cast<x##_flags>(static_cast<int>(a) | static_cast<int>(b)); \
+  }
 
 FLAG_TYPE(lexer, ARG(
 	SUBSTITUTE   =      0, // 00000000

@@ -103,6 +103,9 @@ void exec(int argc, char *argv[])
 	for (auto const& it : { functions, builtins }) {
 		if (it.find(argv[0]) != it.end()) {
 			vars::status = it.at(argv[0])(argc, argv);
+			// Don't forget to flush buffers
+			std::cout << std::flush;
+			std::cerr << std::flush;
 			return;
 		}
 	}

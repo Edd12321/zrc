@@ -135,7 +135,7 @@ static inline void prints(std::stack<std::string> sp)
 		std::cout << sp.top() << ' ';
 		sp.pop();
 	}
-	std::cout << std::endl;
+	std::cout << '\n';
 }
 
 /*****************
@@ -203,6 +203,17 @@ COMMAND(wait)   while (wait(NULL) > 0)                      END
 // Source a script
 COMMAND(.)      source(concat(argc, argv, 1));              END
 
+// Prioritise builtins
+COMMAND(builtin)
+	auto help = "<arg1> <arg2>...";
+	if (argc < 2) SYNTAX_ERROR
+	--argc, ++argv;
+	if (builtins.find(*argv) != builtins.end())
+		builtins.at(*argv)(argc, argv);
+	else
+		exec(argc, argv)
+END
+
 // Add/remove a new function
 COMMAND(fn)
 	auto help = "<name> [<w1> <w2>...]";
@@ -236,7 +247,7 @@ COMMAND(help)
 		if (std::next(it) != builtins.end())
 			std::cout << ' ';
 	}
-	std::cout << '\n'
+	std::cout << '\n';
 END
 
 // If/else command
@@ -394,7 +405,7 @@ COMMAND(read)
 	};
 
 	if (optind >= argc)
-		std::cout << readstr() << std::endl;
+		std::cout << readstr() << '\n';
 	else for (; optind < argc; ++optind)
 		setvar(argv[optind], readstr());
 
@@ -406,7 +417,7 @@ COMMAND(alias)
 	auto help = "[<name> < <w1> <w2>...>]";
 	if (argc == 1)
 		for (auto& it : kv_alias)
-			std::cout << "alias " << list(it.first) << ' ' << list(it.second) << std::endl;
+			std::cout << "alias " << list(it.first) << ' ' << list(it.second) << '\n';
 	else if (argc >= 3)
 		kv_alias[argv[1]] = concat(argc, argv, 2);
 	else SYNTAX_ERROR
@@ -430,7 +441,7 @@ COMMAND(bindkey)
 			std::cout << "bindkey ";
 			if (it.second.zrc_cmd)
 				std::cout << "-c ";
-			std::cout << list(it.first) << ' ' << list(it.second.cmd) << std::endl;
+			std::cout << list(it.first) << ' ' << list(it.second.cmd) << '\n';
 		}
 		return vars::status;
 	}
@@ -495,7 +506,6 @@ COMMAND(echo)
 	}
 	if (!nflag)
 		std::cout << '\n';
-	std::cout << std::flush;
 END
 
 // Assign to a list of variables
@@ -867,7 +877,7 @@ COMMAND(>&)
 
 	bool is_valid = good_fd(fd1);
 	if (isnan(fd1) || fd1 < 0 || fd1 > FD_MAX) {
-		std::cerr << "error: Bad file descriptor " << fd1 << std::endl;
+		std::cerr << "error: Bad file descriptor " << fd1 << '\n';
 		return "2";
 	}
 	if (!isnan(fd2)) {
@@ -876,7 +886,7 @@ COMMAND(>&)
 	} else
 		fd2 = fd1, fd1 = STDOUT_FILENO;
 	if (fd2 < 0 || fd2 > FD_MAX || !good_fd(fd2)) {
-		std::cerr << "error: Bad file descriptor " << fd2 << std::endl;
+		std::cerr << "error: Bad file descriptor " << fd2 << '\n';
 		return "3";
 	}
 	new_fd fd(fd1);
@@ -900,7 +910,7 @@ COMMAND(>&-)
 		fd = STDOUT_FILENO;
 	bool is_valid = good_fd(fd);
 	if (fd < 0 || fd > FD_MAX || !is_valid) {
-		std::cerr << "error: Bad file descriptor " << fd << std::endl;
+		std::cerr << "error: Bad file descriptor " << fd << '\n';
 		return "2";
 	}
 

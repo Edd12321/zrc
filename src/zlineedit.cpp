@@ -57,7 +57,7 @@ namespace line_edit
   if (cursor_pos)                 \
     CURSOR_BWD(cursor_pos);       \
   for (long i = 0; i < len; ++i)  \
-	  std::cerr << ' ';             \
+    std::cerr << ' ';             \
   if (len)                        \
     CURSOR_BWD(len);              \
   std::cerr << buf;               \
