@@ -1,0 +1,26 @@
+#!../bin/zrc
+# Ported from https://rosettacode.org/wiki/Mandelbrot_set
+set XSize = 100 YSize = 35
+set MinIm = -1 MaxIm = 1 MinRe = -2 MaxRe = 1
+set StepX = [expr {($MaxRe-$MinRe)/$XSize}]
+set StepY = [expr {($MaxIm-$MinIm)/$YSize}]
+
+# Don't ask
+for {set y = 0} {$y < $YSize} {inc y} {
+	set Im = [expr {$MinIm+$StepY*$y}]
+	for {set x = 0} {$x < $XSize} {inc x} {
+		set Re = [expr {$MinRe+$StepX*$x}]
+		set Zr = $Re Zi = $Im
+		for {set n = 0} {$n < 30} {inc n} {
+			set a = [expr {$Zr*$Zr}]
+			set b = [expr {$Zi*$Zi}]
+			if {$a+$b > 4} {
+				break
+			}
+			set Zi = [expr {2*$Zr*$Zi + $Im}]
+			set Zr = [expr {$a-$b+$Re}]
+		}
+		echo -n [chr {62-$n}]
+	}
+	echo
+}

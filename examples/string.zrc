@@ -1,0 +1,10 @@
+#!../bin/zrc
+set s = "my string"
+
+echo [str $s < "hi mom"] # prints 0
+echo [str $s == $s]      # prints 1
+echo [str $s 0 2]        # prints my
+echo [str $s + 3]        # prints string
+echo [str $s 0]          # prints m
+echo [str $s len]        # prints 9
+echo [str $s 8 = v]      # prints my strinv

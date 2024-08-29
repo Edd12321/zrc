@@ -1,0 +1,8 @@
+#!../bin/zrc
+
+read -p "Input a string: " str
+read -p "What separator should be used? " sep
+
+echo $str | while {![read -d $sep x]} {
+	echo ($x)
+}

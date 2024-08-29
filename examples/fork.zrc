@@ -1,0 +1,11 @@
+#!../bin/zrc
+
+set pid = [fork]
+if {$pid == 0} {
+	echo "Child pid is [pid]"
+	exit
+} else {
+	echo "Parent pid is [pid]"
+}
+
+echo "I am running from the parent only!"

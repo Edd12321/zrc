@@ -1,0 +1,16 @@
+#!../bin/zrc
+
+echo Lexical scoping:
+echo a is [set a = 1]
+echo b is [set b = 2]
+echo c is [set c = 3]
+
+let {'a' `{echo b} c} {
+	echo a is now [set a = a]
+	echo b is now [set b = b]
+	echo c is not [set c = c]
+}
+
+echo a is yet again $a
+echo b is yet again $b
+echo c is yet again $c

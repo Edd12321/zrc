@@ -1,0 +1,77 @@
+#!../bin/zrc
+#########################################
+# Graphs functions                      #
+#                                       #
+# Code translated from C to Zrc from:   #
+# https://c-for-dummies.com/blog/?p=831 #
+#########################################
+set LIM    = 3.14159
+set WIDTH  = 120
+set HEIGHT = 40
+set X      = [expr {$WIDTH>>1}]
+set Y      = [expr {$HEIGHT>>1}]
+set XMAX   = [expr {$WIDTH-$X-1}]
+set XMIN   = [expr {-($WIDTH-$X)}]
+set YMAX   = [expr {$HEIGHT-$Y}]
+set YMIN   = [expr {-($HEIGHT-$Y)+1}]
+
+# Set "pixel" at specific coordinates
+fn plot {
+	let {x y} {
+		set x = ${argv 1}
+		set y = ${argv 2}
+		if {$x > $XMAX || $x < $XMIN || $y > $XMAX || $Y < $YMIN} {
+			return -1}
+		# >> graph.dat echo x=$x,y=$y, [expr {$Y-$y}],[expr {$X+$x}]
+		set {grid [expr {$Y-$y}],[expr {$X+$x}]} = '*'
+		return 1
+	}
+}
+
+# Initialize grid
+fn init_grid {
+	let {x y} {
+		for {set y = 0} {$y < $HEIGHT} {inc y} {
+			for {set x = 0} {$x < $WIDTH} {inc x} {
+				set {grid $y,$x} = ' '}}
+		# draw the axis
+		for {set y = 0} {$y < $HEIGHT} {inc y} {
+			set {grid $y,$X} = '|'}
+		for {set x = 0} {$x < $WIDTH} {inc x} {
+			set {grid $Y,$x} = '-'}
+		set {grid $Y,$X} = '+'
+	}
+}
+
+# display grid
+fn show_grid {
+	let {x y} {
+		for {set y = 0} {$y < $HEIGHT} {inc y} {
+			for {set x = 0} {$x < $WIDTH} {inc x} {
+				echo -n ${grid $y,$x}}
+			echo
+		}
+	}
+}
+
+fn main {
+	read func_old -p 'Which function/expression to graph? (sin(x),cos(x),etc.) '
+	set func_old = [subst $func_old]
+	if {[>&- 2 $func_old] != 127} {
+		set func = ${func_old}(\$x)
+	} else for {set i = 0 len = [str $func_old len]} {$i < $len} {inc i} {
+		set ch = [str $func_old $i]
+		if {[str $ch == 'x']} {
+			set func = ${func}\$x
+		} else {
+			set func = ${func}${ch}
+		}
+	}
+	init_grid
+	for {set x = -$LIM*2} {$x <= $LIM*2} {inc x 0.1} {
+		set y = [expr $func]
+		plot [expr {round($x*10)}] [expr {round($y*8)}]
+	}
+	show_grid
+	return 0
+}; main
