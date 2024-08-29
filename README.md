@@ -1,6 +1,5 @@
 <img src="img/zrc.svg" width=100 height=auto />
-
-WARNING: Legacy version, this was written in 10th grade! Please use the newest version for better stability, less bugs and nicer syntax.
+(This is the new, better and REWRITTEN version of Zrc (master branch)! It has way less bugs, a better codebase, nicer syntax, etc. It also no longer has job control. I plan to add it again.
 
 Zrc is a small scripting language for Linux, BSD, etc. written in C++ (core interpreter in a very small ~3000SLOC). It is a shell with syntax similar to Tcl/TK ([EIAS](https://wiki.tcl-lang.org/page/everything+is+a+string)). The code is quite small, but minimalism is not the main focus of Zrc (which is why it has way more "luxury features" compared to usual shells). Instead, the idea is to be a better alternative to `tclsh` that extends its syntax and adds features like job control, a custom line editor and more, while still almost keeping Tcl's "pure syntax".
 
@@ -8,18 +7,13 @@ It was created because the old shell languages that I used weren't "programmable
 
 Zrc is just ~600KB in size because its implementation is to the point and simple. The language doesn't even need a Backus -- Naur form (BNF). You can compile with -Os to make it even smaller, at the expense of performance!
 
+To use the classic version, issue the following command:
+```
+git checkout legacy
+```
 ## Features left to implement:
 
-- [ ] Full standard library
-    - [ ] Finish corebuf
-    - [ ] Finish zrclib
-        - [X] List implementation
-        - [X] Basic utility library
-        - [X] Math.h equivalent
-        - [ ] Formatted I/O
-        - [X] <s>Classes/objects,</s> structs
-        - [ ] More?
-- [X] Path hashing/caching
+- [ ] Path hashing/caching
 - [X] Cdpath support
 - [X] Home directory config file (`~/.zrc`)
 - [X] Aliases
@@ -29,16 +23,16 @@ Zrc is just ~600KB in size because its implementation is to the point and simple
 	- [X] Function arguments
 		- [X] `$argv(...)`
 		- [X] `$argc`
-- [X] Globbing
-	- [X] Tilde expansion
-	- [X] Wildcards
-- [X] Signal trapping (via `fn`, `nf`)
+- [ ] Globbing
+	- [ ] Tilde expansion
+	- [ ] Wildcards
+- [X] Signal trapping (via `fn`)
 - [X] Directory stack
 - [X] Pipelines
 - [X] Full redirection
 	- [X] Basic redirection (`^`, `^?`, `^^`, `>>`, `>`, `>?`, `<`)
     - [X] Here(documents/strings) (`<<< STR`, `<< EOF[...]EOF`)
-    - [X] File descriptors (`x>`, `x>>`, `x> &-`, `x> &y` or `x>? y`)
+    - [X] File descriptors (`> x`, `>> x`, `>&- x`, `>& x y` or `>? x`)
 - [X] Non-I/O shell operators
 	- [X] `&&`
 	- [X] `||`
@@ -54,20 +48,20 @@ Zrc is just ~600KB in size because its implementation is to the point and simple
 - [X] Word substitution
 	- [X] Variable expansion
 		- [X] Scalars, arrays/hashes (`$`, `${...}`)
-		- [X] Separate envvar array (`$env(...)`)
+		- [X] Environment scalars, exporting
 	- [X] Command substitution
 		- [X] Output (`` `{...} ``)
         - [X] Process (`<{...}`)
 		- [X] Return value (`[...]`)
-- [X] Built-in commands (like `expr`, `jobs`, etc. but there are too many to list. View `dispatch.hpp`)
+- [X] Built-in commands (like `expr`, etc. but there are too many to list. View `dispatch.hpp`)
 - [X] Conditional logic/flow control with full C arithmetic operator set
 	- [X] If/else
     - [X] Unless
 	- [X] Do
 	- [X] While
-	- [X] Foreach
+	- [ ] Foreach
 	- [X] For
-	- [X] Switch
+	- [ ] Switch (currently does nothing)
 	- [X] Subshell (`@ {...}`)
 	- [X] Lexial scoping (`let`)
 	- [X] Until
@@ -75,21 +69,21 @@ Zrc is just ~600KB in size because its implementation is to the point and simple
     - [X] Return
     - [X] Continue
     - [X] Break
-    - [X] Fallthrough
-- [X] Full job control
-	- [X] Job table support
-	- [X] Job listing command
-	- [X] Job manipulation
-	- [X] Don't separate jobs by pipe
-	- [X] Background and foreground processes with `&`
+    - [ ] Fallthrough (currently does nothing)
+- [ ] Full job control (need to re-implement)
+	- [ ] Job table support
+	- [ ] Job listing command
+	- [ ] Job manipulation
+	- [ ] Don't separate jobs by pipe
+	- [ ] Background and foreground processes with `&`
 - [ ] Usable regular expressions
-    - [X] Basic built-in regex support (`regexp`)
+    - [ ] Basic built-in regex support (`regexp`)
     - [ ] More commandline options
     - [ ] `regcomp`
 - [ ] Pleasant interactive shell
 	- [X] History file
 	- [X] Line editor
-	- [X] Tab completion
+	- [ ] Tab completion (need to re-implement)
 	- [ ] Syntax highlighting
     - [X] Keybindings
 
