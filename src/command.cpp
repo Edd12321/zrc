@@ -113,6 +113,8 @@ void exec(int argc, char *argv[])
 	// External programs
 	pid_t pid = fork();
 	if (pid == 0) {
+		for (; new_fd::fdcount > FD_MAX; --new_fd::fdcount)
+			close(new_fd::fdcount);
 		if (execvp(*argv, argv)) {
 			perror(*argv);
 			_exit(127);
@@ -166,7 +168,7 @@ static inline std::string get_fifo(std::string const& str)
 {
 	char temp[] = FIFO_DIRNAME;
 	std::string fifo_name = mkdtemp(temp);
-	std::string fifo_file = fifo_name+"/"FIFO_FILNAME;
+	std::string fifo_file = fifo_name+"/" FIFO_FILNAME;
 	
 	mkfifo(fifo_file.c_str(), S_IRUSR | S_IWUSR);
 	pid_t pid = fork();
@@ -306,7 +308,7 @@ void pipeline::execute()
 	}
 	cmds.clear();
 	for (auto const& it : fifo_cleanup) {
-		unlink((it+"/"FIFO_FILNAME).c_str());
+		unlink((it+"/" FIFO_FILNAME).c_str());
 		rmdir(it.c_str());
 	}
 	fifo_cleanup.clear();
