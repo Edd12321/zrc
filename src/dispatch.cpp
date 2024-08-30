@@ -313,6 +313,25 @@ COMMAND(switch)
 	// TODO
 END
 
+// For-each loop
+COMMAND(foreach)
+	auto help = "<var> <var-list> <eoe>";
+	if (argc < 4) SYNTAX_ERROR
+	block_handler lh(&in_loop);
+	auto vlst = lex(argv[2], SPLIT_WORDS).elems;
+	auto it = vlst.begin();
+_repeat_foreach:
+	try {
+		for (auto it = vlst.begin(); it != vlst.end(); ++it) {
+			setvar(argv[1], *it);
+			eoe(argc, argv, 3);
+		}
+	} catch (break_handler ex) {
+	} catch (continue_handler ex) {
+		++it; goto _repeat_foreach;
+	}
+END
+
 // Negation
 COMMAND(!)
 	eoe(argc, argv, 1);
@@ -611,6 +630,7 @@ COMMAND(let)
 	bool ret = false, brk = false, con = false, fal = false;
 	std::unordered_map<std::string, zrc_obj> vmap;
 	std::unordered_map<std::string, zrc_arr> amap;
+	std::unordered_map<std::string, bool> didnt_exist;
 
 	for (auto const& it : wlst) {
 		if (vars::amap.find(it) != vars::amap.end())
@@ -618,7 +638,7 @@ COMMAND(let)
 		else if (vars::vmap.find(it) != vars::vmap.end())
 			vmap[it] = vars::vmap[it];
 		else
-			vmap[it] = "";
+			didnt_exist[it] = true;
 	}
 
 	try {
@@ -630,12 +650,13 @@ COMMAND(let)
 	
 	for (auto const& it : amap)
 		vars::amap[it.first] = it.second;
-	for (auto const& it : vmap)
-		if (it.first.empty())
-			vars::vmap.erase(it.first);
-		else
-			vars::vmap[it.first] = it.second;
-	
+	for (auto const& it : vmap) {
+		unsetvar(it.first);
+		setvar(it.first, it.second);
+	}
+	for (auto const& it : didnt_exist)
+		unsetvar(it.first);
+
 	if (ret) throw return_handler();
 	if (brk) throw break_handler();
 	if (con) throw continue_handler();

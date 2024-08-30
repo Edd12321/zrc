@@ -210,7 +210,9 @@ token_list lex(const char *p, lexer_flags flags)
 			 *************/
 			case '\n': /* FALLTHROUGH */
 			case  ';':
-				if (!quoted_single && !quoted_double && (flags & SEMICOLON)) {
+				if ((flags & SPLIT_WORDS) && !(flags & SEMICOLON) && !quoted_single && !quoted_double) {
+					add_remaining_txt("", 1);
+				} else if (!quoted_single && !quoted_double && (flags & SEMICOLON)) {
 					add_remaining_txt("" , 1);
 					add_remaining_txt(";", 1);
 				} else
@@ -288,11 +290,11 @@ token_list lex(const char *p, lexer_flags flags)
 
 inline std::string subst(const char *text)
 {
+	if (!*text) return std::string();
 	return lex(text, SUBSTITUTE).elems[0];
 }
 
 inline std::string subst(std::string const& text)
 {
-	if (text.empty()) return std::string();
 	return subst(text.c_str());
 }

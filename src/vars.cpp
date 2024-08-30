@@ -133,10 +133,28 @@ static inline void unsetvar(std::string const& key)
 {
 	using namespace vars;
 
-	if (getenv(key.c_str()))
-		unsetenv(key.c_str());
-	else if (vmap.find(key) != vmap.end())
-		vars::vmap.erase(key);
-	else if (amap.find(key) != amap.end())
-		std::cerr << "error: " << key << " is an array! Please use `arr {" << key << "} destroy` instead.\n";
+	auto wlst = lex(key.c_str(), SPLIT_WORDS).elems;
+	auto len = wlst.size();
+
+	if (len < 1 || len > 2) {
+		std::cerr << "syntax error: Expected one or two words in variable {" << key << "}, got " << len << '\n';
+		return;
+	}
+
+	if (len == 1) {
+		std::string var = wlst[0];
+		if (getenv(var.c_str()))
+			unsetenv(var.c_str());
+		else if (vmap.find(var) != vmap.end())
+			vars::vmap.erase(var);
+		else if (amap.find(var) != amap.end())
+			vars::amap.erase(var);
+	} else {
+		std::string arr = wlst[0];
+		std::string key = wlst[1];
+		if (vmap.find(arr) != vmap.end())
+			std::cerr << "error: " << arr << " is a scalar!\n";
+		else if (amap.find(arr) != amap.end())
+			amap[arr].erase(key);
+	}
 }

@@ -55,13 +55,15 @@ _syn_error_redir:
 
 	if (flags & OPTFD_Y) {
 		auto x = stonum(argv[1]);
-		if (isnan(x) || x < 0 || x > FD_MAX) {
-			std::cerr << "error: Bad file descriptor " << x << '\n';
-			return 2;
+		if (!isnan(x)) {
+			if (x < 0 || x > FD_MAX) {
+				std::cerr << "error: Bad file descriptor " << x << '\n';
+				return 2;
+			}
+			fd = x, --argc, ++argv;
+			if (argc < 2)
+				goto _syn_error_redir;
 		}
-		fd = x, --argc, ++argv;
-		if (argc < 2)
-			goto _syn_error_redir;
 	}
 
 	if ((flags & NO_CLOBBER) && access(argv[1], F_OK)) {
