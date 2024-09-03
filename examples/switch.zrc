@@ -1,0 +1,40 @@
+#!../bin/zrc
+fn good {
+	echo Passed!
+}
+fn bad {
+	echo This shouldn't be printed!
+}
+
+switch abc {
+	case def bad
+	case ghi bad
+	regex {.} bad
+	regex {..} bad
+	regex {[0-9][a-zA-Z]+} bad
+	default {
+		good
+		fallthrough
+	}
+	case bad-case good
+	case bad-case-2 bad
+}
+
+switch 123 {
+	regex {.+} { good; fallthrough }
+	regex {..+} { good; fallthrough }
+	regex {.+} { good }
+	regex {.+} { bad }
+	# this should not run :)
+	default bad
+}
+
+switch abcdef {
+	case abcdef { good; fallthrough }
+	default good
+
+	# comments inside switch
+	case abcdef bad
+	default bad
+}
+echo If you received an error above, then all is good.

@@ -24,7 +24,7 @@ git checkout legacy
 - [X] Complex I/O handling (control flow, functions, built-ins and commands can be seamlessly piped together)
 - [X] Procedures/functions
 	- [X] Function arguments
-		- [X] `$argv(...)`
+		- [X] `${argv "..."}`
 		- [X] `$argc`
 - [ ] Globbing
 	- [ ] Tilde expansion
@@ -61,9 +61,9 @@ git checkout legacy
     - [X] Unless
 	- [X] Do
 	- [X] While
-	- [ ] Foreach
+	- [X] Foreach
 	- [X] For
-	- [ ] Switch (currently does nothing)
+	- [X] Switch (currently does nothing)
 	- [X] Subshell (`@ {...}`)
 	- [X] Lexial scoping (`let`)
 	- [X] Until
@@ -71,7 +71,7 @@ git checkout legacy
     - [X] Return
     - [X] Continue
     - [X] Break
-    - [ ] Fallthrough (currently does nothing)
+    - [X] Fallthrough
 - [ ] Full job control (need to re-implement)
 	- [ ] Job table support
 	- [ ] Job listing command

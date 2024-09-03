@@ -13,6 +13,7 @@
 #include <iostream>
 #include <limits>
 #include <map>
+#include <regex>
 #include <stack>
 #include <string>
 #include <unordered_map>
@@ -102,7 +103,7 @@ static inline void eoe(int argc, char *argv[], int i)
 }
 
 bool in_loop;
-bool in_swit;
+bool in_switch;
 bool in_func;
 
 class block_handler
@@ -155,10 +156,10 @@ CMD_TBL functions, builtins = {
     z;                                             \
     throw y##_handler();                           \
   END
-CTRLFLOW_HELPER(swit, fallthrough,)
-CTRLFLOW_HELPER(loop, break,)
-CTRLFLOW_HELPER(loop, continue,)
-CTRLFLOW_HELPER(func, return,
+CTRLFLOW_HELPER(switch, fallthrough,)
+CTRLFLOW_HELPER(loop,   break,)
+CTRLFLOW_HELPER(loop,   continue,)
+CTRLFLOW_HELPER(func,   return,
 	if (argc > 1) {
 		auto help = "[<val>]";
 		if (argc > 2) SYNTAX_ERROR
@@ -310,7 +311,96 @@ END
 
 // Switch instruction
 COMMAND(switch)
-	// TODO
+	auto help = "<val> {< <case|regex|default> <eval>...>}";
+	if (argc != 3) SYNTAX_ERROR
+	
+	auto wlst = lex(argv[2], SPLIT_WORDS).elems;
+	auto txt = argv[1];
+	ssize_t i, len, def = -1;
+
+	struct switch_case {
+		enum switch_type {
+			CASE, DEFAULT, REGEX
+		} type;
+		std::string txt;
+		std::string block;
+	};
+	std::vector<switch_case> vec;
+	using SW = switch_case::switch_type;
+
+	len = wlst.size();
+	// Parse
+	for (i = 0; i < len; ++i) {
+		std::string conv = wlst[i];
+		if (conv == "case" && i < len-2) {
+			vec.push_back({ SW::CASE, wlst[i+1], wlst[i+2] });
+			i += 2;
+			continue;
+		}
+		if (conv == "regex" && i < len-2) {
+			vec.push_back({ SW::REGEX, wlst[i+1], wlst[i+2] });
+			i += 2;
+			continue;
+		}
+		if (conv == "default" && i < len-1) {
+			if (def != -1) {
+				std::cerr << "syntax error: Expected only one default block" << std::endl;
+				return "1";
+			}
+			vec.push_back({ SW::DEFAULT, std::string(), wlst[++i] });
+			def = vec.size()-1;
+			continue;
+		}
+		std::cerr << "syntax error: Invalid case type " << list(conv) << std::endl;
+		return "1";
+	}
+
+	block_handler sh(&in_switch);
+	len = vec.size();
+	bool fell = false, ran_once = true;
+	// Try to evaluate
+	for (i = 0; i < len; ++i) {
+_repeat_switch:
+		try {
+			switch (vec[i].type) {
+				// case {word} {script}
+				case SW::CASE:
+					if (fell || vec[i].txt == txt) {
+						ran_once = true;
+						return eval(vec[i].block);
+					}
+					break;
+
+				// regex {regex} {script}
+				case SW::REGEX:
+					try {
+						if (fell || std::regex_match(txt, std::regex(vec[i].txt))) {
+							ran_once = true;
+							return eval(vec[i].block);
+						}
+					} catch (std::regex_error ex) {
+						std::cerr << "syntax error: Invalid regex " << list(vec[i].txt) << std::endl;
+						return "1";
+					}
+					break;
+
+				// default {script}
+				case SW::DEFAULT:;
+					if (fell || def != -1) {
+						ran_once = true;
+						return eval(vec[i].block);
+					}
+			}
+			fell = false;
+		} catch (fallthrough_handler ex) {
+			fell = true;
+			continue;
+		}
+	}
+	if (!ran_once) {
+		i = def;
+		goto _repeat_switch;
+	}
 END
 
 // For-each loop
