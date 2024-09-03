@@ -170,6 +170,19 @@ zrc_arr copy_argv(int argc, char *argv[])
 	return ret;
 }
 
+/** Random message printers **/
+static inline void usage()
+{
+	std::cerr << "usage: zrc [--help|--version] [-c <script>|<file>] [<args...>]" << std::endl;
+	exit(EXIT_FAILURE);
+}
+
+static inline void version()
+{
+	std::cerr << "zrc v2.0" << std::endl;
+	exit(EXIT_FAILURE);
+}
+
 int main(int argc, char *argv[])
 {
 	std::ios_base::sync_with_stdio(false);
@@ -204,8 +217,17 @@ int main(int argc, char *argv[])
 		filename += "/" ZCONF;
 		source(filename);
 		eval_stream(std::cin);
-	} else if (!source(argv[1]))
-		return EXIT_FAILURE;
+	} else {
+		if (!strcmp(argv[1], "--version")) version();
+		if (!strcmp(argv[1], "--help")) usage();
+		if (!strcmp(argv[1], "-c")) {
+			if (argc == 3)
+				eval(argv[2]);
+			else
+				usage();
+		} else if (!source(argv[1]))
+			return EXIT_FAILURE;
+	}
 	return EXIT_SUCCESS;
 }
 

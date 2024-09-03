@@ -8,20 +8,20 @@ zrc_obj list(int argc, char *argv[])
 	zrc_obj ret;
 
 	for (int i = 0; i < argc; ++i) {
+		bool contains_space = false;
+		for (int j = 0, c; (c = argv[i][j]); ++j)
+			if (isspace(c)) {
+				contains_space = true;
+				break;
+			}
+		if (contains_space)
+			ret += '\'';
 		for (int j = 0, c; (c = argv[i][j]); ++j) {
 			switch (c) {
 				case  '[': /* FALLTHROUGH */
 				case  '$': /* FALLTHROUGH */
 				case  '`': /* FALLTHROUGH */
-				case  '{': /* FALLTHROUGH */
-				case  '"': /* FALLTHROUGH */
 				case '\'': /* FALLTHROUGH */ 
-				case '\f': /* FALLTHROUGH */
-				case '\n': /* FALLTHROUGH */
-				case '\r': /* FALLTHROUGH */
-				case '\t': /* FALLTHROUGH */
-				case '\v': /* FALLTHROUGH */
-				case  ' ': /* FALLTHROUGH */
 				case '\\':
 					ret += '\\';
 			
@@ -29,6 +29,8 @@ zrc_obj list(int argc, char *argv[])
 					ret += c;
 			}
 		}
+		if (contains_space)
+			ret += '\'';
 		if (i < argc-1)
 			ret += ' ';
 	}
