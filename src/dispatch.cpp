@@ -198,7 +198,7 @@ COMMAND(expr)   return numtos(expr(concat(argc, argv, 1)))  END
 // Concatenate arguments
 COMMAND(concat) return concat(argc, argv, 1)                END
 // Replace currently running process
-COMMAND(exec)   if (argc > 1) execvp(*++argv, argv)         END
+COMMAND(exec)   if (argc > 1) execvp(*(argv+1), argv+1)     END
 // Wait for child processes to finish execution
 COMMAND(wait)   while (wait(NULL) > 0)                      END
 // Source a script
