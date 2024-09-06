@@ -8,6 +8,7 @@
 #include <stack>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 // \c...
 #define KEY_ESC 27
@@ -91,6 +92,7 @@ static inline void unsetvar(std::string const&);
 token_list lex(const char*, lexer_flags);
 std::string subst(const char*);
 std::string subst(std::string const&);
+std::vector<std::string> glob(const char*, int);
 
 // COMMAND.CPP
 static inline bool good_fd(int);
@@ -105,6 +107,12 @@ static inline std::string concat(int, char**, int);
 static inline zrc_num expr(std::string const&);
 static inline void eoe(int, char**, int);
 static inline void prints(std::stack<std::string>);
+
+// LIST.CPP
+zrc_obj list(int, char**);
+zrc_obj list(std::vector<token>&);
+zrc_obj list(std::string&);
+zrc_obj list(std::string const&);
 
 // EXPR.L
 extern zrc_num expr(const char*);

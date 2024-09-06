@@ -1,3 +1,4 @@
+#include <glob.h>
 #include <string.h>
 
 #include <string>
@@ -76,6 +77,25 @@ struct token_list {
 		}
 	}
 };
+
+/** Return a list after performing globbing.
+ *
+ * @param {const char*}str,{int}flags
+ * @return none
+ */
+std::vector<std::string> glob(const char *s, int flags)
+{
+	std::vector<std::string> ret;
+	glob_t gvl;
+	memset(&gvl, 0, sizeof(glob_t));
+	if (!glob(s, flags, NULL, &gvl))
+		for (int i = 0; i < gvl.gl_pathc; ++i)
+			ret.push_back(list(gvl.gl_pathv[i]));
+	if (ret.empty())
+		ret.push_back(list(s));
+	globfree(&gvl);
+	return ret;
+}
 
 /*********
  *       *

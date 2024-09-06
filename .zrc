@@ -122,4 +122,11 @@ fn kernelgraph {
 	} | dot -Tpng | display -;
 }
 
-set AUTH = doas; export AUTH
+# Helper function
+fn expvar {
+	set ${argv 1} = ${argv 2}
+	export ${argv 1}
+}
+expvar AUTH   doas
+expvar CDPATH /home/edward:$CDPATH
+expvar PATH   /usr/lib/zrc/bin:$PATH

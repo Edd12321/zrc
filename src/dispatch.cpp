@@ -30,7 +30,7 @@
 
 // Easier command declararions
 #define CMD_TBL std::unordered_map<std::string, std::function<zrc_obj(int, char**)> >
-#define COMMAND(x) { #x,  [](int argc, char *argv[]) -> zrc_obj {
+#define COMMAND(x) { #x,  [](int argc, char *argv[]) -> zrc_obj {optind = 0; int opt;
 #define END ;return vars::status;} },
 
 #define SIGEXIT 0
@@ -464,9 +464,6 @@ END
 
 // Read from stdin
 COMMAND(read)
-	optind = 0;
-	int opt;
-
 	auto help = "[-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...]";
 
 	std::string d = "\n", prompt, buf;
@@ -661,9 +658,6 @@ END
 
 // Export one or more variables
 COMMAND(export)
-	optind = 0;
-	int opt;
-
 	auto help = "[-n] < <var1> <var2>...>";
 	bool nflag = false;
 	while ((opt = getopt(argc, argv, "n")) != -1) {
@@ -681,6 +675,48 @@ COMMAND(export)
 		else
 			setvar(argv[optind], val.c_str());
 	}
+END
+
+// Filename globbing
+COMMAND(glob)
+	char flags[3] = "s";
+	int g_flags = GLOB_NOSORT;
+	// If your stdlib doesn't use GNU extensions,
+	// then I guess that means no tilde exp for you.
+#ifdef GLOB_BRACE
+	strcat(flags, "b");
+#endif
+#ifdef GLOB_TILDE
+	strcat(flags, "t");
+#endif
+	std::string help = "[-"; help += flags; help += "] <patterns...>";
+	while ((opt = getopt(argc, argv, flags)) != -1) {
+		switch (opt) {
+			case '?': SYNTAX_ERROR
+			case 's': g_flags &= ~GLOB_NOSORT; break;
+#ifdef GLOB_BRACE
+			case 'b': g_flags |= GLOB_BRACE; break;
+#endif
+#ifdef GLOB_TILDE
+			case 't': g_flags |= GLOB_TILDE; break;
+#endif
+		}
+	}
+	if (optind >= argc)
+		SYNTAX_ERROR
+	
+	std::string lst;
+	for (; optind < argc; ++optind) {
+		auto ret = glob(argv[optind], g_flags);
+		for (size_t i = 0; i < ret.size(); ++i) {
+			lst += ret[i];
+			if (i < ret.size()-1)
+				lst += ' ';
+		}
+		if (optind < argc-1)
+			lst += '\n';
+	}
+	return lst
 END
 
 // Increment a variable
@@ -943,17 +979,17 @@ END
 
 // Tcl-style lists
 COMMAND(list)
-	auto help = "create <w1> <w2> ..."
-	"\n                  len <l>"
-	"\n                  <i> <l>"
-	"\n                  <i> = <val> <l>"
-	"\n                  <i> += <val> <l>"
-	"\n                  += <val> <l>";
+	auto help = "new <w1> <w2> ..."
+	"\n                   len <l>"
+	"\n                   <i> <l>"
+	"\n                   <i> = <val> <l>"
+	"\n                   <i> += <val> <l>"
+	"\n                   += <val> <l>";
 
 	if (argc < 3) SYNTAX_ERROR
 	
 	// Create new list
-	if (!strcmp(argv[1], "create")) return list(argc-2, argv+2);
+	if (!strcmp(argv[1], "new")) return list(argc-2, argv+2);
 	
 	auto wlst = lex(argv[argc-1], SPLIT_WORDS).elems;
 	
