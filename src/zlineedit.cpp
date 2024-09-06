@@ -224,6 +224,8 @@ static inline bool zlineedit(std::string& buf)
 bool zrc_getline(std::istream& in, std::string& str, bool show_secondary_prompt = false)
 {
 	if (&in == &std::cin && isatty(fileno(stdin))) {
+		auto old_status = vars::status;
+
 		new_fd old_out(STDOUT_FILENO);
 		dup2(STDERR_FILENO, STDOUT_FILENO);
 		     if (show_secondary_prompt)   std::cout << DEFAULT_SPROMPT;
@@ -232,6 +234,7 @@ bool zrc_getline(std::istream& in, std::string& str, bool show_secondary_prompt 
 		dup2(old_out, STDOUT_FILENO);
 		close(old_out);
 
+		vars::status = old_status;
 		return zlineedit(str);
 	}
 	return !std::getline(in, str).fail();
