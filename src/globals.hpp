@@ -12,6 +12,10 @@
 #include <unordered_map>
 #include <vector>
 
+#ifndef WAIT_ANY
+  #define WAIT_ANY -1
+#endif
+
 // \c...
 #define KEY_ESC 27
 #ifndef CTRL

@@ -1,6 +1,6 @@
 <img src="img/zrc.svg" width=100 height=auto />
 <p>
-<b>This is the new, better and REWRITTEN version of Zrc (master branch)! It has way less bugs, a better codebase, nicer syntax, etc. It also no longer has job control, regex, and a bunch of other stuff. I plan to add it again.
+<b>This is the new, better and REWRITTEN version of Zrc (master branch)! It has way less bugs, a better codebase, nicer syntax, etc. It also no longer has regex and a bunch of other stuff. I plan to add it again.
 </b>
 </p>
 
@@ -72,12 +72,11 @@ git checkout legacy
     - [X] Continue
     - [X] Break
     - [X] Fallthrough
-- [ ] Full job control (need to re-implement)
-	- [ ] Job table support
-	- [ ] Job listing command
-	- [ ] Job manipulation
-	- [ ] Don't separate jobs by pipe
-	- [ ] Background and foreground processes with `&`
+- [X] Full job control
+	- [X] Job table support
+	- [X] Job listing command
+	- [X] Job manipulation
+	- [X] Background and foreground processes with `&`
 - [ ] Usable regular expressions
     - [ ] Basic built-in regex support (`regexp`)
     - [ ] More commandline options
@@ -85,7 +84,7 @@ git checkout legacy
 - [ ] Pleasant interactive shell
 	- [X] History file
 	- [X] Line editor
-	- [ ] Tab completion (need to re-implement)
+	- [X] Tab completion (need to re-implement)
 	- [ ] Syntax highlighting
     - [X] Keybindings
 
