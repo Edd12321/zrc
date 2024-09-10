@@ -163,7 +163,7 @@ CTRLFLOW_HELPER(func,   return,
 	if (argc > 1) {
 		auto help = "[<val>]";
 		if (argc > 2) SYNTAX_ERROR
-		return std::string(argv[1]);
+		vars::status = std::string(argv[1]);
 	}
 )
 
