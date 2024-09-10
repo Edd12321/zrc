@@ -225,9 +225,45 @@ COMMAND(exec)   if (argc > 1) execvp(*(argv+1), argv+1)     END
 // Wait for child processes to finish execution
 COMMAND(wait)   while (wait(NULL) > 0)                      END
 // Source a script
-COMMAND(.)      source(concat(argc, argv, 1));              END
+COMMAND(.)      source(concat(argc, argv, 1))               END
 // Disable internal hash table
-COMMAND(unhash) hctable.clear();                            END
+COMMAND(unhash) hctable.clear()                             END
+// Display internal job table
+COMMAND(jobs)   show_jobs()                                 END
+
+// Foreground/background tasks
+#define FGBG(z, x, y)                            \
+  COMMAND(x)                                     \
+    auto help = "<n>";                           \
+    if (argc != 2) SYNTAX_ERROR                  \
+    auto n = expr(argv[1]);                      \
+    if (isnan(n)) SYNTAX_ERROR                   \
+    auto p = pid2job(n);                         \
+    if (p < 0) {                                 \
+      std::cerr << "Bad PID\n";                  \
+      return "2";                                \
+    }                                            \
+    kill(-getpgid(n), SIGCONT);                  \
+    jobstate(p, z); y;                           \
+    if (getpid() == tty_pid)                     \
+       tcsetpgrp(tty_fd, tty_pid)                \
+  END
+FGBG(1, fg, tcsetpgrp(tty_fd, getpgid(n)); reaper(n, WUNTRACED))
+FGBG(0, bg,)
+
+// JID to PID
+COMMAND(job)
+	auto help = "<n>";
+	if (argc != 2) SYNTAX_ERROR
+	auto x = expr(argv[1]);
+	if (isnan(x)) SYNTAX_ERROR
+	auto pid = job2pid(x);
+	if (pid < 0) {
+		std::cerr << "Expected a valid JID" << std::endl;
+		return "-1";
+	}
+	return numtos(pid)
+END
 
 // Refresh internal hash table
 COMMAND(rehash)

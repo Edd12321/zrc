@@ -12,6 +12,7 @@
 #include <array>
 #include <functional>
 #include <vector>
+volatile sig_atomic_t chld_notif;
 
 /** Check if a file descriptor is valid
  *
@@ -56,7 +57,7 @@ _syn_error_redir:
 	if (flags & OPTFD_Y) {
 		auto x = stonum(argv[1]);
 		if (!isnan(x)) {
-			if (x < 0 || x > FD_MAX) {
+			if (x < 0 || x >= FD_MAX) {
 				std::cerr << "error: Bad file descriptor " << x << '\n';
 				return 2;
 			}
@@ -89,6 +90,52 @@ _syn_error_redir:
 	return 0;
 }
 
+/** Check if a command is a builtin or function.
+ *
+ * @param {int}argc,{char**}argv
+ * @return bool
+ */
+bool builtin_check(int argc, char *argv[])
+{
+	auto largv = argv[argc];
+	argv[argc] = nullptr;
+	for (auto const& it : { functions, builtins }) {
+		if (it.find(argv[0]) != it.end()) {
+			vars::status = it.at(argv[0])(argc, argv);
+			// Don't forget to flush buffers
+			std::cout << std::flush;
+			std::cerr << std::flush;
+			return true;
+		}
+	}
+	argv[argc] = largv;
+	return false;
+}
+
+/** Execute an external command (without forking)
+ *
+ * @param {int}argc,{char**}argv
+ * @return void
+ */
+void exec_extern(int argc, char *argv[])
+{
+	auto largv = argv[argc];
+	argv[argc] = nullptr;
+	for (; new_fd::fdcount > FD_MAX; --new_fd::fdcount)
+		close(new_fd::fdcount);
+	if (hctable.find(*argv) != hctable.end()) {
+		if (execv(hctable[*argv].c_str(), argv)) {
+			perror(*argv);
+			_exit(127);
+		}
+	}
+	if (execvp(*argv, argv)) {
+		perror(*argv);
+		_exit(127);
+	}
+	argv[argc] = largv;
+}
+
 /** Run arguments as a function, builtin or external command.
  *
  * @param {int}argc,{char**}argv
@@ -96,42 +143,13 @@ _syn_error_redir:
  */
 void exec(int argc, char *argv[])
 {
-	auto largv = argv[argc];
-	argv[argc] = nullptr;
-
-	// Shell builtins/functions
-	for (auto const& it : { functions, builtins }) {
-		if (it.find(argv[0]) != it.end()) {
-			vars::status = it.at(argv[0])(argc, argv);
-			// Don't forget to flush buffers
-			std::cout << std::flush;
-			std::cerr << std::flush;
-			return;
-		}
+	if (!builtin_check(argc, argv)) {
+		pid_t pid = fork();
+		if (pid == 0)
+			exec_extern(argc, argv);
+		else
+			reaper(pid, WUNTRACED);
 	}
-
-	// External programs
-	pid_t pid = fork();
-	if (pid == 0) {
-		for (; new_fd::fdcount > FD_MAX; --new_fd::fdcount)
-			close(new_fd::fdcount);
-		if (hctable.find(*argv) != hctable.end()) {
-			if (execv(hctable[*argv].c_str(), argv)) {
-				perror(*argv);
-				_exit(127);
-			}
-		}
-		if (execvp(*argv, argv)) {
-			perror(*argv);
-			_exit(127);
-		}
-	} else {
-		int status;
-		waitpid(pid, &status, 0);
-		if (WIFEXITED(status))
-			vars::status = numtos(WEXITSTATUS(status));
-	}
-	argv[argc] = largv;
 }
 
 /** Forks, launches a script and return the output from the process.
@@ -234,31 +252,151 @@ public:
 		AND, OR, NORMAL
 	} rmode = NORMAL;
 	enum ppl_proc_mode {
-		BG, FG, STOPPED
+		BG, FG
 	} pmode = FG;
 private:
-	std::vector<command> cmds;
-
-	inline bool execute_fg();
-	inline bool execute_bg();
+	inline bool execute_act();
 public:
 	void execute();
+	std::vector<command> cmds;
 
 	inline void add_cmd(command& cmd)
 	{
 		if (cmd.argc)
 			cmds.push_back(std::move(cmd));
 	}
+
+	operator std::string() const
+	{
+		std::string ret;
+		for (size_t i = 0; i < cmds.size(); ++i) {
+			ret += list(cmds[i].argc, const_cast<char**>(cmds[i].argv.data())) + " ";
+			if (i < cmds.size()-1)
+				ret += "| ";
+		}
+		return ret;
+	}
 };
+
+/******************************
+ *                            *
+ * Job stuff is written below *
+ *                            *
+ ******************************/
+// Job entry table
+struct job {
+	std::string ppl;
+	pipeline::ppl_proc_mode state;
+	pid_t pgid;
+};
+std::map<int, job> jobs;
+unsigned long long jc;
+
+/** Add a new entry to the job table
+ *
+ * @param {pipeline const&}ppl,{pipeline::ppl_proc_mode}status,{pid_t}pgid
+ * @return int
+ */
+int add_job(pipeline const& ppl, pipeline::ppl_proc_mode status, pid_t pgid)
+{
+	jc = jobs.empty() ? 1 : ((*jobs.rbegin()).first + 1);
+	jobs[jc] = { (std::string)ppl, status, pgid };
+
+	return jc;
+}
+
+/** Reap zombie processes.
+ *
+ * @param none
+ * @return void
+ */
+void reaper(int who, int how)
+{
+	pid_t pid;
+	int status;
+	while ((pid = waitpid(who, &status, how)) > 0) {
+		int jid = -1;
+		for (auto const& it : jobs) {
+			if (it.second.pgid == pid) {
+				jid = it.first;
+				break;
+			}
+		}
+		if (jid < 0) continue;
+		if (getpid() == tty_pid)
+			tcsetpgrp(tty_fd, tty_pid);
+		if (WIFSTOPPED(status)) {
+			if (interactive_sesh)
+				std::cerr << "Stopped" << std::endl;
+			break;
+		}
+		if (WIFSIGNALED(status)) {
+			if (interactive_sesh)
+				std::cerr << "[" << jid << "] " << strsignal(WTERMSIG(status)) << std::endl;
+			jobs.erase(jid);
+		}
+		if (WIFEXITED(status)) {
+			if (jobs[jid].state == pipeline::ppl_proc_mode::BG) {
+				if (interactive_sesh)
+					std::cerr << "[" << jid << "] Done" << std::endl;
+			} else vars::status = numtos(WEXITSTATUS(status));
+			jobs.erase(jid);
+		}
+	}
+}
+
+void reaper()
+{
+	reaper(WAIT_ANY, WNOHANG | WUNTRACED);
+}
+
+pid_t job2pid(int jid)
+{
+	if (jobs.find(jid) != jobs.end())
+		return jobs[jid].pgid;
+	return -1;
+}
+
+int pid2job(pid_t pid)
+{
+	for (auto const& it : jobs)
+		if (it.second.pgid == pid)
+			return it.first;
+	return -1;
+}
+
+void jobstate(int job, int st)
+{
+	jobs[job].state = static_cast<pipeline::ppl_proc_mode>(st);
+}
+
+/** Display job table.
+ *
+ * @param none
+ * @return void
+ */
+inline void show_jobs()
+{
+	using pp = pipeline::ppl_proc_mode;
+	for (auto const& it : jobs) {
+		auto& v = it.second;
+		std::cout << it.first << ' ' << v.pgid << ' ';
+		if (v.state == pp::BG)
+			std::cout << "bg ";
+		else std::cout << "fg ";
+		std::cout << v.ppl << std::endl;
+	}
+}
 
 /** Executes a pipeline.
  *
  * @param none
  * @return none
  */
-inline bool pipeline::execute_fg()
+inline bool pipeline::execute_act()
 {
 	int input = STDIN_FILENO;
+	pid_t pgid = 0;
 	new_fd old_input(input);
 	std::vector<int> to_close;
 	size_t i;
@@ -268,34 +406,54 @@ inline bool pipeline::execute_fg()
 
 		pid_t pid = fork();
 		if (pid == 0) {
+			setpgid(0, pgid);
 			dup2(input,  STDIN_FILENO); close(input);
 			dup2(pd[1], STDOUT_FILENO); close(pd[1]);
 			close(pd[0]);
-			exec(cmds[i]);
+
+			// Exec stuff happens here
+			if (!builtin_check(cmds[i].argc, cmds[i].argv.data()))
+				exec_extern(cmds[i].argc, cmds[i].argv.data());
 			_exit(0);
 		} else {
+			if (!pgid)
+				pgid = pid;
 			close(pd[1]);
 			input = pd[0];
 			to_close.push_back(input);
 		}
 	}
 	dup2(input, STDIN_FILENO);
-	exec(cmds[i]);
+	// Last one! (ditto)
+	if (!builtin_check(cmds[i].argc, cmds[i].argv.data())) {
+		pid_t pid = fork();
+		if (pid == 0) {
+			setpgid(0, pgid);
+			exec_extern(cmds[i].argc, cmds[i].argv.data());
+		} else {
+			if (!pgid)
+				pgid = pid;
+			setpgid(0, pgid);
+			
+			auto jid = add_job(*this, pmode, pgid);
+			if (this->pmode == ppl_proc_mode::FG) {
+				// Foreground jobs transfer the terminal control to the child
+				if (getpid() == tty_pid) {
+					tcsetpgrp(tty_fd, pgid);
+					reaper(pid, WUNTRACED);
+					tcsetpgrp(tty_fd, tty_pid);
+				} else
+					reaper(pid, WUNTRACED);	
+			} else {
+				if (interactive_sesh)
+					std::cerr << "[" << jid << "] " << jobs[jid].ppl << std::endl;
+			}
+		}
+	}
 	for (auto const& fd : to_close)
 		close(fd);
 	dup2(old_input, STDIN_FILENO);
 	close(old_input);
-	return true; /* DUMMY */
-}
-
-/* Ditto */
-inline bool pipeline::execute_bg()
-{
-	pid_t pid = fork();
-	if (pid == 0) {
-		execute_fg();
-		_exit(0);
-	}
 
 	return true; /* DUMMY */
 }
@@ -303,17 +461,13 @@ inline bool pipeline::execute_bg()
 /* Ditto */
 void pipeline::execute()
 {
+	reaper();
 	if (cmds.empty())
 		return;
-	std::function<bool(void)> fn;
-	switch (pmode) {
-		case ppl_proc_mode::BG: fn = std::bind(&pipeline::execute_bg, this); break;
-		case ppl_proc_mode::FG: fn = std::bind(&pipeline::execute_fg, this); break;
-	}
 	switch (rmode) {
-		case ppl_run_mode::AND: !stonum(vars::status) && fn(); break;
-		case ppl_run_mode::OR:  !stonum(vars::status) || fn(); break;
-		case ppl_run_mode::NORMAL:                       fn(); break;
+		case ppl_run_mode::AND: !stonum(vars::status) && execute_act(); break;
+		case ppl_run_mode::OR:  !stonum(vars::status) || execute_act(); break;
+		case ppl_run_mode::NORMAL:                       execute_act(); break;
 	}
 	cmds.clear();
 	for (auto const& it : fifo_cleanup) {

@@ -197,9 +197,16 @@ int main(int argc, char *argv[])
 	if (setrlimit(RLIMIT_NOFILE, &rlim) < 0)
 		std::cerr << "warning: Could not setrlimit()\n";
 
+	// For PGID stuff
+	new_fd tty_fd(STDOUT_FILENO);
+	::tty_fd = tty_fd;
+	setpgrp();
+	tcsetpgrp(0, 0);
+
 	// Setup arguments
 	vars::argv = copy_argv(argc, argv);
 
+	
 	for (auto const& it : txt2sig)
 		// Setup signal handlers
 		if (it.second != SIGEXIT)
@@ -210,8 +217,11 @@ int main(int argc, char *argv[])
 			});
 		// Atexit handler
 		else atexit([] { run_function("sigexit"); });
+	signal(SIGTTOU, SIG_IGN);
+	signal(SIGCHLD, [](int sig){ chld_notif = true; });
 
 	if (argc == 1) {
+		interactive_sesh = true;
 		auto pw = getpwuid(getuid());
 		std::string filename = pw->pw_dir;
 		filename += "/" ZCONF;

@@ -1,10 +1,12 @@
 /*
  * Global structs, macros, classes and subroutines.
  */
+#include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 #include <functional>
+#include <map>
 #include <stack>
 #include <string>
 #include <unordered_map>
@@ -58,11 +60,16 @@ struct substit;
 struct token;
 struct token_list;
 struct command;
+struct job;
 
 // Command dispatch tables
 extern CMD_TBL builtins, functions;
 // Alias table
 std::unordered_map<std::string, std::string> kv_alias;
+
+int tty_fd;
+int tty_pid = getpid();
+bool interactive_sesh;
 
 // Fetches a new FD.
 struct new_fd {
@@ -74,6 +81,7 @@ struct new_fd {
 
 	inline operator int() const { return index; }
 };
+
 int FD_MAX, new_fd::fdcount;
 
 // MAIN.CPP
@@ -101,6 +109,13 @@ bool run_function(std::string const&);
 void exec(int, char**);
 static inline std::string get_output(std::string const&);
 static inline std::string get_fifo(std::string const&);
+int add_job(pipeline const&, pid_t);
+inline void show_jobs();
+pid_t job2pid(int);
+int pid2job(pid_t);
+void jobstate(int, int);
+void reaper();
+void reaper(int, int);
 
 // DISPATCH.CPP
 static inline std::string concat(int, char**, int);
