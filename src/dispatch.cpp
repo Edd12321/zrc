@@ -237,8 +237,12 @@ COMMAND(fn)
 		};
 	} else if (argc == 2) {
 		functions.erase(argv[1]);
-	} else SYNTAX_ERROR
-		
+	} else SYNTAX_ERROR	
+END
+
+COMMAND(die)
+	std::cerr << concat(argc, argv, 1) << std::endl;
+	exit(EXIT_FAILURE)
 END
 
 // List all commands

@@ -66,7 +66,7 @@ _syn_error_redir:
 		}
 	}
 
-	if ((flags & NO_CLOBBER) && access(argv[1], F_OK)) {
+	if ((flags & NO_CLOBBER) && !access(argv[1], F_OK)) {
 		std::cerr << "Cannot clobber " << argv[1] << std::endl;
 		return 3;
 	}

@@ -26,9 +26,9 @@ git checkout legacy
 	- [X] Function arguments
 		- [X] `${argv "..."}`
 		- [X] `$argc`
-- [ ] Globbing
-	- [ ] Tilde expansion
-	- [ ] Wildcards
+- [X] Globbing (via `glob`)
+	- [X] Tilde expansion (on GNU systems)
+	- [X] Wildcards
 - [X] Signal trapping (via `fn`)
 - [X] Directory stack
 - [X] Pipelines

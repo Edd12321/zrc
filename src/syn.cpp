@@ -6,7 +6,7 @@
 
 struct substit {
 	enum type {
-		OUTPUT, OUTPUTQ, PBRANCH, RETURN, VARIABLE, PLAIN_TEXT
+		OUTPUT, OUTPUTQ, PBRANCH, RETURN, VARIABLE, VARIABLEB, PLAIN_TEXT
 	} tok_type;
 	std::string contents;
 };
@@ -35,8 +35,11 @@ struct token {
 				case TT::PLAIN_TEXT:
 					ret_str += it.contents;
 					break;
-				case TT::VARIABLE:
+				case TT::VARIABLEB:
 					ret_str += getvar(it.contents);
+					break;
+				case TT::VARIABLE:
+					ret_str += getvar(subst(it.contents));
 					break;
 				case TT::OUTPUT:
 					/* empty */ {
@@ -136,15 +139,16 @@ token_list lex(const char *p, lexer_flags flags)
 	{
 		long cmpnd = 1, brac = (*p && *p == '{');
 		add_remaining_txt();
+
 		for (++p; *p; ++p) {
 			if (*p == '\\') {
 				text += '\\', text += *++p;
 				continue;
 			}
-			if (*p == '{') ++brac;
+			if (*p == '{'/*none*/) ++brac;
 			if (*p == '}' && brac) --brac;
 			if (!brac) {
-				if (*p == c1) ++cmpnd;
+				if (*p == c1/*none */) ++cmpnd;
 				if (*p == c2 && cmpnd) --cmpnd;
 			}
 			if (!cmpnd && !brac)
@@ -214,7 +218,7 @@ token_list lex(const char *p, lexer_flags flags)
 			case '$':
 				curr.bareword = false;
 				if (*++p == '{')
-					append_bquoted_str(TT::VARIABLE, '{', '}');
+					append_bquoted_str(TT::VARIABLEB, '{', '}');
 				else {
 					add_remaining_txt();
 					text.clear();
@@ -260,9 +264,9 @@ token_list lex(const char *p, lexer_flags flags)
 			case '\\':
 				curr.bareword = false;
 				switch (*++p) {
-			  		case 'a': text += '\a'              ; break;
-			  		case 'b': text += '\b'              ; break;
-			  		case 'e': text += '\033'            ; break;
+					case 'a': text += '\a'              ; break;
+					case 'b': text += '\b'              ; break;
+					case 'e': text += '\033'            ; break;
 					case 'f': text += '\f'              ; break;
 					case 'n': text += '\n'              ; break;
 					case 'r': text += '\r'              ; break;
