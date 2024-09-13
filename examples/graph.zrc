@@ -55,7 +55,7 @@ fn show_grid {
 }
 
 fn main {
-	read func_old -p 'Which function/expression to graph? (sin(x),cos(x),etc.) '
+	read -p 'Which function/expression to graph? (sin(x),cos(x),etc.) ' func_old
 	set func_old = [subst $func_old]
 	if {[>&- 2 $func_old] != 127} {
 		set func = ${func_old}(\$x)

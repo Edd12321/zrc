@@ -30,7 +30,7 @@
 
 // Easier command declararions
 #define CMD_TBL std::unordered_map<std::string, std::function<zrc_obj(int, char**)> >
-#define COMMAND(x) { #x,  [](int argc, char *argv[]) -> zrc_obj {optind = 0; int opt;
+#define COMMAND(x) { #x,  [](int argc, char *argv[]) -> zrc_obj {optind = 1; int opt;
 #define END ;return vars::status;} },
 
 #define SIGEXIT 0
@@ -497,7 +497,7 @@ COMMAND(read)
 				SYNTAX_ERROR
 		}
 	}
-	std::cerr << prompt;
+	std::cerr << prompt << std::flush;
 	
 #define READSTR   if (n < 0) {                                                       \
                     if (read(fd, &c, 1) != 1)                                        \
