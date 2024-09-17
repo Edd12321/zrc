@@ -11,7 +11,6 @@
 
 #include <functional>
 #include <iostream>
-#include <limits>
 #include <map>
 #include <regex>
 #include <stack>
@@ -28,10 +27,17 @@
 #define until(x) while (!(x))
 #define unless(x) if (!(x))
 
+#undef END
 // Easier command declararions
 #define CMD_TBL std::unordered_map<std::string, std::function<zrc_obj(int, char**)> >
-#define COMMAND(x) { #x,  [](int argc, char *argv[]) -> zrc_obj {optind = 1; int opt;
-#define END ;return vars::status;} },
+#define COMMAND(x) { #x,  [](int argc, char *argv[]) -> zrc_obj {int opt;
+
+#if defined(__GLIBC__) && !defined(__UCLIBC__)
+	#define OPTIND_RESET 0
+#else
+	#define OPTIND_RESET 1
+#endif
+#define END ; optind = OPTIND_RESET; return vars::status;} },
 
 #define SIGEXIT 0
 const std::map<std::string, int> txt2sig = {
