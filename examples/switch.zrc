@@ -9,8 +9,8 @@ fn bad {
 switch abc {
 	case def bad
 	case ghi bad
-	regex {.} bad
-	regex {..} bad
+	regex {^.$} bad
+	regex {^..$} bad
 	regex {[0-9][a-zA-Z]+} bad
 	default {
 		good
@@ -21,10 +21,13 @@ switch abc {
 }
 
 switch 123 {
-	regex {.+} { good; fallthrough }
-	regex {..+} { good; fallthrough }
-	regex {.+} { good }
-	regex {.+} { bad }
+	regex {.} { good; fallthrough }
+	regex {
+		^       # This is a comment!
+		..+ $   # Woo, extended regex! Spaces must be escaped.
+	} { good; fallthrough }
+	regex {^\.+$} { good }
+	regex {^.+$} { bad }
 	# this should not run :)
 	default bad
 }

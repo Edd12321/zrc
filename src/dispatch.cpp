@@ -8,11 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <regex.h>
 
 #include <functional>
 #include <iostream>
 #include <map>
-#include <regex>
 #include <stack>
 #include <string>
 #include <unordered_map>
@@ -82,6 +82,7 @@ EXCEPTION_CLASS(fallthrough)
 EXCEPTION_CLASS(break)
 EXCEPTION_CLASS(continue)
 EXCEPTION_CLASS(return)
+EXCEPTION_CLASS(regex)
 
 static inline std::string concat(int argc, char *argv[], int i)
 {
@@ -106,6 +107,17 @@ static inline void eoe(int argc, char *argv[], int i)
 		eval(argv[i]);
 	else
 		exec(argc-i, argv+i);
+}
+
+bool regex_match(std::string const& txt, std::string const& reg, int cflags = REG_NOSUB | REG_EXTENDED)
+{
+	regex_t regex;
+
+	if (regcomp(&regex, reg.c_str(), cflags))
+		throw regex_handler();
+	auto ret = regexec(&regex, txt.c_str(), 0, NULL, 0);
+	regfree(&regex);
+	return !ret;
 }
 
 bool in_loop;
@@ -384,11 +396,11 @@ _repeat_switch:
 				// regex {regex} {script}
 				case SW::REGEX:
 					try {
-						if (fell || std::regex_match(txt, std::regex(vec[i].txt))) {
+						if (fell || regex_match(txt, vec[i].txt)) {
 							ran_once = true;
 							return eval(vec[i].block);
 						}
-					} catch (std::regex_error ex) {
+					} catch (regex_handler ex) {
 						std::cerr << "syntax error: Invalid regex " << list(vec[i].txt) << std::endl;
 						return "1";
 					}
