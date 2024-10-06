@@ -115,6 +115,12 @@ void exec(int argc, char *argv[])
 	if (pid == 0) {
 		for (; new_fd::fdcount > FD_MAX; --new_fd::fdcount)
 			close(new_fd::fdcount);
+		if (hctable.find(*argv) != hctable.end()) {
+			if (execv(hctable[*argv].c_str(), argv)) {
+				perror(*argv);
+				_exit(127);
+			}
+		}
 		if (execvp(*argv, argv)) {
 			perror(*argv);
 			_exit(127);

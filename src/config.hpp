@@ -8,6 +8,7 @@
 #define FIFO_DIRNAME     "/tmp/zrc.XXXXXXX" /* Default dir name for FIFOs */
 #define FIFO_FILNAME     "fifo"             /* Default filename for FIFOs */
 #define CDPATH           "CDPATH"           /* What variable to use as our $CDPATH */ 
+#define PATH             "PATH"             /* What variable to use as our $PATH */
 
 #define RESERVE_STR      256                /* How many bytes to reserve for string values by default */
 #define ZRC_BIND_TIMEOUT 400000             /* Line editor timeout (be careful, some values yield unexpected results */

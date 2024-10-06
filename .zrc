@@ -2,6 +2,8 @@
 echo "Welcome to Zrc!"
 echo "The time is: `{date}"
 
+> /dev/null rehash
+
 fn prompt {
 	set green = "\e\[0;32m"
 	set rbold = "\e\[1;31m"

@@ -2,6 +2,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
+#include <dirent.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <math.h>
@@ -84,6 +85,29 @@ EXCEPTION_CLASS(continue)
 EXCEPTION_CLASS(return)
 EXCEPTION_CLASS(regex)
 
+bool in_loop;
+bool in_switch;
+bool in_func;
+
+class block_handler
+{
+private:
+	bool ok = false, *ref = &in_loop;
+public:
+	block_handler(bool *ref)
+	{
+		this->ref = ref;
+		if (!*ref)
+			ok = true;
+		*ref = true;
+	}
+	~block_handler()
+	{
+		if (ok)
+			*ref = false;
+	}
+};
+
 static inline std::string concat(int argc, char *argv[], int i)
 {
 	std::string ret;
@@ -109,6 +133,7 @@ static inline void eoe(int argc, char *argv[], int i)
 		exec(argc-i, argv+i);
 }
 
+// Match ERE
 bool regex_match(std::string const& txt, std::string const& reg, int cflags = REG_NOSUB | REG_EXTENDED)
 {
 	regex_t regex;
@@ -120,31 +145,10 @@ bool regex_match(std::string const& txt, std::string const& reg, int cflags = RE
 	return !ret;
 }
 
-bool in_loop;
-bool in_switch;
-bool in_func;
-
-class block_handler
-{
-private:
-	bool ok = false, *ref = &in_loop;
-public:
-	block_handler(bool *ref)
-	{
-		this->ref = ref;
-		if (!*ref)
-			ok = true;
-		*ref = true;
-	}
-	~block_handler()
-	{
-		if (ok)
-			*ref = false;
-	}
-};
-
 // Dir stack
 std::stack<std::string> pstack;
+// Path hashing
+std::unordered_map<std::string, std::string> hctable;
 
 static inline void prints(std::stack<std::string> sp)
 {
@@ -221,6 +225,34 @@ COMMAND(exec)   if (argc > 1) execvp(*(argv+1), argv+1)     END
 COMMAND(wait)   while (wait(NULL) > 0)                      END
 // Source a script
 COMMAND(.)      source(concat(argc, argv, 1));              END
+// Disable internal hash table
+COMMAND(unhash) hctable.clear();                            END
+
+// Refresh internal hash table
+COMMAND(rehash)
+	std::istringstream iss{getvar(PATH)};
+	std::string tmp;
+	hctable.clear();
+
+	while (getline(iss, tmp, ':')) {
+		struct dirent *entry;
+		struct stat sb;
+
+		DIR *d = opendir(tmp.c_str());
+		if (d) {
+			while ((entry = readdir(d))) {
+				char *nm = entry->d_name;
+				char nm2[PATH_MAX];
+				sprintf(nm2, "%s/%s", tmp.c_str(), nm);
+				if (hctable.find(nm) == hctable.end() && !stat(nm2, &sb) && sb.st_mode & S_IXUSR) {
+					hctable[nm] = nm2;
+					std::cout << "Added " << nm << " (" << nm2 << ")\n";
+				}
+			}
+		}
+		closedir(d);
+	}
+END
 
 // Prioritise builtins
 COMMAND(builtin)

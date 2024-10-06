@@ -16,7 +16,7 @@ git checkout legacy
 ```
 ## Features left to implement:
 
-- [ ] Path hashing/caching
+- [X] Path hashing/caching
 - [X] Cdpath support
 - [X] Home directory config file (`~/.zrc`)
 - [X] Aliases
