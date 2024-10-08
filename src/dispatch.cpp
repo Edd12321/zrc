@@ -574,9 +574,11 @@ COMMAND(read)
                   }
 
 	if (optind >= argc) {
+		buf.clear();
 		READSTR
 		std::cout << buf << '\n';
 	} else for (; optind < argc; ++optind) {
+		buf.clear();
 		READSTR
 		setvar(argv[optind], buf);
 	}
