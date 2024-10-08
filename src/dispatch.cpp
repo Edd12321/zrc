@@ -31,14 +31,15 @@
 #undef END
 // Easier command declararions
 #define CMD_TBL std::unordered_map<std::string, std::function<zrc_obj(int, char**)> >
-#define COMMAND(x) { #x,  [](int argc, char *argv[]) -> zrc_obj {int opt;
-
 #if defined(__GLIBC__) && !defined(__UCLIBC__)
 	#define OPTIND_RESET 0
 #else
 	#define OPTIND_RESET 1
 #endif
-#define END ; optind = OPTIND_RESET; return vars::status;} },
+#define COMMAND(x) { #x,  [](int argc, char *argv[]) -> zrc_obj {\
+	int opt;\
+	optind = OPTIND_RESET;
+#define END ; return vars::status;} },
 
 #define SIGEXIT 0
 const std::map<std::string, int> txt2sig = {
@@ -347,8 +348,8 @@ END
 COMMAND(do)
 	auto help = "<eoe> while|until <expr>...";
 	if (argc < 4) SYNTAX_ERROR
-	bool w = !strcmp(argv[argc-1], "while");
-	bool u = !strcmp(argv[argc-1], "until");
+	bool w = !strcmp(argv[argc-2], "while");
+	bool u = !strcmp(argv[argc-2], "until");
 	if (!w && !u) SYNTAX_ERROR
 
 	block_handler bh(&in_loop);
@@ -520,73 +521,56 @@ END
 COMMAND(read)
 	auto help = "[-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...]";
 
-	std::string d = "\n", prompt, buf;
-	char c;
-	int n = -1, fd = STDIN_FILENO;
-	bool dflag = false, valid_return = true;
+	auto delim = (char*)"\n";
+	int status = 2, n = -1, fd = STDIN_FILENO;
 
 	while ((opt = getopt(argc, argv, "d:n:p:f:")) != -1) {
 		switch (opt) {
 			case 'd':
-				if (n != -1) SYNTAX_ERROR
-				d = optarg, dflag = true;
+				delim = optarg;
 				break;
-			
 			case 'n':
-				if (dflag) SYNTAX_ERROR
 				n = expr(optarg);
-				if (isnan(n) || n < 0) SYNTAX_ERROR
 				break;
-
 			case 'p':
-				prompt = optarg;
+				std::cout << optarg << std::flush;
 				break;
-
 			case 'f':
 				fd = expr(optarg);
-				if (fd < 0 || fd > FD_MAX) SYNTAX_ERROR
 				break;
-
 			case '?':
 				SYNTAX_ERROR
 		}
 	}
-	std::cerr << prompt << std::flush;
-	
-#define READSTR   if (n < 0) {                                                       \
-                    if (read(fd, &c, 1) != 1)                                        \
-                      goto _fail_read;                                               \
-                    if (d.find(c) == std::string::npos)                              \
-                      buf += c;                                                      \
-                    for (;;) {                                                       \
-                      if ((read(fd, &c, 1)) != 1 || d.find(c) != std::string::npos)  \
-                        break;                                                       \
-                      buf += c;                                                      \
-                    }                                                                \
-                  } else {                                                           \
-                    char *b = new char[(n > 0) ? (n + 1) : 1];                       \
-                    if (read(fd, b, n) != n) {                                       \
-                      delete [] b;                                                   \
-                      goto _fail_read;                                               \
-                    }                                                                \
-                    b[n] = '\0';                                                     \
-                    buf += b;                                                        \
-                  }
+	auto read_str = [&]()
+	{
+		std::string ret_val;
+		char c;
+		status = 2;
+		if (n < 0) {
+			char c;
+			while (read(fd, &c, 1) == 1) {
+				status = 0;
+				if (strchr(delim, c))
+					break;
+				ret_val += c;
+			}
+		} else {
+			char *s = new char[n+1];
+			if (read(fd, s, n) > 0)
+				status = 0;
+			s[n] = '\0';
+			ret_val += s;
+			delete [] s;
+		}
+		return ret_val;
+	};
 
-	if (optind >= argc) {
-		buf.clear();
-		READSTR
-		std::cout << buf << '\n';
-	} else for (; optind < argc; ++optind) {
-		buf.clear();
-		READSTR
-		setvar(argv[optind], buf);
-	}
-
-_corr_read:
-	return "0";
-_fail_read:
-	return "2";
+	if (optind >= argc)
+		std::cout << read_str() << std::endl;
+	else for (; optind < argc; ++optind)
+		setvar(argv[optind], read_str());
+	return numtos(status);
 END
 
 // Aliases
