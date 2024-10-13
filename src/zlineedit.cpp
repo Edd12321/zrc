@@ -1,9 +1,24 @@
+#include <sys/ioctl.h>
 #include <termios.h>
 
 #include <algorithm>
 #include <fstream>
 #include <string>
 #include <vector>
+
+void display_prompt(bool show_secondary_prompt)
+{
+	auto old_status = vars::status;
+
+	new_fd old_out(STDOUT_FILENO);
+	dup2(STDERR_FILENO, STDOUT_FILENO);
+	     if (show_secondary_prompt)   std::cout << DEFAULT_SPROMPT;
+	else if (!run_function("prompt")) std::cout << DEFAULT_PPROMPT;
+
+	dup2(old_out, STDOUT_FILENO);
+	close(old_out);
+	vars::status = old_status;
+}
 
 namespace line_edit
 {
@@ -12,6 +27,86 @@ namespace line_edit
 	std::vector<std::string> histfile;
 	std::string filename;
 	std::fstream io;
+
+	static inline void init_term(size_t& row, size_t& col)
+	{
+		struct winsize term;
+		ioctl(STDOUT_FILENO, TIOCGWINSZ, &term);
+		row = term.ws_row;
+		col = term.ws_col;
+	}
+
+	static inline bool list(std::vector<std::string> const& vec)
+	{
+		size_t i = 0, term_hi, term_wd;
+		init_term(term_hi, term_wd);
+		std::cerr << '\n';
+		for (; i < vec.size(); ++i) {
+			std::cerr << std::setw(term_wd / 3) << vec[i];
+			if ((i + 1) % 3 == 0) {
+				std::cerr << '\n';
+				if (term_hi * 3 - 6 <= i) {
+					std::cerr << "--More--";
+					int tmp;
+					while ((tmp = getchar()) != EOF) {
+						if (tmp == 'q' || tmp == 'Q') {
+							std::cerr << std::endl;
+							return dp_list = i;
+						} else if (tmp == KEY_RET) {
+							std::cerr << "\b \b\b \b\b \b\b \b\b \b\b \b\b \b\b \b";
+							break;
+						}
+					}
+				}
+			}
+		}
+		std::cerr << std::endl;
+		return dp_list = i;
+	}
+
+	static inline void tab(std::string& buf)
+	{
+		auto wlist = lex(buf.c_str(), SPLIT_WORDS | SEMICOLON).elems;
+		auto globbed = glob((std::string(wlist.back())+"*").c_str(), GLOB_TILDE);
+		if (globbed.size() == 1) {
+			wlist.back() = globbed[0];
+			// Replace last word
+			buf.clear();
+			for (size_t i = 0; i < wlist.size()-1; ++i)
+				buf += wlist[i], buf += ' ';
+			buf += wlist.back();
+// ANSI terminal cursor
+#define CURSOR_FWD(X) std::cerr << "\033[" << X << 'C' << std::flush
+#define CURSOR_BWD(X) std::cerr << "\033[" << X << 'D' << std::flush
+			CURSOR_BWD(cursor_pos);
+			std::cerr << buf;
+			cursor_pos = buf.length();	
+		} else if (!globbed.empty()) {
+			list(globbed);
+		}
+	}
+
+	static inline void cmd(std::string& buf)
+	{
+		std::vector<std::string> vec;
+		for (auto const& it : hctable)
+			if (!it.first.rfind(buf, 0))
+				vec.emplace_back(it.first);
+		for (auto const& i : { functions, builtins })
+			for (auto const& j : i)
+				if (!j.first.rfind(buf, 0))
+					vec.emplace_back(j.first);
+		if (vec.size() == 1) {
+			buf = vec[0];
+			CURSOR_BWD(cursor_pos);
+			std::cerr << buf;
+			cursor_pos = buf.length();
+		} else if (!vec.size()) {
+			tab(buf);
+		} else {
+			list(vec);
+		}
+	}
 
 	static inline void R_histfile()
 	{
@@ -42,9 +137,6 @@ namespace line_edit
 #define ACTION(x) { #x, [](std::string& buf, char c) {
 #undef END
 #define END ;return false; } },
-// ANSI terminal cursor
-#define CURSOR_FWD(X) std::cerr << "\033[" << X << 'C' << std::flush
-#define CURSOR_BWD(X) std::cerr << "\033[" << X << 'D' << std::flush
 // Arrow key history browsing
 #define ARROW_MACRO(x)            \
   size_t len = buf.length();      \
@@ -120,6 +212,18 @@ namespace line_edit
 			W_histfile(buf);
 			std::cin.clear();
 			return true;
+		END
+		// Tab completion
+		ACTION(expand-word)
+			if (first_word)
+				tab(buf);
+			else
+				cmd(buf);
+			if (dp_list) {
+				display_prompt(false);
+				std::cerr << buf;
+			}
+			dp_list = 0;
 		END
 	};
 }
@@ -224,17 +328,7 @@ static inline bool zlineedit(std::string& buf)
 bool zrc_getline(std::istream& in, std::string& str, bool show_secondary_prompt = false)
 {
 	if (&in == &std::cin && isatty(fileno(stdin))) {
-		auto old_status = vars::status;
-
-		new_fd old_out(STDOUT_FILENO);
-		dup2(STDERR_FILENO, STDOUT_FILENO);
-		     if (show_secondary_prompt)   std::cout << DEFAULT_SPROMPT;
-		else if (!run_function("prompt")) std::cout << DEFAULT_PPROMPT;
-
-		dup2(old_out, STDOUT_FILENO);
-		close(old_out);
-
-		vars::status = old_status;
+		display_prompt(show_secondary_prompt);
 		return zlineedit(str);
 	}
 	return !std::getline(in, str).fail();
