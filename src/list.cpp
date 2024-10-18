@@ -43,8 +43,9 @@ zrc_obj list(std::vector<token>& vec)
 	char **argv = new char*[vec.size()];
 	for (size_t i = 0; i < vec.size(); ++i)
 		argv[i] = &std::string(vec[i])[0];
-	return list(vec.size(), argv);
+	auto ret = list(vec.size(), argv);
 	delete [] argv;
+	return ret;
 }
 
 /* Ditto */
