@@ -312,13 +312,13 @@ token_list lex(const char *p, lexer_flags flags)
 	return wlst;
 }
 
-inline std::string subst(const char *text)
+std::string subst(const char *text)
 {
 	if (!*text) return std::string();
 	return lex(text, SUBSTITUTE).elems[0];
 }
 
-inline std::string subst(std::string const& text)
+std::string subst(std::string const& text)
 {
 	return subst(text.c_str());
 }
