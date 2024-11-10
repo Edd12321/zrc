@@ -2,7 +2,7 @@
 #define YYSTYPE long double
 #include <iostream>
 #include <string>
-#include "y.tab.h"
+#include "y.tab.hpp"
 int yyparse();
 %}
 %option noyywrap
