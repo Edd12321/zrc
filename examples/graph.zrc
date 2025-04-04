@@ -62,7 +62,7 @@ fn main {
 	} else for {set i = 0 len = [str $func_old len]} {$i < $len} {inc i} {
 		set ch = [str $func_old $i]
 		if {[str $ch == 'x']} {
-			set func = ${func}\$x
+			set func = ${func}(\$x)
 		} else {
 			set func = ${func}${ch}
 		}

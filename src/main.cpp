@@ -179,7 +179,7 @@ static inline void usage()
 
 static inline void version()
 {
-	std::cerr << "zrc v2.0" << std::endl;
+	std::cerr << ZVERSION << std::endl;
 	exit(EXIT_FAILURE);
 }
 

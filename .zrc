@@ -69,7 +69,7 @@ alias mkdir   "mkdir -pv"
 alias pacman  "\$AUTH pacman"
 alias calc    "bc -ql"
 alias emacs   "emacs -nw"
-alias history "eval \$env(PAGER) ~/.zrc_history"
+alias history "eval \$PAGER \[glob -t ~/.zrc_history]"
 alias da      "date '+%Y-%m-%d %A %T %Z'"
 
 # Modify original cmds
@@ -132,3 +132,4 @@ fn expvar {
 expvar AUTH   doas
 expvar CDPATH /home/edward:$CDPATH
 expvar PATH   /usr/lib/zrc/bin:$PATH
+expvar PAGER  most

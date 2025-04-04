@@ -37,6 +37,21 @@ zrc_num stonum(std::string const& str)
 #define ARR(x) zrc_arr& x = amap[#x];
 #define VAR(x) zrc_obj& x = vmap[#x];
 
+class arr_sorter
+{
+public:
+	bool operator()(std::string const& lhs, std::string const& rhs)
+	{
+		try {
+			zrc_num x = std::stold(lhs);
+			zrc_num y = std::stold(rhs);
+			return x < y;
+		} catch (...) {
+			return lhs < rhs;
+		}
+	}
+};
+
 namespace vars
 {
 	std::unordered_map<std::string, zrc_obj> vmap;

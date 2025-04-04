@@ -58,6 +58,7 @@ erf                         return ERF;
 erfc                        return ERFC;
 lgamma                      return LGAMMA;
 tgamma                      return TGAMMA;
+sgn                         return SGN;
 %%
 #include <string.h>
 #include <math.h>

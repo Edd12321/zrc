@@ -23,7 +23,7 @@
 #endif
 
 // Custom types
-#define zrc_arr std::unordered_map<std::string, zrc_obj>
+#define zrc_arr std::map<std::string, zrc_obj, arr_sorter>
 #define CMD_TBL std::unordered_map<std::string, std::function<zrc_obj(int, char**)> >
 typedef std::string zrc_obj;
 typedef long double zrc_num;
@@ -59,6 +59,7 @@ class break_handler;
 class return_handler;
 class return_handler;
 class block_handler;
+class arr_sorter;
 
 struct substit;
 struct token;

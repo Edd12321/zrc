@@ -400,6 +400,17 @@ _repeat_do:
 	}
 END
 
+COMMAND(repeat)
+	auto help = "<expr> <eoe>";
+	if (argc < 3) SYNTAX_ERROR
+
+	zrc_num exp = floor(expr(argv[1]));
+	if (isnan(exp)) SYNTAX_ERROR
+
+	while (exp--)
+		eoe(argc, argv, 2);
+END
+
 // Switch instruction
 COMMAND(switch)
 	auto help = "<val> {< <case|regex|default> <eval>...>}";
@@ -755,7 +766,7 @@ END
 
 // Filename globbing
 COMMAND(glob)
-	char flags[3] = "s";
+	char flags[4] = "s";
 	int g_flags = GLOB_NOSORT;
 	// If your stdlib doesn't use GNU extensions,
 	// then I guess that means no tilde exp for you.
@@ -965,23 +976,28 @@ COMMAND(str)
 	"\n                  <s> - <ind1> <ind2>...";
 
 #define STROP(x, op) if (argc == 4 && !strcmp(argv[2], #x)) return numtos(strcmp(argv[1], argv[3]) op);
+	// String comparisons
 	STROP(>, > 1) STROP(==, == 0) STROP(<=, <= 0)
 	STROP(<, < 0) STROP(!=, != 0) STROP(>=, >= 0)
 	STROP(<=>,)
 
+	// Return string length
 	if (argc == 3 && !strcmp(argv[2], "len")) return numtos(strlen(argv[1]));
+	// Return string char at index
 	if (argc == 3) {
 		zrc_num i = expr(argv[2]);
 		if (!isnan(i) && i >= 0 && i < strlen(argv[1]))
 			return std::string(1, argv[1][size_t(i)]);
 		else SYNTAX_ERROR
 	}
+	// Return string starting from index
 	if (argc == 4 && !strcmp(argv[2], "+")) {
 		zrc_num i = expr(argv[3]);
 		if (!isnan(i) && i >= 0 && i <= strlen(argv[1]))
 			return std::string(argv[1]+size_t(i));
 		else SYNTAX_ERROR
 	}
+	// Return string minus chars from indexes removed
 	if (argc >= 4 && !strcmp(argv[2], "-")) {
 		std::string str = argv[1];
 		for (int i = 3, k = 0; i < argc; ++i) {
@@ -992,6 +1008,7 @@ COMMAND(str)
 		}
 		return str;
 	}
+	// Return string range
 	if (argc == 4) {
 		zrc_num i = expr(argv[2]);
 		zrc_num j = expr(argv[3]);
@@ -1004,6 +1021,7 @@ COMMAND(str)
 			return ret_val;
 		} else SYNTAX_ERROR
 	}
+	// Return string with replaced char
 	if (argc == 5 && !strcmp(argv[3], "=")) {
 		zrc_num i = expr(argv[2]);
 		if (!isnan(i) && i >= 0 && i < strlen(argv[1])) {
@@ -1021,22 +1039,52 @@ COMMAND(arr)
 	"\n                  <a> -= <elem1> <elem2>..."
 	"\n                  <a> len"
 	"\n                  <a> keys"
-	"\n                  <a> destroy";
+	"\n                  <a> vals"
+	"\n                  <a> destroy"
+	"\n                  <a>";
 
 	if (argc < 2) SYNTAX_ERROR
 	auto& arr = vars::amap[argv[1]];
 
+	// Return array as list (k v)
+	if (argc == 2) {
+		zrc_obj ret_val;
+		for (auto const& it : arr)
+			ret_val += list(it.first) + ' ' + list(it.second) + '\n';
+		if (!ret_val.empty()) ret_val.pop_back();
+		return ret_val;
+	}
+	// Destroy array
 	if (argc == 3 && !strcmp(argv[2], "destroy")) {
 		vars::amap.erase(argv[1]);
 		return vars::status;
 	}
+	// Return array length
 	if (argc == 3 && !strcmp(argv[2], "len")) return numtos(arr.size());
+	// Return array as list (k)
+	if (argc == 3 && !strcmp(argv[2], "keys")) {
+		zrc_obj ret_val;
+		for (auto const& it : arr)
+			ret_val += list(it.first) + ' ';
+		if (!ret_val.empty()) ret_val.pop_back();
+		return ret_val;	
+	}
+	// Return array as list (v)
+	if (argc == 3 && !strcmp(argv[2], "vals")) {
+		zrc_obj ret_val;
+		for (auto const& it : arr)
+			ret_val += list(it.second) + ' ';
+		if (!ret_val.empty()) ret_val.pop_back();
+		return ret_val;	
+	}
+	// Assign to array as numbered list
 	if (argc == 4 && !strcmp(argv[2], ":=")) {
 		auto wlst = lex(argv[3], SPLIT_WORDS).elems;
 		for (size_t i = 0; i < wlst.size(); ++i)
 			arr[numtos(i)] = wlst[i];
 		return vars::status;
 	}
+	// Assign to array as key/value pair
 	if (argc == 4 && !strcmp(argv[2], "=")) {
 		auto wlst = lex(argv[3], SPLIT_WORDS).elems;
 		if (wlst.size() % 2 != 0) SYNTAX_ERROR
@@ -1044,6 +1092,7 @@ COMMAND(arr)
 			arr[wlst[i]] = wlst[i+1];
 		return vars::status;
 	}
+	// Remove keys from array
 	if (argc >= 4 && !strcmp(argv[2], "-=")) {
 		for (int i = 3; i < argc; ++i)
 			arr.erase(argv[i]);

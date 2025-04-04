@@ -17,7 +17,7 @@ void yyerror(const char *msg)
 
 %token YYEOF 0
 %token NUM
-%token LOG10 LOG2 LN SQRT SIN COS CTG TG SEC CSC ARCSIN ARCCOS ARCCTG ARCTG ARCSEC ARCCSC FLOOR TRUNC CEIL ABS ROUND ERF ERFC TGAMMA LGAMMA
+%token LOG10 LOG2 LN SQRT SIN COS CTG TG SEC CSC ARCSIN ARCCOS ARCCTG ARCTG ARCSEC ARCCSC FLOOR TRUNC CEIL ABS ROUND ERF ERFC TGAMMA LGAMMA SGN
 
 %left ','
 %right '?' ':'
@@ -32,7 +32,7 @@ void yyerror(const char *msg)
 %left SHL SHR
 %left '+' '-'
 %left '*' '/' '%' POW FDIV
-%right '!' '~' LOG10 LOG2 LN SQRT SIN COS CTG TG SEC CSC ARCSIN ARCCOS ARCCTG ARCTG ARCSEC ARCCSC FLOOR TRUNC CEIL ABS ROUND ERF ERFC TGAMMA LGAMMA
+%right '!' '~' LOG10 LOG2 LN SQRT SIN COS CTG TG SEC CSC ARCSIN ARCCOS ARCCTG ARCTG ARCSEC ARCCSC FLOOR TRUNC CEIL ABS ROUND ERF ERFC TGAMMA LGAMMA SGN
 %left '(' ')'
 %%
 goal : expr YYEOF { last_ret = $1; YYACCEPT; }
@@ -86,6 +86,7 @@ expr : expr ',' expr           { $$ = $3; }
      | ERFC expr               { $$ = erfc($2); }
      | TGAMMA expr             { $$ = tgamma($2); }
      | LGAMMA expr             { $$ = lgamma($2); }
+     | SGN expr                { $$ = (0 < $2) - ($2 < 0); }
      | '-' expr                { $$ = -$2; }
      | '+' expr                { $$ = +$2; }
      | '!' expr                { $$ = !$2; }
