@@ -40,7 +40,7 @@ zrc_num stonum(std::string const& str)
 class arr_sorter
 {
 public:
-	bool operator()(std::string const& lhs, std::string const& rhs)
+	bool operator()(std::string const& lhs, std::string const& rhs) const
 	{
 		try {
 			zrc_num x = std::stold(lhs);
