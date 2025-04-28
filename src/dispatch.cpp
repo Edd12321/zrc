@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <regex.h>
 
+#include <algorithm>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -1046,11 +1047,30 @@ COMMAND(arr)
 	if (argc < 2) SYNTAX_ERROR
 	auto& arr = vars::amap[argv[1]];
 
+	auto get_sorted_keys = [&]() {
+		auto sort = [](std::string const& lhs, std::string const& rhs) {
+			zrc_num x, y;
+			bool x_num = true, y_num = true;
+			try { x = std::stold(lhs); } catch (...) { x_num = false; }
+			try { y = std::stold(rhs); } catch (...) { y_num = false; }
+			if (x_num != y_num)
+				return x_num;
+			if (x_num && x != y)
+				return x < y;
+			return lhs < rhs;
+		};
+		std::vector<std::string> keys;
+		for (auto const& it : arr)
+			keys.push_back(it.first);
+		std::sort(keys.begin(), keys.end(), sort);
+		return keys;
+	};
+
 	// Return array as list (k v)
 	if (argc == 2) {
 		zrc_obj ret_val;
-		for (auto const& it : arr)
-			ret_val += list(it.first) + ' ' + list(it.second) + '\n';
+		for (auto const& it : get_sorted_keys())
+			ret_val += list(it) + ' ' + list(arr[it]) + '\n';
 		if (!ret_val.empty()) ret_val.pop_back();
 		return ret_val;
 	}
@@ -1064,16 +1084,16 @@ COMMAND(arr)
 	// Return array as list (k)
 	if (argc == 3 && !strcmp(argv[2], "keys")) {
 		zrc_obj ret_val;
-		for (auto const& it : arr)
-			ret_val += list(it.first) + ' ';
+		for (auto const& it : get_sorted_keys())
+			ret_val += list(it) + ' ';
 		if (!ret_val.empty()) ret_val.pop_back();
 		return ret_val;	
 	}
 	// Return array as list (v)
 	if (argc == 3 && !strcmp(argv[2], "vals")) {
 		zrc_obj ret_val;
-		for (auto const& it : arr)
-			ret_val += list(it.second) + ' ';
+		for (auto const& it : get_sorted_keys())
+			ret_val += list(arr[it]) + ' ';
 		if (!ret_val.empty()) ret_val.pop_back();
 		return ret_val;	
 	}

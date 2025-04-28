@@ -130,6 +130,6 @@ fn expvar {
 	export ${argv 1}
 }
 expvar AUTH   doas
-expvar CDPATH /home/edward:$CDPATH
+expvar CDPATH $CDPATH:/home/edward
 expvar PATH   /usr/lib/zrc/bin:$PATH
 expvar PAGER  most
