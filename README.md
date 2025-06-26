@@ -56,11 +56,13 @@ git checkout legacy
         - [X] Process (`<{...}`)
 		- [X] Return value (`[...]`)
 - [X] Built-in commands (like `expr`, etc. but there are too many to list. View `dispatch.hpp`)
+- [X] Tcl-style `unknown` (ex: `fn unknown { expr [arr argv vals] }`) (currently only works with path hashing)
 - [X] Conditional logic/flow control with full C arithmetic operator set
 	- [X] If/else
     - [X] Unless
 	- [X] Do
 	- [X] While
+    - [X] Repeat
 	- [X] Foreach
 	- [X] For
 	- [X] Switch (currently does nothing)

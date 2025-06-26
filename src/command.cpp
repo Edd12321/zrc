@@ -112,6 +112,21 @@ bool builtin_check(int argc, char *argv[])
 	return false;
 }
 
+/** Tcl-like `unknown` command
+ *
+ * @param {int}argc,{char**}argv
+ * @return void
+ */
+bool unknown_check(int argc, char *argv[])
+{
+	if (!hctable.empty() && hctable.find(*argv) == hctable.end()
+	&& functions.find("unknown") != functions.end()) {
+		functions.at("unknown")(argc, argv);
+		return true;
+	}
+	return false;
+}
+
 /** Execute an external command (without forking)
  *
  * @param {int}argc,{char**}argv
@@ -412,7 +427,8 @@ inline bool pipeline::execute_act()
 			close(pd[0]);
 
 			// Exec stuff happens here
-			if (!builtin_check(cmds[i].argc, cmds[i].argv.data()))
+			if (!builtin_check(cmds[i].argc, cmds[i].argv.data())
+			&&  !unknown_check(cmds[i].argc, cmds[i].argv.data()))
 				exec_extern(cmds[i].argc, cmds[i].argv.data());
 			_exit(0);
 		} else {
@@ -425,7 +441,8 @@ inline bool pipeline::execute_act()
 	}
 	dup2(input, STDIN_FILENO);
 	// Last one! (ditto)
-	if (!builtin_check(cmds[i].argc, cmds[i].argv.data())) {
+	if (!builtin_check(cmds[i].argc, cmds[i].argv.data())
+	&&  !unknown_check(cmds[i].argc, cmds[i].argv.data())) {
 		pid_t pid = fork();
 		if (pid == 0) {
 			setpgid(0, pgid);
