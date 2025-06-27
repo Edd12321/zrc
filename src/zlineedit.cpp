@@ -92,10 +92,13 @@ namespace line_edit
 		for (auto const& it : hctable)
 			if (!it.first.rfind(buf, 0))
 				vec.emplace_back(it.first);
-		for (auto const& i : { functions, builtins })
-			for (auto const& j : i)
-				if (!j.first.rfind(buf, 0))
-					vec.emplace_back(j.first);
+
+		for (auto const& j : functions)
+			if (!j.first.rfind(buf, 0))
+				vec.emplace_back(j.first);
+		for (auto const& j : builtins)
+			if (!j.first.rfind(buf, 0))
+				vec.emplace_back(j.first);
 		if (vec.size() == 1) {
 			buf = vec[0];
 			CURSOR_BWD(cursor_pos);

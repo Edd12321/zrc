@@ -31,7 +31,6 @@
 
 #undef END
 // Easier command declararions
-#define CMD_TBL std::unordered_map<std::string, std::function<zrc_obj(int, char**)> >
 #if defined(__GLIBC__) && !defined(__UCLIBC__)
 	#define OPTIND_RESET 0
 #else
@@ -163,12 +162,35 @@ static inline void prints(std::stack<std::string> sp)
 	std::cout << '\n';
 }
 
+// User functions
+struct zrc_fun {
+	std::string body;
+
+	zrc_fun()=default;
+	zrc_fun(std::string const& b) : body(b) {}
+
+	zrc_obj operator()(int argc, char *argv[])
+	{
+		zrc_obj argc_old = vars::argc;
+		zrc_arr argv_old = vars::argv;
+		vars::argv = copy_argv(argc, argv);
+		vars::argc = numtos(argc);
+		block_handler fh(&in_func);
+		try { eval(body); } catch (return_handler ex) {}
+		vars::argc = argc_old;
+		vars::argv = argv_old;
+
+		// Don't forget
+		return vars::status;
+	}
+};
+
 /*****************
  *               *
  * Command table *
  *               *
  *****************/
-CMD_TBL functions, builtins = {
+CMD_TBL builtins = {
 
 // Commands that only work in certain contexts
 #define CTRLFLOW_HELPER(x, y, z)                   \
@@ -309,20 +331,7 @@ COMMAND(fn)
 	if (argc >= 3) {
 		// Function body
 		auto b = concat(argc, argv, 2);
-		functions[argv[1]] = [=](int argc, char *argv[])
-		{
-			zrc_obj argc_old = vars::argc;
-			zrc_arr argv_old = vars::argv;
-			vars::argv = copy_argv(argc, argv);
-			vars::argc = numtos(argc);
-			block_handler fh(&in_func);
-			try { eval(b); } catch (return_handler ex) {}
-			vars::argc = argc_old;
-			vars::argv = argv_old;
-
-			// Don't forget
-			return vars::status;
-		};
+		functions[argv[1]] = zrc_fun(concat(argc, argv, 2));
 	} else if (argc == 2) {
 		functions.erase(argv[1]);
 	} else SYNTAX_ERROR	
@@ -335,11 +344,30 @@ END
 
 // List all commands
 COMMAND(help)
-	for (auto it = builtins.begin(); it != builtins.end(); ++it) {
-		std::cout << it->first;
-		if (std::next(it) != builtins.end())
-			std::cout << ' ';
+	bool handled_args = false;
+	for (int i = 1; i < argc; ++i) {
+		if (functions.find(argv[i]) != functions.end()) {
+			std::cout << "#function\n";
+			std::cout << "fn " << list(argv[i]) << " {" << functions.at(argv[i]).body << "}\n";
+		}
+		if (builtins.find(argv[i]) != builtins.end())
+			std::cout << "#builtin\n";
+		handled_args = true;
 	}
+
+	if (handled_args)
+		return "0";
+
+#define DISPLAY_COMMANDS_MAP(MAP)            \
+	std::vector<std::string> v##MAP;         \
+	for (auto const& it : MAP)               \
+		v##MAP.push_back(it.first);          \
+	std::sort(v##MAP.begin(), v##MAP.end()); \
+	for (auto const& it : v##MAP)            \
+		std::cout << it << ' '; 
+	DISPLAY_COMMANDS_MAP(builtins)
+	std::cout << "\n\n";
+	DISPLAY_COMMANDS_MAP(functions)
 	std::cout << '\n';
 END
 

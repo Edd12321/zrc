@@ -99,15 +99,18 @@ bool builtin_check(int argc, char *argv[])
 {
 	auto largv = argv[argc];
 	argv[argc] = nullptr;
-	for (auto const& it : { functions, builtins }) {
-		if (it.find(argv[0]) != it.end()) {
-			vars::status = it.at(argv[0])(argc, argv);
-			// Don't forget to flush buffers
-			std::cout << std::flush;
-			std::cerr << std::flush;
-			return true;
-		}
+
+#define TRY_BUILTIN_FROM(thing)                        \
+	if (thing.find(argv[0]) != thing.end()) {          \
+		vars::status = thing.at(argv[0])(argc, argv);  \
+		/* Don't forget to flush buffers */            \
+		std::cout << std::flush;                       \
+		std::cerr << std::flush;                       \
+		return true;                                   \
 	}
+
+	TRY_BUILTIN_FROM(functions)
+	TRY_BUILTIN_FROM(builtins)
 	argv[argc] = largv;
 	return false;
 }
@@ -119,7 +122,13 @@ bool builtin_check(int argc, char *argv[])
  */
 bool unknown_check(int argc, char *argv[])
 {
-	if (!hctable.empty() && hctable.find(*argv) == hctable.end()
+	auto doesnt_exist = [](const char *fname) -> bool
+	{
+		struct stat buf;
+		return stat(fname, &buf);
+	};
+
+	if (!hctable.empty() && hctable.find(*argv) == hctable.end() && doesnt_exist(argv[0])
 	&& functions.find("unknown") != functions.end()) {
 		functions.at("unknown")(argc, argv);
 		return true;

@@ -25,6 +25,7 @@
 // Custom types
 #define zrc_arr std::unordered_map<std::string, zrc_obj>
 #define CMD_TBL std::unordered_map<std::string, std::function<zrc_obj(int, char**)> >
+#define FUN_TBL std::unordered_map<std::string, zrc_fun>
 typedef std::string zrc_obj;
 typedef long double zrc_num;
 
@@ -65,9 +66,15 @@ struct token;
 struct token_list;
 struct command;
 struct job;
+struct zrc_fun;
 
 // Command dispatch tables
-extern CMD_TBL builtins, functions;
+extern CMD_TBL builtins;
+extern FUN_TBL functions;
+
+// User functions
+std::unordered_map<std::string, zrc_fun> functions;
+
 // Alias table
 std::unordered_map<std::string, std::string> kv_alias;
 

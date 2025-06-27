@@ -2,7 +2,19 @@
 echo "Welcome to Zrc!"
 echo "The time is: `{date}"
 
-> /dev/null rehash
+set __use_unknown = false
+fn enable_unknown {
+	if {!($__use_unknown)} {
+		set use_unknown = true
+		fn unknown {
+			expr [arr argv vals]
+		}
+	} else {
+		set use_unknown = false
+		fn unknown
+	}
+}
+enable_unknown
 
 fn prompt {
 	set green = "\e\[0;32m"
@@ -133,3 +145,5 @@ expvar AUTH   doas
 expvar CDPATH $CDPATH:/home/edward
 expvar PATH   /usr/lib/zrc/bin:$PATH
 expvar PAGER  most
+
+> /dev/null rehash
