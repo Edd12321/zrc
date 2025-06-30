@@ -142,8 +142,8 @@ fn expvar {
 	export ${argv 1}
 }
 expvar AUTH   doas
-expvar CDPATH $CDPATH:/home/edward
-expvar PATH   /usr/lib/zrc/bin:$PATH
+expvar CDPATH $CDPATH:$HOME
+expvar PATH   /usr/lib/zrc/bin:$HOME/.local/bin:$PATH
 expvar PAGER  most
 
 > /dev/null rehash

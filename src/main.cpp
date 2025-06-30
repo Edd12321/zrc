@@ -93,67 +93,71 @@ static inline std::string eval(std::string const& str)
 	return vars::status;
 }
 
-/** Get enough data from a stream to pass to `eval`, not just one line.
+/** Gets logical line from input stream
+ *
+ * @param {std::ifstream&}in,{std::string&}str
+ * @return bool
+ */
+bool get_phrase(std::istream& in, std::string& str) {
+	// State trackers
+	bool single_quote = false;
+	bool double_quote = false;
+	bool backslash_newline = false;
+	int brace = 0;
+	std::stack<char> stk;
+
+	// Working vars
+	std::string buf;
+	str.clear();
+
+	while (zrc_getline(in, buf, brace || !stk.empty() || backslash_newline)) {
+		backslash_newline = false;
+		for (size_t i = 0; i < buf.length(); ++i) {
+			if (buf[i] == '\'' && !double_quote && !brace) {
+				if (!single_quote)
+					stk.push('\'');
+				else
+					stk.pop();
+				single_quote = !single_quote;
+			}
+			if (buf[i] == '"' && !single_quote && !brace) {
+				if (!double_quote)
+					stk.push('"');
+				else
+					stk.pop();
+				double_quote = !double_quote;
+			}
+			if (buf[i] == '[' && !brace)
+				stk.push('[');
+			if (buf[i] == ']' && !brace && !stk.empty() && stk.top() == '[')
+				stk.pop();
+			if (buf[i] == '{' && !single_quote && !double_quote)
+				++brace;
+			if (buf[i] == '}' && !single_quote && !double_quote && brace)
+				--brace;
+			if (buf[i] == '#' && !single_quote && !double_quote && !brace)
+				i = buf.length();
+			if (buf[i] == '\\' && ++i == buf.length())
+				backslash_newline = true;
+		}
+		str += buf;
+		if (!backslash_newline && !brace && stk.empty())
+			return true;
+		str += '\n';
+	}
+	return false;
+}
+
+/** Evaluate stream
  *
  * @param {std::istream&}in
  * @return none
  */
 static inline void eval_stream(std::istream& in)
 {
-	long subst = 0, brac = 0;
-	bool sq_mode = false, dq_mode = false, comment = false;
-	std::string str, buf;
-	while (zrc_getline(in, str, sq_mode || dq_mode || comment || brac || subst)) {
-		comment = false;
-_again:
-		for (size_t i = 0; i < str.length(); ++i) {
-			switch (str[i]) {
-				case '\'':
-					if (!dq_mode && !brac && !subst && !comment) sq_mode = !sq_mode; buf += '\''; break;
-				case  '"':
-					if (!sq_mode && !brac && !subst && !comment) dq_mode = !dq_mode; buf +=  '"'; break;
-				case  '{':
-					if (!dq_mode && !sq_mode && !subst && !comment) ++brac;          buf +=  '{'; break;
-				case  '}':
-					if (brac && !comment)                           --brac;          buf +=  '}'; break;
-				case '[':
-					if (!brac && !comment)                         ++subst;          buf +=  '['; break;
-				case ']':
-					if (subst && !comment)                         --subst;          buf +=  ']'; break;
-				case '\\':
-					if (i == str.length()-1) {
-						zrc_getline(in, str, 1);
-						goto _again;
-					}
-					buf += '\\', buf += str[++i];
-					break;
-				case '#': /* FALLTHROUGH */
-					if (!sq_mode && !dq_mode && !subst && !brac)
-						comment = true;
-				default:
-					buf += str[i];
-					break;
-			}
-		}
-		if (!brac && !sq_mode && !dq_mode && !subst) {
-			eval(buf);
-			buf.clear();
-		} else
-			buf += '\n';
-	}
-	if (brac) {
-		std::cerr << "Unclosed brace!\n";
-		return;
-	}
-	if (sq_mode || dq_mode) {
-		std::cerr << "Unclosed quote!\n";
-		return;
-	}
-	if (subst) {
-		std::cerr << "Unclosed substituion!\n";
-		return;
-	}
-	eval(str);
+	std::string str;
+	while (get_phrase(in, str))
+		eval(str);
 }
 
 /** Set current argv to the one passed here.
