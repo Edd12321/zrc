@@ -1,5 +1,6 @@
 #pragma GCC optimize("O3")
 #include <sys/resource.h>
+#include <sys/stat.h>
 #include <fstream>
 #include <pwd.h>
 
@@ -34,6 +35,35 @@ bool source(std::string const& str)
 		return true;
 	}
 }
+
+/** Walk through $PATH and return its contents
+ *
+ * @param none
+ * @return std::vector<std::string>
+ */
+std::unordered_map<std::string, std::string> pathwalk()
+{
+	std::istringstream iss{getvar(PATH)};
+	std::string tmp;
+	std::unordered_map<std::string, std::string> ret_val;
+	struct stat sb;
+	
+	while (getline(iss, tmp, ':')) {
+		struct dirent *entry;
+		DIR *d = opendir(tmp.c_str());
+		if (d) {
+			while ((entry = readdir(d))) {
+				std::string short_name = entry->d_name;
+				std::string full_name = tmp + "/" + short_name;
+				if (!stat(full_name.c_str(), &sb) && sb.st_mode & S_IXUSR && ret_val.find(short_name) == ret_val.end())
+					ret_val[short_name] = full_name;
+			}
+		}
+		closedir(d);
+	}
+	return ret_val;
+}
+
 
 /** Evaluate a script and return the result.
  *
@@ -137,13 +167,16 @@ bool get_phrase(std::istream& in, std::string& str) {
 				--brace;
 			if (buf[i] == '#' && !single_quote && !double_quote && !brace)
 				i = buf.length();
-			if (buf[i] == '\\' && ++i == buf.length())
+			if (buf[i] == '\\' && ++i == buf.length()) {
+				buf.pop_back();
 				backslash_newline = true;
+			}
 		}
 		str += buf;
 		if (!backslash_newline && !brace && stk.empty())
 			return true;
-		str += '\n';
+		if (!backslash_newline)
+			str += '\n';
 	}
 	return false;
 }
@@ -209,7 +242,6 @@ int main(int argc, char *argv[])
 
 	// Setup arguments
 	vars::argv = copy_argv(argc, argv);
-
 	
 	for (auto const& it : txt2sig)
 		// Setup signal handlers

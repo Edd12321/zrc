@@ -89,10 +89,10 @@ namespace line_edit
 	static inline void cmd(std::string& buf)
 	{
 		std::vector<std::string> vec;
-		for (auto const& it : hctable)
+		for (auto const& it : !hctable.empty() ? hctable : pathwalk())
 			if (!it.first.rfind(buf, 0))
-				vec.emplace_back(it.first);
-
+				vec.emplace_back(basename(it.first.c_str()));
+					
 		for (auto const& j : functions)
 			if (!j.first.rfind(buf, 0))
 				vec.emplace_back(j.first);

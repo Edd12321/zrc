@@ -96,6 +96,7 @@ struct new_fd {
 int FD_MAX, new_fd::fdcount;
 
 // MAIN.CPP
+std::unordered_map<std::string, std::string> pathwalk();
 bool source(std::string const&);
 static inline std::string eval(std::string const&);
 static inline void eval_stream(std::istream&);

@@ -171,7 +171,7 @@ struct zrc_fun {
 	zrc_fun()=default;
 	zrc_fun(std::string const& b) : body(b) {}
 
-	zrc_obj operator()(int argc, char *argv[])
+	inline zrc_obj operator()(int argc, char *argv[])
 	{
 		zrc_obj argc_old = vars::argc;
 		zrc_arr argv_old = vars::argv;
@@ -288,27 +288,11 @@ END
 
 // Refresh internal hash table
 COMMAND(rehash,)
-	std::istringstream iss{getvar(PATH)};
-	std::string tmp;
-	hctable.clear();
-
-	while (getline(iss, tmp, ':')) {
-		struct dirent *entry;
-		struct stat sb;
-
-		DIR *d = opendir(tmp.c_str());
-		if (d) {
-			while ((entry = readdir(d))) {
-				char *nm = entry->d_name;
-				char nm2[PATH_MAX];
-				sprintf(nm2, "%s/%s", tmp.c_str(), nm);
-				if (hctable.find(nm) == hctable.end() && !stat(nm2, &sb) && sb.st_mode & S_IXUSR) {
-					hctable[nm] = nm2;
-					std::cout << "Added " << nm << " (" << nm2 << ")\n";
-				}
-			}
-		}
-		closedir(d);
+	for (auto const& file : pathwalk()) {
+		auto full = file.second;
+		auto name = basename(file.first.data());
+		hctable[name] = full;
+		std::cout << "Added " << name << " (" << full << ")\n";
 	}
 END
 

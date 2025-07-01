@@ -110,7 +110,7 @@ fn main {
 	echo -n "What difficulty? (0-2) "
 	read d
 
-	rlimit [expr {$m*10}]M #generous memory for any game of minesweeper...
+	rlimit [expr {$m*30}]M #generous memory for any game of minesweeper...
 	set x_pos = 0 y_pos = 0
 
 	stty raw

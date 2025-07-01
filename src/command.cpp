@@ -6,6 +6,7 @@
 #include <math.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -90,52 +91,6 @@ _syn_error_redir:
 	return 0;
 }
 
-/** Check if a command is a builtin or function.
- *
- * @param {int}argc,{char**}argv
- * @return bool
- */
-bool builtin_check(int argc, char *argv[])
-{
-	auto largv = argv[argc];
-	argv[argc] = nullptr;
-
-#define TRY_BUILTIN_FROM(thing)                        \
-	if (thing.find(argv[0]) != thing.end()) {          \
-		vars::status = thing.at(argv[0])(argc, argv);  \
-		/* Don't forget to flush buffers */            \
-		std::cout << std::flush;                       \
-		std::cerr << std::flush;                       \
-		return true;                                   \
-	}
-
-	TRY_BUILTIN_FROM(functions)
-	TRY_BUILTIN_FROM(builtins)
-	argv[argc] = largv;
-	return false;
-}
-
-/** Tcl-like `unknown` command
- *
- * @param {int}argc,{char**}argv
- * @return void
- */
-bool unknown_check(int argc, char *argv[])
-{
-	auto doesnt_exist = [](const char *fname) -> bool
-	{
-		struct stat buf;
-		return stat(fname, &buf);
-	};
-
-	if (!hctable.empty() && hctable.find(*argv) == hctable.end() && doesnt_exist(argv[0])
-	&& functions.find("unknown") != functions.end()) {
-		functions.at("unknown")(argc, argv);
-		return true;
-	}
-	return false;
-}
-
 /** Execute an external command (without forking)
  *
  * @param {int}argc,{char**}argv
@@ -167,12 +122,30 @@ void exec_extern(int argc, char *argv[])
  */
 void exec(int argc, char *argv[])
 {
-	if (!builtin_check(argc, argv)) {
-		pid_t pid = fork();
-		if (pid == 0)
-			exec_extern(argc, argv);
-		else
-			reaper(pid, WUNTRACED);
+	// If found function, run
+	if (functions.find(*argv) != functions.end())
+		vars::status = functions.at(*argv)(argc, argv);
+	// If found builtin, run
+	else if (builtins.find(*argv) != builtins.end())
+		vars::status = builtins.at(*argv)(argc, argv);
+	// Try to run as external
+	else {
+		auto const& map = !hctable.empty() ? hctable : pathwalk();
+		if (map.find(*argv) != map.end()) {
+			pid_t pid = fork();
+			if (pid == 0) {
+				execv(map.at(*argv).c_str(), argv);
+				perror(*argv);
+				_exit(127);
+			} else {
+				reaper(pid, WUNTRACED);
+			}
+		} else if (functions.find("unknown") != functions.end())
+			vars::status = functions.at("unknown")(argc, argv);
+		else {
+			perror(*argv);
+			vars::status = "127";
+		}
 	}
 }
 
@@ -254,11 +227,12 @@ public:
 
 	inline void add_arg(const char *str)
 	{
-		if (argc == argv.size()-1) {
+		if (argc == argv.size()-2) {
 			std::cerr << "Too many args!\n";
 			return;
 		} else {
 			argv[argc++] = strdup(str);
+			argv[argc] = NULL;
 		}
 	}
 };
@@ -412,76 +386,153 @@ inline void show_jobs()
 	}
 }
 
+
 /** Executes a pipeline.
  *
  * @param none
  * @return none
  */
+// !!! Beware of dragons !!!
 inline bool pipeline::execute_act()
 {
 	int input = STDIN_FILENO;
-	pid_t pgid = 0;
 	new_fd old_input(input);
-	std::vector<int> to_close;
-	size_t i;
-	for (i = 0; i < cmds.size()-1; ++i) {
+	int pgid = 0;
+
+	struct fd_closer_guard {
+		std::vector<int> v;
+		inline void cleanup()
+		{
+			for (auto const& fd : v)
+				close(fd);
+		}
+		~fd_closer_guard()
+		{
+			cleanup();
+		}
+	} to_close;
+
+	for (size_t i = 0; i < cmds.size() - 1; ++i) {
+		int argc = cmds[i].argc;
+		char **argv = cmds[i].argv.data();
 		int pd[2];
 		pipe(pd);
 
 		pid_t pid = fork();
 		if (pid == 0) {
 			setpgid(0, pgid);
-			dup2(input,  STDIN_FILENO); close(input);
+			dup2(input, STDIN_FILENO); close(input);
 			dup2(pd[1], STDOUT_FILENO); close(pd[1]);
 			close(pd[0]);
-
-			// Exec stuff happens here
-			if (!builtin_check(cmds[i].argc, cmds[i].argv.data())
-			&&  !unknown_check(cmds[i].argc, cmds[i].argv.data()))
-				exec_extern(cmds[i].argc, cmds[i].argv.data());
-			_exit(0);
+			// If found function, run (atoi used for no throw)
+			if (functions.find(*argv) != functions.end())
+				_exit(uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
+			// If found builtin, run
+			if (builtins.find(*argv) != builtins.end())
+				_exit(uint8_t(atoi(builtins.at(*argv)(argc, argv).c_str())));
+			// Try to run as external
+			auto const& map = !hctable.empty() ? hctable : pathwalk();
+			if (map.find(*argv) != map.end())
+				execv(map.at(*argv).c_str(), argv);
+			struct stat sb;
+			if (!stat(*argv, &sb))
+				execv(*argv, argv);
+			// If that failed, run as `unknown`
+			if (functions.find("unknown") != functions.end()) {
+				auto ret = functions.at("unknown")(argc, argv);
+				_exit(uint8_t(atoi(ret.c_str())));
+			}
 		} else {
 			if (!pgid)
 				pgid = pid;
 			close(pd[1]);
 			input = pd[0];
-			to_close.push_back(input);
+			to_close.v.push_back(input);
 		}
 	}
-	dup2(input, STDIN_FILENO);
-	// Last one! (ditto)
-	if (!builtin_check(cmds[i].argc, cmds[i].argv.data())
-	&&  !unknown_check(cmds[i].argc, cmds[i].argv.data())) {
-		pid_t pid = fork();
-		if (pid == 0) {
-			setpgid(0, pgid);
-			exec_extern(cmds[i].argc, cmds[i].argv.data());
-		} else {
-			if (!pgid)
-				pgid = pid;
-			setpgid(0, pgid);
-			
-			auto jid = add_job(*this, pmode, pgid);
-			if (this->pmode == ppl_proc_mode::FG) {
-				// Foreground jobs transfer the terminal control to the child
-				if (getpid() == tty_pid) {
-					tcsetpgrp(tty_fd, pgid);
-					reaper(pid, WUNTRACED);
-					tcsetpgrp(tty_fd, tty_pid);
-				} else
-					reaper(pid, WUNTRACED);	
+	if (input != STDIN_FILENO)
+		dup2(input, STDIN_FILENO);
+
+	// Last one!
+	int argc = cmds.back().argc;
+	char **argv = cmds.back().argv.data();
+	// This is literally the exec function but with extra stuff:
+
+	bool is_fun = functions.find(*argv) != functions.end();
+	bool is_builtin = builtins.find(*argv) != builtins.end();
+	// If found function and FG, run (for side effects in the shell)
+	if (this->pmode == ppl_proc_mode::FG && is_fun)
+		vars::status = functions.at(*argv)(argc, argv);
+	// If found builtin and FG, run (for side effects in the shell)
+	else if (this->pmode == ppl_proc_mode::FG && is_builtin)
+		vars::status = builtins.at(*argv)(argc, argv);
+	// Try to run as external/BG
+	else {
+		std::string full_path;
+		enum stuff_known {
+			IS_NOTHING,
+			IS_UNKNOWN,
+			IS_FUNCTION,
+			IS_BUILTIN,
+			IS_COMMAND_PATH,
+			IS_COMMAND_FILE,
+		} ok = IS_NOTHING;
+		if (is_fun)
+			ok = IS_FUNCTION;
+		else if (is_builtin)
+			ok = IS_BUILTIN;
+		else {
+			struct stat sb;
+			if (!stat(*argv, &sb))
+				ok = IS_COMMAND_FILE;
+			else {	
+				auto const& map = !hctable.empty() ? hctable : pathwalk();
+				if (map.find(*argv) != map.end()) {
+					ok = IS_COMMAND_PATH;
+					full_path = map.at(*argv);
+				} else if (functions.find("unknown") != functions.end())
+					ok = IS_UNKNOWN;
+			}
+		}
+		if (ok == IS_UNKNOWN && this->pmode == ppl_proc_mode::FG)
+			vars::status = functions.at("unknown")(argc, argv);
+		else {
+			pid_t pid = fork();
+			if (pid == 0) {
+				setpgid(0, pgid);
+				switch (ok) {
+					case IS_FUNCTION: _exit(uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
+					case IS_BUILTIN: _exit(uint8_t(atoi(builtins.at(*argv)(argc, argv).c_str())));
+					case IS_COMMAND_FILE: execv(*argv, argv); perror(*argv); _exit(127);
+					case IS_COMMAND_PATH: execv(full_path.c_str(), argv); perror(*argv); _exit(127);
+					case IS_UNKNOWN: _exit(uint8_t(atoi(functions.at("unknown")(argc, argv).c_str())));
+					case IS_NOTHING: perror(*argv); _exit(127);
+				}
 			} else {
-				if (interactive_sesh)
+				if (!pgid)
+					pgid = pid;
+				setpgid(pid, pgid);
+				auto jid = add_job(*this, pmode, pgid);
+				if (this->pmode == ppl_proc_mode::FG) {
+					// Foreground jobs transfer the terminal control to the child
+					if (getpid() == tty_pid) {
+						tcsetpgrp(tty_fd, pgid);
+						reaper(pid, WUNTRACED);
+						tcsetpgrp(tty_fd, tty_pid);
+					} else
+						reaper(pid, WUNTRACED);
+				} else if (interactive_sesh)
 					std::cerr << "[" << jid << "] " << jobs[jid].ppl << std::endl;
 			}
 		}
-	}
-	for (auto const& fd : to_close)
-		close(fd);
+	}	
+	to_close.cleanup();
 	dup2(old_input, STDIN_FILENO);
 	close(old_input);
 
-	return true; /* DUMMY */
+	std::cout << std::flush;
+	std::cerr << std::flush;
+	return true;
 }
 
 /* Ditto */
