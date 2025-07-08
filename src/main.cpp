@@ -238,25 +238,24 @@ int main(int argc, char *argv[])
 	new_fd tty_fd(STDOUT_FILENO);
 	::tty_fd = tty_fd;
 	setpgrp();
-	tcsetpgrp(0, 0);
+
+	// Shells have no buffering
+	std::cout << std::unitbuf;
+	std::cerr << std::unitbuf;
 
 	// Setup arguments
 	vars::argv = copy_argv(argc, argv);
-	
-	for (auto const& it : txt2sig)
-		// Setup signal handlers
-		if (it.second != SIGEXIT)
-			signal(it.second, [](int sig) {
-				for (auto const& it : txt2sig)
-					if (it.second == sig)
-						run_function(it.first);
-			});
-		// Atexit handler
-		else atexit([] { run_function("sigexit"); });
-	signal(SIGTTOU, SIG_IGN);
-	signal(SIGCHLD, [](int sig){ chld_notif = true; });
-
+	// Sighandlers
+	atexit([] { run_function("sigexit"); });	
+	signal(SIGCHLD, [](int sig) {
+		chld_notif = true;
+		run_function("sigchld");
+	});
 	if (argc == 1) {
+		tcsetpgrp(0, 0);
+		signal(SIGTTOU, SIG_IGN);
+		signal(SIGINT, [](int sig) { run_function("sigint"); });
+		signal(SIGTSTP, [](int sig) { run_function("sigtstp"); });
 		interactive_sesh = true;
 		auto pw = getpwuid(getuid());
 		std::string filename = pw->pw_dir;

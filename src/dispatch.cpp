@@ -312,8 +312,28 @@ COMMAND(fn, <name> [<w1> <w2>...])
 		// Function body
 		auto b = concat(argc, argv, 2);
 		functions[argv[1]] = zrc_fun(concat(argc, argv, 2));
+		if (txt2sig.find(argv[1]) != txt2sig.end()) {
+			std::string sig = argv[1]+3;
+			if (sig == "exit" || sig == "tstp" || sig == "int" || sig == "chld")
+				return vars::status; // this gets set in main()
+			signal(txt2sig.at(argv[1]), [](int sig) {
+				for (auto const& it : txt2sig) // signal(2) can't capture fun name
+					if (it.second == sig)
+						run_function(it.first);
+			});
+		}
 	} else if (argc == 2) {
 		functions.erase(argv[1]);
+		if (txt2sig.find(argv[1]) != txt2sig.end()) {
+			std::string sig = argv[1]+3;
+			if (sig == "exit" || sig == "tstp" || sig == "int" || sig == "chld")
+				return vars::status; // this gets set in main()
+			if (sig == "ttou" && interactive_sesh) {
+				signal(SIGTTOU, SIG_IGN); // ignore only sometimes
+				return vars::status;
+			}
+			signal(txt2sig.at(argv[1]), SIG_DFL);
+		}
 	} else SYNTAX_ERROR	
 END
 
@@ -602,7 +622,7 @@ COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...
 				n = expr(optarg);
 				break;
 			case 'p':
-				std::cout << optarg << std::flush;
+				std::cout << optarg;
 				break;
 			case 'f':
 				fd = expr(optarg);

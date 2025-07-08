@@ -321,7 +321,7 @@ void reaper(int who, int how)
 			}
 		}
 		if (jid < 0) continue;
-		if (getpid() == tty_pid)
+		if (getpid() == tty_pid && interactive_sesh)
 			tcsetpgrp(tty_fd, tty_pid);
 		if (WIFSTOPPED(status)) {
 			if (interactive_sesh)
@@ -412,6 +412,12 @@ inline bool pipeline::execute_act()
 		}
 	} to_close;
 
+	auto close_stuff = [&]()
+	{
+		for (; new_fd::fdcount > FD_MAX; --new_fd::fdcount)
+			close(new_fd::fdcount);
+	};
+
 	for (size_t i = 0; i < cmds.size() - 1; ++i) {
 		int argc = cmds[i].argc;
 		char **argv = cmds[i].argv.data();
@@ -424,6 +430,8 @@ inline bool pipeline::execute_act()
 			dup2(input, STDIN_FILENO); close(input);
 			dup2(pd[1], STDOUT_FILENO); close(pd[1]);
 			close(pd[0]);
+			close_stuff();
+
 			// If found function, run (atoi used for no throw)
 			if (functions.find(*argv) != functions.end())
 				_exit(uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
@@ -435,8 +443,10 @@ inline bool pipeline::execute_act()
 			if (map.find(*argv) != map.end())
 				execv(map.at(*argv).c_str(), argv);
 			struct stat sb;
-			if (!stat(*argv, &sb))
+			if (!stat(*argv, &sb)) {
+				close_stuff();
 				execv(*argv, argv);
+			}
 			// If that failed, run as `unknown`
 			if (functions.find("unknown") != functions.end()) {
 				auto ret = functions.at("unknown")(argc, argv);
@@ -500,6 +510,7 @@ inline bool pipeline::execute_act()
 			pid_t pid = fork();
 			if (pid == 0) {
 				setpgid(0, pgid);
+				close_stuff();
 				switch (ok) {
 					case IS_FUNCTION: _exit(uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
 					case IS_BUILTIN: _exit(uint8_t(atoi(builtins.at(*argv)(argc, argv).c_str())));
@@ -515,7 +526,7 @@ inline bool pipeline::execute_act()
 				auto jid = add_job(*this, pmode, pgid);
 				if (this->pmode == ppl_proc_mode::FG) {
 					// Foreground jobs transfer the terminal control to the child
-					if (getpid() == tty_pid) {
+					if (getpid() == tty_pid && interactive_sesh) {
 						tcsetpgrp(tty_fd, pgid);
 						reaper(pid, WUNTRACED);
 						tcsetpgrp(tty_fd, tty_pid);
@@ -529,9 +540,6 @@ inline bool pipeline::execute_act()
 	to_close.cleanup();
 	dup2(old_input, STDIN_FILENO);
 	close(old_input);
-
-	std::cout << std::flush;
-	std::cerr << std::flush;
 	return true;
 }
 
