@@ -325,7 +325,7 @@ void reaper(int who, int how)
 			tcsetpgrp(tty_fd, tty_pid);
 		if (WIFSTOPPED(status)) {
 			if (interactive_sesh)
-				std::cerr << "Stopped" << std::endl;
+				std::cerr << "[" << jid << "] Stopped" << std::endl;
 			break;
 		}
 		if (WIFSIGNALED(status)) {

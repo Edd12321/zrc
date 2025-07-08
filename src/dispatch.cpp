@@ -267,10 +267,10 @@ COMMAND(jobs,                 )  show_jobs()                                 END
     }                                            \
     kill(-getpgid(n), SIGCONT);                  \
     jobstate(p, z); y;                           \
-    if (getpid() == tty_pid)                     \
+    if (getpid() == tty_pid && interactive_sesh) \
        tcsetpgrp(tty_fd, tty_pid)                \
   END
-FGBG(1, fg, tcsetpgrp(tty_fd, getpgid(n)); reaper(n, WUNTRACED))
+FGBG(1, fg, if (interactive_sesh) tcsetpgrp(tty_fd, getpgid(n)); reaper(n, WUNTRACED))
 FGBG(0, bg,)
 
 // JID to PID
