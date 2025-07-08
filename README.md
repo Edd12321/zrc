@@ -80,7 +80,7 @@ git checkout legacy
 	- [X] Job manipulation
 	- [X] Background and foreground processes with `&`
 - [ ] Usable regular expressions
-    - [ ] Basic built-in regex support (`regexp`)
+    - [X] Basic built-in regex support (`regexp`)
     - [ ] More commandline options
     - [ ] `regcomp`
 - [ ] Pleasant interactive shell
