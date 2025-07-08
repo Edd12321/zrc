@@ -987,6 +987,48 @@ COMMAND(rlimit, <n>BKMGTPEZYg)
 		}
 END
 
+// Shift argv to the left
+COMMAND(shift, [<n>])
+	size_t howmuch = 1, len = vars::argv.size(), i;
+	if (argc > 2) SYNTAX_ERROR
+	if (argc == 2 && isnan(howmuch = expr(argv[1]))) SYNTAX_ERROR
+
+	if (howmuch >= len) {
+		vars::argv.clear();
+		return vars::argc = "0";
+	}
+	for (i = 0; i < len - howmuch; ++i) {
+		setvar("argv " + std::to_string(i),
+		getvar("argv " + std::to_string(i + howmuch)));
+		unsetvar("argv " + std::to_string(i + howmuch));
+	}
+	return vars::argc = std::to_string(len - howmuch);
+END
+
+// regex
+COMMAND(regexp, <reg> <txt> <var1> <var2...>)
+	if (argc < 4) SYNTAX_ERROR
+	regex_t rexp;
+	const char *pattern = argv[1], *txt = argv[2], *it = txt;
+	regmatch_t pmatch;
+	int k = 3;
+	if (regcomp(&rexp, pattern, REG_EXTENDED))
+		return "1";
+	std::string ret_val = "2";
+	while (!regexec(&rexp, it, 1, &pmatch, 0)) {
+		ret_val = "0";
+		if (k >= argc) {
+			regfree(&rexp);
+			return vars::status;
+		}
+		int start = pmatch.rm_so, end = pmatch.rm_eo, len = end - start;
+		setvar(argv[k++], std::string(it + start, len));
+		it += end;
+	}
+	regfree(&rexp);
+	return ret_val;
+END
+
 /****************************************
  *                                      *
  * Special data type manipulation cmds  *
