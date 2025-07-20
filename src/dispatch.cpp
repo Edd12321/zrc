@@ -95,19 +95,19 @@ bool in_func;
 class block_handler
 {
 private:
-	bool ok = false, *ref = &in_loop;
+	bool ok = false, &ref = in_loop;
 public:
-	block_handler(bool *ref)
+	block_handler(bool& ref)
 	{
 		this->ref = ref;
-		if (!*ref)
+		if (!ref)
 			ok = true;
-		*ref = true;
+		ref = true;
 	}
 	~block_handler()
 	{
 		if (ok)
-			*ref = false;
+			ref = false;
 	}
 };
 
@@ -177,7 +177,7 @@ struct zrc_fun {
 		zrc_arr argv_old = vars::argv;
 		vars::argv = copy_argv(argc, argv);
 		vars::argc = numtos(argc);
-		block_handler fh(&in_func);
+		block_handler fh(in_func);
 		try { eval(body); } catch (return_handler ex) {}
 		vars::argc = argc_old;
 		vars::argv = argv_old;
@@ -218,7 +218,7 @@ CTRLFLOW_HELPER(func,   return,[<val>],
 #define WHILE_HELPER(x)             \
   COMMAND(x, <expr> <eoe>)          \
     if (argc < 3) SYNTAX_ERROR      \
-    block_handler lh(&in_loop);     \
+    block_handler lh(in_loop);      \
   _repeat_while:                    \
     try {                           \
       if (argc == 3)                \
@@ -410,7 +410,7 @@ END
 // For loops
 COMMAND(for, <eval> <expr> <eval> <eoe>)
 	if (argc < 5) SYNTAX_ERROR
-	block_handler bh(&in_loop);
+	block_handler bh(in_loop);
 	auto old_stmt = argv[1];
 _repeat_for:
 	try {
@@ -431,7 +431,7 @@ COMMAND(do, <eoe> while|until <expr>...)
 	bool u = !strcmp(argv[argc-2], "until");
 	if (!w && !u) SYNTAX_ERROR
 
-	block_handler bh(&in_loop);
+	block_handler bh(in_loop);
 _repeat_do:
 	try {
 		if (w) do { eoe(argc-2, argv, 1); } while (expr(argv[argc-1]));
@@ -498,7 +498,7 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 		return "1";
 	}
 
-	block_handler sh(&in_switch);
+	block_handler sh(in_switch);
 	len = vec.size();
 	bool fell = false, ran_once = true;
 	// Try to evaluate
@@ -549,7 +549,7 @@ END
 // For-each loop
 COMMAND(foreach, <var> <var-list> <eoe>)
 	if (argc < 4) SYNTAX_ERROR
-	block_handler lh(&in_loop);
+	block_handler lh(in_loop);
 	auto vlst = lex(argv[2], SPLIT_WORDS).elems;
 	auto it = vlst.begin();
 _repeat_foreach:
