@@ -39,7 +39,7 @@ ln                          return LN;
 sqrt                        return SQRT;
 sin                         return SIN;
 cos                         return COS;
-ctg                         return CTG;
+ctg|cot                     return CTG;
 tg|tan                      return TG;
 sec                         return SEC;
 csc|cosec                   return CSC;

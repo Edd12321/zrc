@@ -20,7 +20,7 @@ fn plot {
 	let {x y} {
 		set x = ${argv 1}
 		set y = ${argv 2}
-		if {$x > $XMAX || $x < $XMIN || $y > $XMAX || $Y < $YMIN} {
+		if {$x > $XMAX || $x < $XMIN || $y > $YMAX || $Y < $YMIN} {
 			return -1}
 		# >> graph.dat echo x=$x,y=$y, [expr {$Y-$y}],[expr {$X+$x}]
 		set {grid [expr {$Y-$y}],[expr {$X+$x}]} = '*'

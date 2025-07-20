@@ -1,7 +1,7 @@
 #include <string>
 #include <unordered_map>
 
-#define ZVERSION         "zrc v2.2"         /* Version string */
+#define ZVERSION         "zrc v2.3 staging" /* Version string */
 #define ZCONF            ".zrc"             /* Configuration file */
 #define ZHIST            ".zrc_history"     /* History file */
 #define DEFAULT_PPROMPT  "zrc% "            /* Defualt primary prompt */
