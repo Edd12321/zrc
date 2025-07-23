@@ -97,7 +97,7 @@ int FD_MAX, new_fd::fdcount;
 
 // MAIN.CPP
 std::unordered_map<std::string, std::string> pathwalk();
-bool source(std::string const&);
+bool source(std::string const&, bool err = true);
 static inline std::string eval(std::string const&);
 static inline void eval_stream(std::istream&);
 zrc_arr copy_argv(int, char**);

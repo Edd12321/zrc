@@ -24,11 +24,12 @@
  * @param {std::string const&}str
  * @return none
  */
-bool source(std::string const& str)
+bool source(std::string const& str, bool err/* = true */)
 {
 	std::ifstream f(str);
 	if (!f) {
-		perror(str.c_str());
+		if (err)
+			perror(str.c_str());
 		return false;
 	} else {
 		eval_stream(f);
@@ -260,7 +261,7 @@ int main(int argc, char *argv[])
 		auto pw = getpwuid(getuid());
 		std::string filename = pw->pw_dir;
 		filename += "/" ZCONF;
-		source(filename);
+		source(filename, false);
 		eval_stream(std::cin);
 	} else {
 		if (!strcmp(argv[1], "--version")) version();

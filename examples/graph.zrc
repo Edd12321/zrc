@@ -5,9 +5,9 @@
 # Code translated from C to Zrc from:   #
 # https://c-for-dummies.com/blog/?p=831 #
 #########################################
-set LIM    = 3.14159
-set WIDTH  = 120
-set HEIGHT = 40
+set HEIGHT = [expr {`{tput lines} - 2}]
+set WIDTH  = `{tput cols}
+set LIM    = $WIDTH # 3.14159
 set X      = [expr {$WIDTH>>1}]
 set Y      = [expr {$HEIGHT>>1}]
 set XMAX   = [expr {$WIDTH-$X-1}]
@@ -20,7 +20,7 @@ fn plot {
 	let {x y} {
 		set x = ${argv 1}
 		set y = ${argv 2}
-		if {$x > $XMAX || $x < $XMIN || $y > $YMAX || $Y < $YMIN} {
+		if {$x > $XMAX || $x < $XMIN || $y > $YMAX || $y < $YMIN} {
 			return -1}
 		# >> graph.dat echo x=$x,y=$y, [expr {$Y-$y}],[expr {$X+$x}]
 		set {grid [expr {$Y-$y}],[expr {$X+$x}]} = '*'
@@ -55,6 +55,7 @@ fn show_grid {
 }
 
 fn main {
+	clear
 	read -p 'Which function/expression to graph? (sin(x),cos(x),etc.) ' func_old
 	set func_old = [subst $func_old]
 	if {[>&- 2 $func_old] != 127} {
