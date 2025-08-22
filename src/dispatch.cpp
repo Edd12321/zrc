@@ -1037,6 +1037,7 @@ END
 
 // Strings
 COMMAND(str, <s> > | >= | == | != | <=> | <= | < <p> \n
+             <s> len \n
              <s> <ind> \n
              <s> + <ptr> \n
              <s> <r1> <r2> \n
