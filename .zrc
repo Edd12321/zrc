@@ -44,6 +44,7 @@ bindkey -c "\ct"  { $TERMINAL & }
 bindkey -c "\cf"  { doublecmd & }
 bindkey -c "\cft" { thunar & }
 
+set __use_lsd = 0
 fn enable_lsd {
 	if {!($__use_lsd) && ![>&- 2 >&- which lsd]} {
 		alias l "lsd -hF"

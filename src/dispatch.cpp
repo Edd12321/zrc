@@ -92,6 +92,8 @@ bool in_loop;
 bool in_switch;
 bool in_func;
 
+volatile sig_atomic_t chld_notif;
+
 class block_handler
 {
 private:
@@ -314,7 +316,7 @@ COMMAND(fn, <name> [<w1> <w2>...])
 		functions[argv[1]] = zrc_fun(concat(argc, argv, 2));
 		if (txt2sig.find(argv[1]) != txt2sig.end()) {
 			std::string sig = argv[1]+3;
-			if (sig == "exit" || sig == "tstp" || sig == "int" || sig == "chld")
+			if (sig == "exit" || sig == "chld" || interactive_sesh && (sig == "int" || sig == "tstp"))
 				return vars::status; // this gets set in main()
 			signal(txt2sig.at(argv[1]), [](int sig) {
 				for (auto const& it : txt2sig) // signal(2) can't capture fun name
@@ -326,13 +328,12 @@ COMMAND(fn, <name> [<w1> <w2>...])
 		functions.erase(argv[1]);
 		if (txt2sig.find(argv[1]) != txt2sig.end()) {
 			std::string sig = argv[1]+3;
-			if (sig == "exit" || sig == "tstp" || sig == "int" || sig == "chld")
+			if (sig == "exit" || sig == "chld" || interactive_sesh && (sig == "int" || sig == "tstp"))
 				return vars::status; // this gets set in main()
-			if (sig == "ttou" && interactive_sesh) {
+			else if (sig == "ttou" && interactive_sesh)
 				signal(SIGTTOU, SIG_IGN); // ignore only sometimes
-				return vars::status;
-			}
-			signal(txt2sig.at(argv[1]), SIG_DFL);
+			else signal(txt2sig.at(argv[1]), SIG_DFL);
+			return vars::status;
 		}
 	} else SYNTAX_ERROR	
 END

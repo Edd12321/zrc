@@ -13,7 +13,8 @@
 #include <array>
 #include <functional>
 #include <vector>
-volatile sig_atomic_t chld_notif;
+// volatile sig_atomic_t chld_notif;
+// in dispatch.cpp now
 
 /** Check if a file descriptor is valid
  *
