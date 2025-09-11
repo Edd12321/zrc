@@ -338,6 +338,18 @@ COMMAND(fn, <name> [<w1> <w2>...])
 	} else SYNTAX_ERROR	
 END
 
+// Lambda functions
+COMMAND(apply, <eval> [<w1> <w2>...])
+	if (argc < 2) SYNTAX_ERROR
+	auto f = zrc_fun(argv[1]);
+	char *old_arg = argv[1];
+	static char new_arg[] = "<lambda>";
+	argv[1] = new_arg;
+	try { f(argc-1, argv+1); } catch (...) { argv[1] = old_arg; throw; }
+	argv[1] = old_arg;
+END
+
+// Close shell with message and exit status 1
 COMMAND(die, [<w1> <w2>...])
 	std::cerr << concat(argc, argv, 1) << std::endl;
 	exit(EXIT_FAILURE)
