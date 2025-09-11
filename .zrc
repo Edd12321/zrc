@@ -1,4 +1,6 @@
 #!/usr/bin/env zrc
+# My personal config (~/.zrc)
+# Beware of envvars, stuff that you might not want, etc.
 echo "Welcome to Zrc!"
 echo "The time is: `{date}"
 
@@ -61,6 +63,7 @@ fn enable_lsd {
 
 fn soundchk { timeout 0.15 aplay /dev/random }
 fn life { ffplay -f lavfi -i life }
+fn xkcd { $BROWSER https://xkcd.com/${argv 1}}
 
 # Aliases
 enable_lsd
@@ -142,9 +145,10 @@ fn expvar {
 	set ${argv 1} = ${argv 2}
 	export ${argv 1}
 }
-expvar AUTH   doas
-expvar CDPATH $CDPATH:$HOME
-expvar PATH   /usr/lib/zrc/bin:$HOME/.local/bin:$PATH
-expvar PAGER  most
+expvar AUTH    doas
+expvar CDPATH  $CDPATH:$HOME
+expvar PATH    /usr/lib/zrc/bin:$HOME/.local/bin:$PATH
+expvar PAGER   most
+expvar BROWSER firefox
 
 > /dev/null rehash

@@ -343,8 +343,7 @@ COMMAND(apply, <eval> [<w1> <w2>...])
 	if (argc < 2) SYNTAX_ERROR
 	auto f = zrc_fun(argv[1]);
 	char *old_arg = argv[1];
-	static char new_arg[] = "<lambda>";
-	argv[1] = new_arg;
+	argv[1] = LAM_STR;
 	try { f(argc-1, argv+1); } catch (...) { argv[1] = old_arg; throw; }
 	argv[1] = old_arg;
 END
@@ -767,7 +766,7 @@ COMMAND(echo, [<w1> <w2>...])
 END
 
 // Assign to a list of variables
-COMMAND(set, < <var> [bin-op]= <val> >...)
+COMMAND(set, < <var> [<bin-op>]= <val> >...)
 	if ((argc-1) % 3 != 0) SYNTAX_ERROR
 	zrc_obj lret;
 	for (int i = 2; i < argc; i += 3) {
@@ -1054,7 +1053,6 @@ COMMAND(str, <s> > | >= | == | != | <=> | <= | < <p> \n
              <s> <ind> \n
              <s> + <ptr> \n
              <s> <r1> <r2> \n
-             <s> <r1> <r2> \n
              <s> <ind> = <c> \n
              <s> - <ind1> <ind2>...)
 
@@ -1209,7 +1207,10 @@ COMMAND(list, new <w1> <w2> ... \n
               <i> <l> \n
               <i> = <val> <l> \n
               <i> += <val> <l> \n
-              += <val> <l>)
+              += <val> <l> \n
+              map <lambda> <l> \n
+              filter <lambda> <l> \n
+              reduce <lambda> <l>)
 
 	if (argc < 3) SYNTAX_ERROR
 	
@@ -1219,14 +1220,50 @@ COMMAND(list, new <w1> <w2> ... \n
 	auto wlst = lex(argv[argc-1], SPLIT_WORDS).elems;
 	
 	// Append element
-	if (argc == 3 && !strcmp(argv[1], "+=")) { wlst.push_back(argv[2]); return list(wlst); }
+	if (argc == 4 && !strcmp(argv[1], "+=")) { wlst.push_back(argv[2]); return list(wlst); }
 	// Get list length
 	if (argc == 3 && !strcmp(argv[1], "len")) return numtos(wlst.size());
 	
+	// Lambda stuf
+	if (argc == 4 && !strcmp(argv[1], "map")) {
+		zrc_fun f(argv[2]);
+		for (auto& it : wlst) {
+			// Very very careful
+			std::string str = it;
+			it = f(2, (char*[]){LAM_STR, &str[0]});
+		}
+		return list(wlst);
+	}
+	if (argc == 4 && !strcmp(argv[1], "filter")) {
+		zrc_fun f(argv[2]);
+		for (size_t i = 0; i < wlst.size(); ++i) {
+			std::string str = wlst[i];
+			auto e = expr(f(2, (char*[]){LAM_STR, &str[0]}));
+			if (isnan(e) || !e)
+				wlst.erase(wlst.begin() + i--);
+		}
+		return list(wlst);
+	}
+	if (argc == 4 && !strcmp(argv[1], "reduce")) {
+		while (wlst.size() < 2) {
+			token tok;
+			tok.parts.push_back({substit::type::PLAIN_TEXT, ""});
+			wlst.push_back(tok);
+		}
+		zrc_fun f(argv[2]);
+		std::string s1 = wlst[0], s2 = wlst[1];
+		zrc_obj ret_val = f(3, (char*[]){LAM_STR, &s1[0], &s2[0]});
+		for (size_t i = 2; i < wlst.size(); ++i) {
+			std::string str = wlst[i];
+			ret_val = f(3, (char*[]){LAM_STR, &ret_val[0], &str[0]});
+		}
+		return ret_val;
+	}
+
 	auto i = expr(argv[1]);
 	if (isnan(i) || i < 0 || i >= wlst.size())
 		SYNTAX_ERROR
-	
+
 	// Get element at index
 	if (argc == 3) return wlst[i];
 	// Set element at inde

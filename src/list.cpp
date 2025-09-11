@@ -16,15 +16,23 @@ zrc_obj list(int argc, char *argv[])
 			}
 		if (contains_space)
 			ret += '\'';
+		if (!argv[i][0])
+			ret += "\'\'";
 		for (int j = 0, c; (c = argv[i][j]); ++j) {
 			switch (c) {
+				case  '<':
+					if (argv[i][j+1] == '{')
+						ret += '\\';
+					ret += c;
+					break;
+
 				case  '[': /* FALLTHROUGH */
 				case  '$': /* FALLTHROUGH */
 				case  '`': /* FALLTHROUGH */
 				case '\'': /* FALLTHROUGH */ 
 				case '\\':
 					ret += '\\';
-			
+
 				default:
 					ret += c;
 			}
@@ -42,8 +50,10 @@ zrc_obj list(std::vector<token>& vec)
 {
 	char **argv = new char*[vec.size()];
 	for (size_t i = 0; i < vec.size(); ++i)
-		argv[i] = &std::string(vec[i])[0];
+		argv[i] = strdup(std::string(vec[i]).data());
 	auto ret = list(vec.size(), argv);
+	for (size_t i = 0; i < vec.size(); ++i)
+		free(argv[i]);
 	delete [] argv;
 	return ret;
 }
