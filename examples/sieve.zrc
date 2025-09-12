@@ -1,0 +1,37 @@
+#!../bin/zrc
+
+fn sieve {
+	set n = ${argv 1}
+	set x = [expr {sqrt($n)}]
+	echo Sieve of Eratosthenes ($x rows)
+
+	for {set i = 1} {$i <= $n} {inc i} {
+		set {prime $i} = true
+	}
+
+	for {set p = 2} {$p <= $x} {inc p} {
+		if {${prime $p}} {
+			for {set i = [expr {$p*$p}]} {$i <= $n} {inc i $p} {
+				set {prime $i} = false
+			}
+		}
+	}
+
+	# Display the numbers
+	for {set p = 2} {$p <= $n} {inc p} {
+		if {${prime $p}} {
+			set ansi = \e\[0\;31m
+		} else if {$p == 42} {
+			set ansi = \e\[0\;32m
+		} else set ansi = \e\[0m
+		printf %b%4d $ansi $p
+		if {$p % $x == 0} echo
+	}
+}
+
+fn main {
+	> /dev/null rehash
+	clear
+	sieve 900
+	return 0
+}; main

@@ -1,0 +1,42 @@
+#!../bin/zrc
+arr d_lin := { -1  0 1 0 }
+arr d_col := {  0 -1 0 1 }
+
+fn Fill {
+	let {i j v k} {
+		set i = ${argv 1} \
+		    j = ${argv 2} \
+		    v = ${argv 3}
+		if {$i>=1 && $i<=$n && $j>=1 && $j<=$m && [str ${A $i,$j} == 0]} {
+			set {A $i,$j} = $v
+			for {set k = 0} {$k < 4} {inc k} {
+				Fill [expr {$i+${d_lin $k}}] [expr {$j+${d_col $k}}] $v
+			}
+		}
+	}
+}
+
+fn main {
+	arr A = {
+		1,1 1   1,2 0   1,3 0   1,4 1   1,5 1   1,6 0   1,7 0
+		2,1 1   2,2 1   2,3 0   2,4 1   2,5 0   2,6 1   2,7 0
+		3,1 0   3,2 0   3,3 0   3,4 0   3,5 0   3,6 0   3,7 0
+		4,1 1   4,2 1   4,3 1   4,4 0   4,5 1   4,6 1   4,7 1
+		5,1 0   5,2 0   5,3 0   5,4 1   5,5 1   5,6 0   5,7 1
+		6,1 0   6,2 0   6,3 0   6,4 1   6,5 1   6,6 0   6,7 0
+	}
+
+	set n = 6 m = 7
+	Fill 3 4 2
+
+	for {set i = 1} {$i <= $n} {inc i} {
+		for {set j = 1} {$j <= $m} {inc j} {
+			switch ${A $i,$j} {
+				case 0 { printf '  ' }
+				case 1 { printf '##' }
+				case 2 { printf '██' }
+			}
+		}
+		printf \n
+	}
+}; main

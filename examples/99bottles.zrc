@@ -1,0 +1,9 @@
+#!../bin/zrc
+set bot = 99
+do {
+	echo $bot bottles of beer on the wall,
+	echo $bot bottles of beer!
+	echo You take one down, pass it around,
+	echo [inc bot -1] bottles of beer on the wall!\n
+} while {$bot > 1}
+echo 1 bottle of beer on the wall,\n1 bottle of beer!\nYou take it down, pass it around,\nNo more bottles of beer!

@@ -1,0 +1,17 @@
+#!../bin/zrc
+set L1 = [list new {*}`{seq 1 10}]
+
+set L2 = [list filter {
+	expr {${argv 1} % 2}
+} $L1]
+
+set L3 = [list map {
+	chr [expr {${argv 1} + [ord 'a'] - 1}]
+} $L2]
+
+set L4 = [list reduce {
+	expr {${argv 1} + ${argv 2}}
+} $L1]
+
+echo $L1 -(filter)-> $L2 -(map)-> $L3
+echo $L1 -(reduce)-> $L4
