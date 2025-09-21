@@ -30,16 +30,54 @@
 #define unless(x) if (!(x))
 
 #undef END
-// Easier command declararions
-#if defined(__GLIBC__) && !defined(__UCLIBC__)
-	#define OPTIND_RESET 0
-#else
-	#define OPTIND_RESET 1
+
+// To reuse getopt inside a builtin, without affecting external state
+class getopt_guard
+{
+private:
+	int saved_optind = 1, saved_opterr = 1, saved_optopt = 0;
+	char *saved_optarg = nullptr;
+#ifdef HAVE_OPTRESET
+	int saved_optreset = 0;
 #endif
+public:
+	getopt_guard(int new_opterr = 1)
+	{
+		// Get all the original ones
+		saved_optind = optind;
+		saved_opterr = opterr;
+		saved_optopt = optopt;
+		saved_optarg = optarg;
+#ifdef HAVE_OPTRESET
+		saved_optreset = optreset;
+		optreset = 1;
+#endif
+
+#ifdef __GLIBC__
+		optind = 0;
+#else
+		optind = 1;
+#endif
+		optarg = nullptr;
+		opterr = new_opterr;
+		optopt = 0;
+	}
+
+	~getopt_guard()
+	{
+		optind = saved_optind;
+		opterr = saved_opterr;
+		optopt = saved_optopt;
+		optarg = saved_optarg;
+#ifdef HAVE_OPTRESET
+		optreset = saved_optreset;
+#endif
+	}
+};
 
 std::unordered_map<std::string, std::string> help_strs;
 #define COMMAND(x, help_str) { (help_strs[#x] = #help_str, #x),  [](int argc, char *argv[]) -> zrc_obj {\
-	int opt; optind = OPTIND_RESET; auto const& help = #help_str; \
+	auto const& help = #help_str; \
 
 #define END ; return vars::status;} },
 
@@ -624,7 +662,10 @@ END
 COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...])
 	auto delim = (char*)"\n";
 	int status = 2, n = -1, fd = STDIN_FILENO;
+	std::string prompt;
 
+	int opt;
+	getopt_guard gg;
 	while ((opt = getopt(argc, argv, "d:n:p:f:")) != -1) {
 		switch (opt) {
 			case 'd':
@@ -634,7 +675,7 @@ COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...
 				n = expr(optarg);
 				break;
 			case 'p':
-				std::cout << optarg;
+				prompt = optarg;
 				break;
 			case 'f':
 				fd = expr(optarg);
@@ -668,9 +709,11 @@ COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...
 	};
 
 	if (optind >= argc)
-		std::cout << read_str() << std::endl;
-	else for (; optind < argc; ++optind)
+		std::cout << prompt << read_str() << std::endl;
+	else for (; optind < argc; ++optind) {
+		std::cout << prompt;
 		setvar(argv[optind], read_str());
+	}
 	return numtos(status);
 END
 
@@ -793,6 +836,8 @@ END
 // Export one or more variables
 COMMAND(export, [-n] < <var1> <var2>...>)
 	bool nflag = false;
+	int opt;
+	getopt_guard gg;
 	while ((opt = getopt(argc, argv, "n")) != -1) {
 		switch (opt) {
 			case 'n': nflag = true; break;
@@ -812,8 +857,9 @@ END
 
 // Filename globbing
 COMMAND(glob, [-sb?t?] <patterns...>)
+	getopt_guard gg;
 	char flags[4] = "s";
-	int g_flags = GLOB_NOSORT;
+	int opt, g_flags = GLOB_NOSORT;
 	// If your stdlib doesn't use GNU extensions,
 	// then I guess that means no tilde exp for you.
 #ifdef GLOB_BRACE
