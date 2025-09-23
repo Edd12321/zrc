@@ -111,7 +111,7 @@ static inline std::string setvar(std::string const& key, zrc_obj const& val)
 		else if (getenv(var.c_str()))
 			setenv(var.c_str(), val.c_str(), 1);
 		else
-			vmap[wlst[0]] = val;
+			vmap[var] = val;
 
 	// Try to set an array key
 	} else {
