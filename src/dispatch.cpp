@@ -213,14 +213,15 @@ struct zrc_fun {
 
 	inline zrc_obj operator()(int argc, char *argv[])
 	{
-		zrc_obj argc_old = vars::argc;
-		zrc_arr argv_old = vars::argv;
-		vars::argv = copy_argv(argc, argv);
-		vars::argc = numtos(argc);
+		// User-facing and internal argc/v are different
+		zrc_obj zargc_old = vars::argc; int argc_old = ::argc;
+		zrc_arr zargv_old = vars::argv; char **argv_old = ::argv;
+		vars::argv = copy_argv(argc, argv); ::argv = argv;
+		vars::argc = numtos(argc); ::argc = argc;
 		block_handler fh(in_func);
 		try { eval(body); } catch (return_handler ex) {}
-		vars::argc = argc_old;
-		vars::argv = argv_old;
+		vars::argc = zargc_old; ::argc = argc_old;
+		vars::argv = zargv_old; ::argv = argv_old;
 
 		// Don't forget
 		return vars::status;
@@ -293,6 +294,28 @@ COMMAND(.,      [<w1> <w2>...])  source(concat(argc, argv, 1))               END
 COMMAND(unhash,               )  hctable.clear()                             END
 // Display internal job table
 COMMAND(jobs,                 )  show_jobs()                                 END
+
+// Bash-style getopts
+COMMAND(getopts, <opt> <var>)
+	if (argc != 3) SYNTAX_ERROR
+
+	auto s_opterr = getvar("opterr");
+	if (s_opterr.empty())
+		setvar("opterr", std::to_string(opterr));
+	else opterr = stonum(s_opterr);
+	
+	auto s_optind = getvar("optind");
+	if (s_optind.empty())
+		setvar("optind", std::to_string(optind));
+	else optind = stonum(s_optind);
+	
+	int opt = getopt(::argc, ::argv, argv[1]);
+	setvar(argv[2], opt != -1 ? std::string(1, opt) : "");
+	setvar("optarg", optarg ? optarg : "");
+	setvar("optind", std::to_string(optind));
+
+	return opt != -1 ? std::to_string(opt) : "false";
+END
 
 // Foreground/background tasks
 #define FGBG(z, x, y)                            \
@@ -1077,14 +1100,18 @@ END
 
 // Shift argv to the left
 COMMAND(shift, [<n>])
-	zrc_num howmuch = 1, len = vars::argv.size(), i;
+	long howmuch, len = vars::argv.size(), i;
+	zrc_num x = 1;
 	if (argc > 2) SYNTAX_ERROR
-	if (argc == 2 && isnan(howmuch = expr(argv[1]))) SYNTAX_ERROR
+	if (argc == 2 && isnan(x = expr(argv[1]))) SYNTAX_ERROR
+	howmuch = x;
 
 	if (howmuch >= len) {
 		vars::argv.clear();
 		return vars::argc = "0";
+		::argv += argc, ::argc = 0;
 	}
+	::argv += howmuch, ::argc -= howmuch;
 	for (i = 0; i < len - howmuch; ++i) {
 		setvar("argv " + std::to_string(i),
 		getvar("argv " + std::to_string(i + howmuch)));

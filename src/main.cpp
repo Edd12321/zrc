@@ -9,6 +9,7 @@
 #include <iostream>
 #include <string>
 
+int argc; char **argv;
 #include "globals.hpp"
 #include "config.hpp"
 
@@ -224,7 +225,6 @@ static inline void version()
 int main(int argc, char *argv[])
 {
 	std::ios_base::sync_with_stdio(false);
-
 	// It's over 9000! (not really)
 	struct rlimit rlim;
 	if (getrlimit(RLIMIT_NOFILE, &rlim) < 0)
@@ -245,7 +245,9 @@ int main(int argc, char *argv[])
 	std::cerr << std::unitbuf;
 
 	// Setup arguments
+	::argc = argc, ::argv = argv;
 	vars::argv = copy_argv(argc, argv);
+	
 	// Sighandlers
 	atexit([] { run_function("sigexit"); });	
 	signal(SIGCHLD, [](int sig) {

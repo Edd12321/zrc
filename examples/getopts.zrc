@@ -1,0 +1,29 @@
+#!/usr/lib/zrc/bin/zrc
+set nsecs = 0 tfnd = 0 flags = 0
+
+shift
+while {[getopts nt: opt]} {
+	switch $opt {
+		case 'n' {
+			set flags = 1
+		}
+		case 't' {
+			set nsecs = $optarg
+			set tfnd = 1
+		}
+		default { # '?'
+			die "Usage: ${argv 0} \[-t nsecs] \[-n] name"
+		}
+	}
+}
+
+echo "flags=$flags tfnd=$tfnd nsecs=$nsecs optind=$optind"
+if {$optind >= $argc} {
+	die "Expected argument after options"
+}
+
+echo "name argument = ${argv $optind}"
+
+# Other code omitted
+
+exit 0
