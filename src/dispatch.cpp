@@ -1128,7 +1128,7 @@ END
  ****************************************/
 
 // Strings
-COMMAND(str, <s> > | >= | == | != | <=> | <= | < <p> \n
+COMMAND(str, <s> > | >= | == | != | <\x3d> | <= | < <p> \n
              <s> len \n
              <s> <ind> \n
              <s> + <ptr> \n
@@ -1140,7 +1140,7 @@ COMMAND(str, <s> > | >= | == | != | <=> | <= | < <p> \n
 	// String comparisons
 	STROP(>, > 0) STROP(==, == 0) STROP(<=, <= 0)
 	STROP(<, < 0) STROP(!=, != 0) STROP(>=, >= 0)
-	STROP(<=>,)
+	STROP(<\x3d>,) // <=>, to make clang++ shut up
 
 	// Return string length
 	if (argc == 3 && !strcmp(argv[2], "len")) return numtos(strlen(argv[1]));

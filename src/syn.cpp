@@ -166,18 +166,20 @@ token_list lex(const char *p, lexer_flags flags)
 			case '"':
 				curr.bareword = false;
 				if (!quoted_single) quoted_double = !quoted_double; else text += *p;
-				if (!quoted_double)
+				if (!quoted_double) {
 					if (text.empty())
 						curr.add_part(text, TT::PLAIN_TEXT);
 					else add_remaining_txt();
+				}
 				break;
 			case '\'':
 				curr.bareword = false;
 				if (!quoted_double) quoted_single = !quoted_single; else text += *p;
-				if (!quoted_single)
+				if (!quoted_single) {
 					if (text.empty())
 						curr.add_part(text, TT::PLAIN_TEXT);
 					else add_remaining_txt();
+				}
 				break;
 
 			/*****************************
@@ -300,7 +302,7 @@ token_list lex(const char *p, lexer_flags flags)
 				else {
 					if (!text.empty())
 						add_remaining_txt();
-					for (; *p && *p != '\n'; ++p); --p;
+					for (; *p && *p != '\n'; ++p) {} --p;
 				}
 				break;
 
