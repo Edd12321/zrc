@@ -686,26 +686,43 @@ COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...
 	}
 	auto read_str = [&]()
 	{
-		std::string ret_val;
-		char c;
 		status = 2;
 		if (n < 0) {
+			std::string ret_val;
 			char c;
-			while (read(fd, &c, 1) == 1) {
-				status = 0;
-				if (strchr(delim, c))
+			for (;;) {
+				ssize_t r = read(fd, &c, 1);
+				if (r == 1) {
+					status = 0;
+					if (strchr(delim, c))
+						break;
+					ret_val += c;
+				} else if (r == 0) {
 					break;
-				ret_val += c;
+				} else{ // r == -1
+					if (errno == EINTR) continue;
+					perror("read");
+					break;
+				}
 			}
+			return ret_val;
 		} else {
-			char *s = new char[n+1];
-			if (read(fd, s, n) > 0)
+			if (n == 0)
+				return std::string();
+
+			std::string s;
+			s.resize(n);
+			ssize_t r = read(fd, &s[0], n);
+			if (r > 0) {
+				s.resize(r);
 				status = 0;
-			s[n] = '\0';
-			ret_val += s;
-			delete [] s;
+			} else {
+				s.clear();
+				if (r == -1)
+					perror("read");
+			}
+			return s;
 		}
-		return ret_val;
 	};
 
 	if (optind >= argc)
