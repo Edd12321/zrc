@@ -32,11 +32,11 @@ fn main {
 	for {set i = 1} {$i <= $n} {inc i} {
 		for {set j = 1} {$j <= $m} {inc j} {
 			switch ${A $i,$j} {
-				case 0 { printf '  ' }
-				case 1 { printf '##' }
-				case 2 { printf '██' }
+				case 0 { echo -n '  ' }
+				case 1 { echo -n '##' }
+				case 2 { echo -n '██' }
 			}
 		}
-		printf \n
+		echo
 	}
 }; main

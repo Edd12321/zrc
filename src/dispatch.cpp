@@ -329,8 +329,8 @@ END
 // Refresh internal hash table
 COMMAND(rehash,)
 	for (auto const& file : pathwalk()) {
-		auto full = file.second;
-		auto name = basename(file.first.data());
+		std::string path = file.first, full = file.second;
+		char *name = basename(&path[0]);
 		hctable[name] = full;
 		std::cout << "Added " << name << " (" << full << ")\n";
 	}
@@ -520,6 +520,7 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 	};
 	std::vector<switch_case> vec;
 	using SW = switch_case::switch_type;
+	std::string ret_val;
 
 	len = wlst.size();
 	// Parse
@@ -550,7 +551,7 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 
 	block_handler sh(in_switch);
 	len = vec.size();
-	bool fell = false, ran_once = true;
+	bool fell = false, ran_once = false;
 	// Try to evaluate
 	for (i = 0; i < len; ++i) {
 _repeat_switch:
@@ -591,6 +592,7 @@ _repeat_switch:
 		}
 	}
 	if (!ran_once) {
+		if (def == -1) return vars::status;
 		i = def;
 		goto _repeat_switch;
 	}
@@ -604,7 +606,7 @@ COMMAND(foreach, <var> <var-list> <eoe>)
 	auto it = vlst.begin();
 _repeat_foreach:
 	try {
-		for (auto it = vlst.begin(); it != vlst.end(); ++it) {
+		for (; it != vlst.end(); ++it) {
 			setvar(argv[1], *it);
 			eoe(argc, argv, 3);
 		}
@@ -694,7 +696,7 @@ COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...
 				ssize_t r = read(fd, &c, 1);
 				if (r == 1) {
 					status = 0;
-					if (strchr(delim, c))
+					if (strchr(delim, (unsigned char)c))
 						break;
 					ret_val += c;
 				} else if (r == 0) {
@@ -785,7 +787,12 @@ COMMAND(cd, [<dir>])
 
 	if (argc == 1) {
 		struct passwd *pw = getpwuid(getuid());
-		chdir(pw->pw_dir);
+		if (pw)
+			chdir(pw->pw_dir);
+		else {
+			std::cerr << "cd: could not find home dir!\n";
+			return "1";
+		}
 	} else {
 		if (argc != 2) SYNTAX_ERROR
 		if (!stat(argv[1], &sb) && S_ISDIR(sb.st_mode))
@@ -796,7 +803,7 @@ COMMAND(cd, [<dir>])
 				std::string tmp;
 				while (getline(iss, tmp, ':')) {
 					char t[PATH_MAX];
-					sprintf(t, "%s/%s", tmp.data(), argv[1]);
+					snprintf(t, sizeof t, "%s/%s", tmp.data(), argv[1]);
 					if (!stat(t, &sb) && S_ISDIR(sb.st_mode)) {
 						chdir(t);
 						return vars::status;
@@ -1010,6 +1017,10 @@ COMMAND(pushd, [<dir>])
 			return "3";
 		}
 		char *rp = realpath(argv[1], NULL);
+		if (!rp) {
+			perror("realpath");
+			return "2";
+		}
 		pstack.push(rp);
 		free(rp);
 	} else {
@@ -1045,13 +1056,15 @@ COMMAND(rlimit, <n>BKMGTPEZYg)
 	auto fd = strchr(cptr, lc);
 	argv[1][len] = '\0';
 
-	rlim_t memory;
+	zrc_num x;
+	if (!fd || isnan(x = expr(argv[1]))) SYNTAX_ERROR
+	
+	rlim_t memory = x;
 	struct rlimit rlm;
 
-	if (!fd || isnan(memory = expr(argv[1])))
-		SYNTAX_ERROR
-	
-	memory <<= (fd-cptr)*10;
+	int idx = fd-cptr;
+	if (idx < 0 || idx >= 8 * sizeof memory) SYNTAX_ERROR
+	memory <<= idx * 10;
 	if (!getrlimit(RLIMIT_STACK, &rlm))
 		if (rlm.rlim_cur < memory) {
 			rlm.rlim_cur = memory;
@@ -1064,7 +1077,7 @@ END
 
 // Shift argv to the left
 COMMAND(shift, [<n>])
-	size_t howmuch = 1, len = vars::argv.size(), i;
+	zrc_num howmuch = 1, len = vars::argv.size(), i;
 	if (argc > 2) SYNTAX_ERROR
 	if (argc == 2 && isnan(howmuch = expr(argv[1]))) SYNTAX_ERROR
 
@@ -1097,8 +1110,12 @@ COMMAND(regexp, <reg> <txt> <var1> <var2...>)
 			return vars::status;
 		}
 		int start = pmatch.rm_so, end = pmatch.rm_eo, len = end - start;
+		if (end == 0)
+			++it;
+		else it += end;
+		if (*it == '\0')
+			break;
 		setvar(argv[k++], std::string(it + start, len));
-		it += end;
 	}
 	regfree(&rexp);
 	return ret_val;
@@ -1121,7 +1138,7 @@ COMMAND(str, <s> > | >= | == | != | <=> | <= | < <p> \n
 
 #define STROP(x, op) if (argc == 4 && !strcmp(argv[2], #x)) return numtos(strcmp(argv[1], argv[3]) op);
 	// String comparisons
-	STROP(>, > 1) STROP(==, == 0) STROP(<=, <= 0)
+	STROP(>, > 0) STROP(==, == 0) STROP(<=, <= 0)
 	STROP(<, < 0) STROP(!=, != 0) STROP(>=, >= 0)
 	STROP(<=>,)
 
