@@ -247,6 +247,10 @@ int main(int argc, char *argv[])
 	// Setup arguments
 	::argc = argc, ::argv = argv;
 	vars::argv = copy_argv(argc, argv);
+
+	// Setup getopts stuff
+	setvar("opterr", std::to_string(opterr));
+	setvar("optind", std::to_string(optind));
 	
 	// Sighandlers
 	atexit([] { run_function("sigexit"); });	

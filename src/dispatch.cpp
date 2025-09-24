@@ -1,5 +1,6 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 
 #include <dirent.h>
@@ -7,9 +8,11 @@
 #include <limits.h>
 #include <math.h>
 #include <stdlib.h>
+#include <pwd.h>
 #include <string.h>
 #include <unistd.h>
 #include <regex.h>
+#include <glob.h>
 
 #include <algorithm>
 #include <functional>
@@ -256,22 +259,11 @@ CTRLFLOW_HELPER(func,   return,[<val>],
 )
 
 // Unless and while use a similar command.
-#define WHILE_HELPER(x)             \
-  COMMAND(x, <expr> <eoe>)          \
-    if (argc < 3) SYNTAX_ERROR      \
-    block_handler lh(in_loop);      \
-  _repeat_while:                    \
-    try {                           \
-      if (argc == 3)                \
-        x (expr(argv[1]))           \
-          eval(argv[2]);            \
-      else                          \
-        x (expr(argv[1]))           \
-          exec(argc-2, argv+2);     \
-    } catch (break_handler ex) {    \
-    } catch (continue_handler ex) { \
-      goto _repeat_while;           \
-    }                               \
+#define WHILE_HELPER(x)               \
+  COMMAND(x, <expr> <eoe>)            \
+    if(argc < 3) SYNTAX_ERROR         \
+    block_handler lh(in_loop);        \
+		x (expr(argv[1])) try { eoe(argc, argv, 2); } catch (break_handler ex) { break; } catch (continue_handler ex) { continue; } \
   END
 WHILE_HELPER(while)
 WHILE_HELPER(until)
@@ -484,17 +476,8 @@ END
 COMMAND(for, <eval> <expr> <eval> <eoe>)
 	if (argc < 5) SYNTAX_ERROR
 	block_handler bh(in_loop);
-	auto old_stmt = argv[1];
-_repeat_for:
-	try {
-		for (eval(argv[1]); expr(argv[2]); eval(argv[3]))
-			eoe(argc, argv, 4);
-	} catch (break_handler ex) {
-	} catch (continue_handler ex) {
-		argv[1] = argv[3];
-		goto _repeat_for;
-	}
-	argv[1] = old_stmt
+	for (eval(argv[1]); expr(argv[2]); eval(argv[3]))
+		try { eoe(argc, argv, 4); } catch (break_handler ex) { break; } catch (continue_handler ex) { continue; }
 END
 
 // Do/while and do/until
@@ -505,14 +488,14 @@ COMMAND(do, <eoe> while|until <expr>...)
 	if (!w && !u) SYNTAX_ERROR
 
 	block_handler bh(in_loop);
-_repeat_do:
-	try {
-		if (w) do { eoe(argc-2, argv, 1); } while (expr(argv[argc-1]));
-		if (u) do { eoe(argc-2, argv, 1); } until (expr(argv[argc-1]));
-	} catch (break_handler ex) {
-	} catch (continue_handler ex) {
-		if (w &&  expr(argv[argc-1])) goto _repeat_do;
-		if (u && !expr(argv[argc-1])) goto _repeat_do;
+	if (w) {
+		do {
+			try { eoe(argc-2, argv, 1); } catch (break_handler ex) { break; } catch (continue_handler ex) { continue; }
+		} while (expr(argv[argc-1]));
+	} else {
+		do {
+			try { eoe(argc-2, argv, 1); } catch (break_handler ex) { break; } catch (continue_handler ex) { continue; }
+		} until (expr(argv[argc-1]));
 	}
 END
 
@@ -532,7 +515,7 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 	
 	auto wlst = lex(argv[2], SPLIT_WORDS).elems;
 	auto txt = argv[1];
-	ssize_t i, len, def = -1;
+	ssize_t i, def = -1;
 
 	struct switch_case {
 		enum switch_type {
@@ -543,23 +526,22 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 	};
 	std::vector<switch_case> vec;
 	using SW = switch_case::switch_type;
-	std::string ret_val;
 
-	len = wlst.size();
+	size_t len = wlst.size();
 	// Parse
 	for (i = 0; i < len; ++i) {
 		std::string conv = wlst[i];
-		if (conv == "case" && i < len-2) {
+		if (conv == "case" && i+2 < len) {
 			vec.push_back({ SW::CASE, wlst[i+1], wlst[i+2] });
 			i += 2;
 			continue;
 		}
-		if (conv == "regex" && i < len-2) {
+		if (conv == "regex" && i+2 < len) {
 			vec.push_back({ SW::REGEX, wlst[i+1], wlst[i+2] });
 			i += 2;
 			continue;
 		}
-		if (conv == "default" && i < len-1) {
+		if (conv == "default" && i+1 < len) {
 			if (def != -1) {
 				std::cerr << "syntax error: Expected only one default block" << std::endl;
 				return "1";
@@ -573,52 +555,38 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 	}
 
 	block_handler sh(in_switch);
-	len = vec.size();
-	bool fell = false, ran_once = false;
+	bool fell = false;
 	// Try to evaluate
-	for (i = 0; i < len; ++i) {
-_repeat_switch:
-		try {
-			switch (vec[i].type) {
-				// case {word} {script}
-				case SW::CASE:
-					if (fell || vec[i].txt == txt) {
-						ran_once = true;
-						return eval(vec[i].block);
-					}
-					break;
+	for (auto const& it : vec) {
+		switch (it.type) {
+			case SW::CASE:
+				if (fell || txt == it.txt)
+					try { return eval(it.block); } catch (fallthrough_handler ex) { fell = true; continue; }
+				break;
 
-				// regex {regex} {script}
-				case SW::REGEX:
-					try {
-						if (fell || regex_match(txt, vec[i].txt)) {
-							ran_once = true;
-							return eval(vec[i].block);
-						}
-					} catch (regex_handler ex) {
-						std::cerr << "syntax error: Invalid regex " << list(vec[i].txt) << std::endl;
-						return "1";
-					}
-					break;
+			case SW::REGEX:
+				try {
+					if (fell || regex_match(txt, it.txt))
+						try { return eval(it.block); } catch (fallthrough_handler ex) { fell = true; continue; }
+				} catch (regex_handler ex) {
+					std::cerr << "syntax error: Invalid regex " << list(it.txt) << std::endl;
+					return "1";
+				}
+				break;
 
-				// default {script}
-				case SW::DEFAULT:;
-					if (fell || def != -1) {
-						ran_once = true;
-						return eval(vec[i].block);
-					}
-			}
-			fell = false;
-		} catch (fallthrough_handler ex) {
-			fell = true;
-			continue;
+			case SW::DEFAULT:
+				if (fell) {
+					def = -1;
+					try { return eval(it.block); } catch (fallthrough_handler ex) { fell = true; continue; }
+				}
+				break;
 		}
+		fell = false;
 	}
-	if (!ran_once) {
-		if (def == -1) return vars::status;
-		i = def;
-		goto _repeat_switch;
-	}
+	// We made it this far, so nothing matched
+	if (def != -1)
+		for (i = def; i < vec.size(); ++i)
+			try { return eval(vec[i].block); } catch (fallthrough_handler ex) {}
 END
 
 // For-each loop
@@ -626,16 +594,15 @@ COMMAND(foreach, <var> <var-list> <eoe>)
 	if (argc < 4) SYNTAX_ERROR
 	block_handler lh(in_loop);
 	auto vlst = lex(argv[2], SPLIT_WORDS).elems;
-	auto it = vlst.begin();
-_repeat_foreach:
-	try {
-		for (; it != vlst.end(); ++it) {
-			setvar(argv[1], *it);
+	for (auto const& it : vlst) {
+		try {
+			setvar(argv[1], it);
 			eoe(argc, argv, 3);
+		} catch (break_handler ex) {
+			break;
+		} catch (continue_handler ex) {
+			continue;
 		}
-	} catch (break_handler ex) {
-	} catch (continue_handler ex) {
-		++it; goto _repeat_foreach;
 	}
 END
 
@@ -1069,25 +1036,23 @@ COMMAND(popd,)
 END
 
 // Increase memory amount
-COMMAND(rlimit, <n>BKMGTPEZYg)
-	auto cptr = help+3;
-	if (argc != 2)
-		SYNTAX_ERROR
+COMMAND(rlimit, <n>[BKMGTPEZYg])
+	if (argc != 2 || !argv[1][0]) SYNTAX_ERROR
+	static const char *prefixes = help + 4;
 
-	auto len = strlen(argv[1])-1;
-	char lc = argv[1][len];
-	auto fd = strchr(cptr, lc);
-	argv[1][len] = '\0';
+	size_t len = strlen(argv[1]);
+	auto found = (const char*)memchr(prefixes, argv[1][len-1], strlen(prefixes)-1); // get rid of ]
 
-	zrc_num x;
-	if (!fd || isnan(x = expr(argv[1]))) SYNTAX_ERROR
-	
-	rlim_t memory = x;
+	unsigned long long mul = 1;
+	if (found) {
+		mul = 1ULL << (10 * (found - prefixes));
+		argv[1][len-1] = '\0';
+	}
+	zrc_num x = expr(argv[1]);
+	if (isnan(x) || x < 0) SYNTAX_ERROR
+	rlim_t memory = x * mul;
 	struct rlimit rlm;
 
-	int idx = fd-cptr;
-	if (idx < 0 || idx >= 8 * sizeof memory) SYNTAX_ERROR
-	memory <<= idx * 10;
 	if (!getrlimit(RLIMIT_STACK, &rlm))
 		if (rlm.rlim_cur < memory) {
 			rlm.rlim_cur = memory;
@@ -1108,8 +1073,8 @@ COMMAND(shift, [<n>])
 
 	if (howmuch >= len) {
 		vars::argv.clear();
-		return vars::argc = "0";
 		::argv += argc, ::argc = 0;
+		return vars::argc = "0";
 	}
 	::argv += howmuch, ::argc -= howmuch;
 	for (i = 0; i < len - howmuch; ++i) {
@@ -1129,7 +1094,7 @@ COMMAND(regexp, <reg> <txt> <var1> <var2...>)
 	int k = 3;
 	if (regcomp(&rexp, pattern, REG_EXTENDED))
 		return "1";
-	std::string ret_val = "2";
+	std::string ret_val = "2", match;
 	while (!regexec(&rexp, it, 1, &pmatch, 0)) {
 		ret_val = "0";
 		if (k >= argc) {
@@ -1137,12 +1102,16 @@ COMMAND(regexp, <reg> <txt> <var1> <var2...>)
 			return vars::status;
 		}
 		int start = pmatch.rm_so, end = pmatch.rm_eo, len = end - start;
-		if (end == 0)
+		if (end > start)
+			match = std::string(it + start, len);
+		else
+			match.clear();
+		setvar(argv[k++], match);
+		if (end == start) {
+			if (it[start] == '\0')
+				break;
 			++it;
-		else it += end;
-		if (*it == '\0')
-			break;
-		setvar(argv[k++], std::string(it + start, len));
+		} else it += end;
 	}
 	regfree(&rexp);
 	return ret_val;

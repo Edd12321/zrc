@@ -3,7 +3,7 @@ fn good {
 	echo Passed!
 }
 fn bad {
-	echo This shouldn't be printed!
+	echo This shouldn\'t be printed!
 }
 
 switch abc {
