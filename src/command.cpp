@@ -444,7 +444,7 @@ inline bool pipeline::execute_act()
 			if (map.find(*argv) != map.end())
 				execv(map.at(*argv).c_str(), argv);
 			struct stat sb;
-			if (!stat(*argv, &sb)) {
+			if (strchr(*argv, '/') && !stat(*argv, &sb)) {
 				close_stuff();
 				execv(*argv, argv);
 			}
@@ -494,7 +494,7 @@ inline bool pipeline::execute_act()
 			ok = IS_BUILTIN;
 		else {
 			struct stat sb;
-			if (!stat(*argv, &sb))
+			if (strchr(*argv, '/') && !stat(*argv, &sb))
 				ok = IS_COMMAND_FILE;
 			else {	
 				auto const& map = !hctable.empty() ? hctable : pathwalk();
