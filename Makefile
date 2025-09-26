@@ -1,6 +1,8 @@
 PREFIX = /usr/local
 SRCS = $(wildcard src/*.cpp src/*.hpp)
 CXXFLAGS = -std=gnu++11 -Wno-unused-result -O3
+SHELLPATH = $(DESTDIR)$(PREFIX)/bin/zrc
+CXX ?= g++
 
 .PHONY: all
 all: bin/zrc
@@ -17,7 +19,13 @@ src/lex.yy.cpp: src/expr.l
 
 .PHONY: install
 install:
-	install -Dm755 bin/zrc $(DESTDIR)$(PREFIX)/bin/zrc
+	install -Dm755 bin/zrc $(SHELLPATH)
+	@grep -qxF '$(SHELLPATH)' /etc/shells || echo $(SHELLPATH) | tee -a /etc/shells
+
+.PHONY: uninstall
+uninstall:
+	rm -f $(SHELLPATH)
+	sed -i '\#$(SHELLPATH)#d' /etc/shells
 
 .PHONY: clean
 clean:
