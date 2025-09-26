@@ -80,7 +80,7 @@ std::unordered_map<std::string, std::string> kv_alias;
 
 int tty_fd;
 int tty_pid = getpid();
-bool interactive_sesh;
+bool interactive_sesh, login_sesh;
 
 // Fetches a new FD.
 struct new_fd {

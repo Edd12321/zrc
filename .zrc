@@ -19,11 +19,36 @@ fn enable_unknown {
 enable_unknown
 
 fn prompt {
-	set green = "\e\[0;32m"
-	set rbold = "\e\[1;31m"
-	set reset = "\e\[0m"
+	let {green red rbold reset pwd home lpwd lhome s} {
+		set s = $status
+		set green = "\e\[0;32m" red = "\e\[0;31m" rbold = "\e\[1;31m" reset = "\e\[0m"
+		set pwd = `{pwd} home = [glob -t ~]
+		set lpwd = [str $pwd len] lhome = [str $home len]
 
-	echo -n $green`{whoami}$reset@`{hostname} $green`{pwd} $reset%\ 
+		# Fit ~ to pwd
+		if {$lhome <= $lpwd} {
+			if {[str [str $pwd 0 $lhome-1] == $home]} {
+				set pwd = $pwd/
+				set pwd = ~[str $pwd $lhome $lpwd]
+				set pwd = [str $pwd 0 [str $pwd len]-2]
+			}
+		}
+
+		# Part 1: username@hostname
+		echo -n $green`{whoami}$reset@`{hostname}
+		echo -n ' '
+		
+		# Part 2: cwd/ ([status])>
+		echo -n ${green}${pwd}"`{
+			if {[str $s != "0"]} {
+				if {[str $last_status == $s]} {
+					set rbold = $red
+				}
+				echo -n \ $red\[${rbold}${s}${red}\]$reset
+			}
+		}"${reset}>\ 
+		set last_status = $s
+	}
 }
 
 bindkey -c "\cl" {
@@ -49,11 +74,13 @@ bindkey -c "\cft" { thunar & }
 set __use_lsd = 0
 fn enable_lsd {
 	if {!($__use_lsd) && ![>&- 2 >&- which lsd]} {
+		alias ls "lsd"
 		alias l "lsd -hF"
 		alias lt "lsd -althrF"
 		alias la "lsd -all"
 		set __use_lsd = 1
 	} else {
+		unalias ls
 		alias l "ls -hF --color"
 		alias lt "ls -altrhF --color"
 		alias la "ls -all"

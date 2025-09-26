@@ -253,7 +253,17 @@ int main(int argc, char *argv[])
 	setvar("optind", std::to_string(optind));
 	
 	// Sighandlers
-	atexit([] { run_function("sigexit"); });	
+	atexit([] {
+		if (login_sesh) {
+			auto pw = getpwuid(getuid());
+			if (pw) {
+				std::string filename = pw->pw_dir;
+				// ~/.zrc_logout (by default)
+				source(filename + "/" ZLOGOUT, false);
+			}
+		}
+		run_function("sigexit");
+	});	
 	signal(SIGCHLD, [](int sig) {
 		chld_notif = true;
 		run_function("sigchld");
@@ -265,9 +275,18 @@ int main(int argc, char *argv[])
 		signal(SIGTSTP, [](int sig) { run_function("sigtstp"); });
 		interactive_sesh = true;
 		auto pw = getpwuid(getuid());
-		std::string filename = pw->pw_dir;
-		filename += "/" ZCONF;
-		source(filename, false);
+		if (pw) {
+			std::string filename = pw->pw_dir;	
+			// ~/.zrc (by default)
+			source(filename + "/" ZCONF, false);
+			if (argv[0][0] == '-') {
+				// ~/.zrc_profile (by default)
+				if (!source(filename + "/" ZLOGIN1, false))
+					// ~/.zrc_login (by default)
+					source(filename + "/" ZLOGIN2, false);
+				login_sesh = true;
+			}
+		}
 		eval_stream(std::cin);
 	} else {
 		if (!strcmp(argv[1], "--version")) version();

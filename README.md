@@ -1,6 +1,6 @@
 <img src="img/zrc.svg" width=100 height=auto />
 <p>
-<b>This is the new, better and REWRITTEN version of Zrc (master branch)! It has way less bugs, a better codebase, nicer syntax, etc. It also no longer has regex and a bunch of other stuff. I plan to add it again.
+<b>This is the new, better and REWRITTEN version of Zrc (master branch)! It has way less bugs, a better codebase, nicer syntax, etc.
 </b>
 </p>
 
@@ -22,6 +22,8 @@ git checkout legacy
 - [X] Aliases
 - [X] **Rich return values** (not just 0-255, but any string)
 - [X] Complex I/O handling (control flow, functions, built-ins and commands can be seamlessly piped together)
+- [X] Getopts
+- [X] Login/Logout file sourcing
 - [X] Procedures/functions
 	- [X] Function arguments
 		- [X] `${argv "..."}`
@@ -65,7 +67,7 @@ git checkout legacy
     - [X] Repeat
 	- [X] Foreach
 	- [X] For
-	- [X] Switch (currently does nothing)
+	- [X] Switch
 	- [X] Subshell (`@ {...}`)
 	- [X] Lexial scoping (`let`)
 	- [X] Until
@@ -74,6 +76,7 @@ git checkout legacy
     - [X] Continue
     - [X] Break
     - [X] Fallthrough
+- [X] FP paradigm (`list map|filter|reduce`, `apply`)
 - [X] Full job control
 	- [X] Job table support
 	- [X] Job listing command

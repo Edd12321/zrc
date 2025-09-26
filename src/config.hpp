@@ -4,6 +4,9 @@
 #define ZVERSION         "zrc v2.3h"        /* Version string */
 #define ZCONF            ".zrc"             /* Configuration file */
 #define ZHIST            ".zrc_history"     /* History file */
+#define ZLOGIN1          ".zrc_profile"     /* Login filename #1 */
+#define ZLOGIN2          ".zrc_login"       /* Login filename #2 */
+#define ZLOGOUT          ".zrc_logout"      /* Logout filename */
 #define DEFAULT_PPROMPT  "zrc% "            /* Defualt primary prompt */
 #define DEFAULT_SPROMPT  "> "               /* Default secondary prompt */
 #define FIFO_DIRNAME     "/tmp/zrc.XXXXXXX" /* Default dir name for FIFOs */
