@@ -7,16 +7,29 @@ echo "The time is: `{date}"
 set __use_unknown = false
 fn enable_unknown {
 	if {!($__use_unknown)} {
-		set use_unknown = true
+		set __use_unknown = true
 		fn unknown {
 			expr [arr argv vals]
 		}
 	} else {
-		set use_unknown = false
+		set __use_unknown = false
 		fn unknown
 	}
 }
 enable_unknown
+
+fn title {
+	echo -n "\e]0;${argv 1}\a"
+}
+set __use_title = true
+fn enable_title {
+	if {!($__use_title)} {
+		set __use_title = true
+	} else {
+		set __use_title = false
+		echo "\e]2;\a"
+	}
+}
 
 fn prompt {
 	let {green red rbold reset pwd home lpwd lhome s} {
@@ -25,7 +38,7 @@ fn prompt {
 		set pwd = `{pwd} home = [glob -t ~]
 		set lpwd = [str $pwd len] lhome = [str $home len]
 
-		# Fit ~ to pwd
+		# Fit ~ to pwd and set terminal window title
 		if {$lhome <= $lpwd} {
 			if {[str [str $pwd 0 $lhome-1] == $home]} {
 				set pwd = $pwd/
@@ -33,20 +46,43 @@ fn prompt {
 				set pwd = [str $pwd 0 [str $pwd len]-2]
 			}
 		}
+		if {$__use_title} {
+			title "(zrc) $pwd"
+		}
 
 		# Part 1: username@hostname
 		echo -n $green`{whoami}$reset@`{hostname}
 		echo -n ' '
 		
-		# Part 2: cwd/ ([status])>
-		echo -n ${green}${pwd}"`{
-			if {[str $s != "0"]} {
-				if {[str $last_status == $s]} {
-					set rbold = $red
-				}
-				echo -n \ $red\[${rbold}${s}${red}\]$reset
+		# Part 2: cwd (git branch) [optional status]>
+		echo -n ${green}${pwd}
+		echo -n ${reset}"`{
+			>&- 2 {> 1 /dev/null {git tag}}
+			if {!($status)} {
+				echo -n " ("
+				git branch | grep ^* | colrm 1 2 | tr -d '\n'
+				echo -n ")"
 			}
-		}"${reset}>\ 
+		}"
+		echo -n "`{
+			if {![str `{>& 2 1 expr $s} len]} {
+				if {1 <= $s && $s <= 255} {
+					if {[str $last_status != $s]} {
+						let {width right pos} {
+							set width = `{tput cols}
+							set right = :(
+
+							set pos = [expr {$width - [str $right len]}]
+							echo -n "\e\[s"                    # Saves cursor position
+							echo -n "\e\[${pos}G"              # Move cursor to calculated column
+							echo -n "${rbold}${right}${reset}" # Print the frowny
+							echo -n "\e\[u"                    # Restore cursor
+						}
+					}
+					echo -n \ $red\[${rbold}${s}${red}\]$reset
+				}
+			}
+		}"'> '
 		set last_status = $s
 	}
 }
@@ -71,20 +107,20 @@ bindkey -c "\ct"  { $TERMINAL & }
 bindkey -c "\cf"  { doublecmd & }
 bindkey -c "\cft" { thunar & }
 
-set __use_lsd = 0
+set __use_lsd = false
 fn enable_lsd {
 	if {!($__use_lsd) && ![>&- 2 >&- which lsd]} {
 		alias ls "lsd"
 		alias l "lsd -hF"
 		alias lt "lsd -althrF"
 		alias la "lsd -all"
-		set __use_lsd = 1
+		set __use_lsd = true
 	} else {
 		unalias ls
 		alias l "ls -hF --color"
 		alias lt "ls -altrhF --color"
 		alias la "ls -all"
-		set __use_lsd = 0
+		set __use_lsd = false
 	}
 }
 
@@ -179,3 +215,4 @@ expvar PAGER   most
 expvar BROWSER firefox
 
 > /dev/null rehash
+set status = 0

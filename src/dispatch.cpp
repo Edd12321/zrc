@@ -1354,7 +1354,7 @@ END
  * Shell I/O redirections *
  *                        *
  **************************/
-#define REDIR(x, ...) COMMAND(x, [<fd>?] <file> <eoe>) return numtos(redir(argc, argv, __VA_ARGS__)) END
+#define REDIR(x, ...) COMMAND(x, [<fd>?] <file> <eoe>) return redir(argc, argv, __VA_ARGS__) END
 // Stdout/other descriptors
 REDIR(>   , STDOUT_FILENO, DO_CLOBBER | OVERWR | OPTFD_Y)
 REDIR(>>  , STDOUT_FILENO, DO_CLOBBER | APPEND | OPTFD_Y)

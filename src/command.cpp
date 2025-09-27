@@ -45,7 +45,7 @@ bool run_function(std::string const& str)
  * @param {int}argc,{char**}argv,{redir_flags}flags
  * @return int
  */
-static inline int redir(int argc, char *argv[], int fd, redir_flags flags)
+static inline zrc_obj redir(int argc, char *argv[], int fd, redir_flags flags)
 {
 	if (argc < 3) {
 _syn_error_redir:
@@ -53,7 +53,7 @@ _syn_error_redir:
 		if (flags & OPTFD_Y)
 			std::cerr << " [<fd>]";
 		std::cerr << " <file> <eoe>\n";
-		return 1;
+		return "1";
 	}
 
 	if (flags & OPTFD_Y) {
@@ -61,7 +61,7 @@ _syn_error_redir:
 		if (!isnan(x)) {
 			if (x < 0 || x >= FD_MAX) {
 				std::cerr << "error: Bad file descriptor " << x << '\n';
-				return 2;
+				return "2";
 			}
 			fd = x, --argc, ++argv;
 			if (argc < 2)
@@ -71,7 +71,7 @@ _syn_error_redir:
 
 	if ((flags & NO_CLOBBER) && !access(argv[1], F_OK)) {
 		std::cerr << "Cannot clobber " << argv[1] << std::endl;
-		return 3;
+		return "3";
 	}
 
 	int fflags;
@@ -82,14 +82,14 @@ _syn_error_redir:
 	int ffd = open(argv[1], fflags, S_IWUSR | S_IRUSR);
 	if (ffd < 0) {
 		perror(argv[1]);
-		return 4;
+		return "4";
 	}
 	new_fd nfd(fd);
 	dup2(ffd, fd);
 	eoe(argc, argv, 2);
 	close(ffd);
 	dup2(nfd, fd);
-	return 0;
+	return vars::status;
 }
 
 /** Execute an external command (without forking)
@@ -321,7 +321,13 @@ void reaper(int who, int how)
 				break;
 			}
 		}
-		if (jid < 0) continue;
+		if (jid < 0) {
+			if (WIFEXITED(status))
+				// Not a job, so launched by eval-or-exec
+				// This must still return tho
+				vars::status = numtos(WEXITSTATUS(status));
+			continue;
+		}
 		if (getpid() == tty_pid && interactive_sesh)
 			tcsetpgrp(tty_fd, tty_pid);
 		if (WIFSTOPPED(status)) {
