@@ -446,6 +446,7 @@ COMMAND(help, [<cmd1> <cmd2>...])
 	if (handled_args)
 		return "0";
 
+	std::cout << ZVERSION << '\n';
 	std::vector<std::string> vbuiltins, vfunctions, valiases;
 	for (auto const& it : functions) vfunctions.push_back(it.first);
 	for (auto const& it : builtins) vbuiltins.push_back(it.first);
@@ -508,13 +509,12 @@ COMMAND(fc, [-e <editor>] [-lnr] [<num>])
 		}
 	}
 	auto& hist = line_edit::histfile;
-	ssize_t num = lflag ? 15 : 1;
+	ssize_t num = lflag ? 15 : 1, i, len = hist.size();
 	if (optind == argc-1) {
 		zrc_num e = expr(argv[optind]);
 		if (isnan(e) || e < 0) SYNTAX_ERROR
-		num = e;
+		num = std::min(len, (ssize_t)e);
 	}
-	ssize_t i, len = hist.size();
 	signed char dir;
 	std::function<bool(ssize_t)> cond;
 
