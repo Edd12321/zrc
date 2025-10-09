@@ -24,7 +24,8 @@ namespace line_edit
 {
 	long cursor_pos, histmax, histpos;
 	bool dp_list, first_word, start_bind;
-	std::vector<std::string> histfile;
+	// defined in globals.hpp
+	//std::vector<std::string> histfile;
 	std::string filename;
 	std::fstream io;
 
@@ -120,6 +121,7 @@ namespace line_edit
 		filename += "/" ZHIST;
 
 		io.open(filename, std::fstream::in);
+		histfile.clear();
 		while (std::getline(io, tmp))
 			histfile.push_back(tmp);
 		io.close();

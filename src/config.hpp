@@ -1,7 +1,7 @@
 #include <string>
 #include <unordered_map>
 
-#define ZVERSION         "zrc v2.3h"        /* Version string */
+#define ZVERSION         "zrc v2.4"         /* Version string */
 #define ZCONF            ".zrc"             /* Configuration file */
 #define ZHIST            ".zrc_history"     /* History file */
 #define ZLOGIN1          ".zrc_profile"     /* Login filename #1 */
@@ -9,10 +9,12 @@
 #define ZLOGOUT          ".zrc_logout"      /* Logout filename */
 #define DEFAULT_PPROMPT  "zrc% "            /* Defualt primary prompt */
 #define DEFAULT_SPROMPT  "> "               /* Default secondary prompt */
-#define FIFO_DIRNAME     "/tmp/zrc.XXXXXXX" /* Default dir name for FIFOs */
+#define FIFO_DIRNAME     "/tmp/zrc.XXXXXXX" /* Default dir name for FIFOs / FCs */
 #define FIFO_FILNAME     "fifo"             /* Default filename for FIFOs */
+#define FC_FILNAME       "fc"               /* Default filename for FCs */
 #define CDPATH           "CDPATH"           /* What variable to use as our $CDPATH */ 
 #define PATH             "PATH"             /* What variable to use as our $PATH */
+#define FC_EDITOR        "vi"               /* Default fallback editor for fc */
 char    LAM_STR[] =      "<lambda>";        /* ${argv 0} in a lambda, mutable for reasons */
 
 #define RESERVE_STR      256                /* How many bytes to reserve for string values by default */

@@ -281,7 +281,7 @@ COMMAND(exec,   <w1> [<w2>...])  if (argc > 1) execvp(*(argv+1), argv+1)     END
 // Wait for child processes to finish execution
 COMMAND(wait,                 )  while (wait(NULL) > 0)                      END
 // Source a script
-COMMAND(.,      [<w1> <w2>...])  source(concat(argc, argv, 1))               END
+COMMAND(source, [<w1> <w2>...])  source(concat(argc, argv, 1))               END
 // Disable internal hash table
 COMMAND(unhash,               )  hctable.clear()                             END
 // Display internal job table
@@ -411,6 +411,11 @@ END
 COMMAND(help, [<cmd1> <cmd2>...])
 	bool handled_args = false;
 	for (int i = 1; i < argc; ++i) {
+		if (kv_alias.find(argv[i]) != kv_alias.end()) {
+			std::cout << "# alias\n";
+			std::cout << "alias " << list(argv[i]) << ' ' << list(kv_alias.at(argv[i])) << '\n';
+			handled_args = true;
+		}
 		if (functions.find(argv[i]) != functions.end()) {
 			std::cout << "# function\n";
 			std::cout << "fn " << list(argv[i]) << " {" << functions.at(argv[i]).body << "}\n";
@@ -441,17 +446,108 @@ COMMAND(help, [<cmd1> <cmd2>...])
 	if (handled_args)
 		return "0";
 
-#define DISPLAY_COMMANDS_MAP(MAP)            \
-	std::vector<std::string> v##MAP;         \
-	for (auto const& it : MAP)               \
-		v##MAP.push_back(it.first);          \
-	std::sort(v##MAP.begin(), v##MAP.end()); \
-	for (auto const& it : v##MAP)            \
-		std::cout << it << ' '; 
-	DISPLAY_COMMANDS_MAP(builtins)
+	std::vector<std::string> vbuiltins, vfunctions, valiases;
+	for (auto const& it : functions) vfunctions.push_back(it.first);
+	for (auto const& it : builtins) vbuiltins.push_back(it.first);
+	for (auto const& it : kv_alias) valiases.push_back(it.first);
+	std::sort(vfunctions.begin(), vfunctions.end());
+	std::sort(valiases.begin(), valiases.end());
+	std::sort(vbuiltins.begin(), vbuiltins.end());
+
+	std::cout << valiases.size() << " aliases" << (valiases.empty() ? "." : ":\n");
+	for (auto const& it : valiases) std::cout << it << ' ';
 	std::cout << "\n\n";
-	DISPLAY_COMMANDS_MAP(functions)
-	std::cout << '\n';
+
+	std::cout << vfunctions.size() << " functions" << (vbuiltins.empty() ? "." : ":\n");
+	for (auto const& it : vfunctions) std::cout << it << ' ';
+	std::cout << "\n\n";
+	
+	std::cout << vbuiltins.size() << " builtins:\n";
+	size_t row, col, hc;
+	line_edit::init_term(row, col);
+	hc = col / 2 - 1;
+	bool newl = false;
+	for (auto& cmd : vbuiltins) {
+		cmd += ' ' + help_strs[cmd];
+		if (cmd.length() > hc)
+			cmd = cmd.substr(0, hc - 3) + "...";
+		if (cmd.length() < hc)
+			cmd += std::string(hc - cmd.length(), ' ');
+		std::replace(cmd.begin(), cmd.end(), '\n', '|');
+		std::cout << cmd << (newl ? "\n" : " ");
+		newl = !newl;
+	}
+	if (newl) std::cout << '\n';
+END
+
+// Command correction
+COMMAND(fc, [-e <editor>] [-lnr] [<num>])
+	int opt;
+	getopt_guard gg;
+	bool lflag = false, nflag = false, rflag = false;
+	auto editor = getvar("editor");
+	if (editor.empty())
+		editor = getvar("EDITOR");
+	if (editor.empty())
+		editor = FC_EDITOR;
+	while ((opt = getopt(argc, argv, "e:lnr")) != -1) {
+		switch (opt) {
+			case 'e':
+				editor = optarg;
+				break;
+			case 'l':
+				lflag = true;
+				break;
+			case 'n':
+				nflag = true;
+				break;
+			case 'r':
+				rflag = true;
+				break;
+			case '?': SYNTAX_ERROR
+		}
+	}
+	auto& hist = line_edit::histfile;
+	ssize_t num = lflag ? 15 : 1;
+	if (optind == argc-1) {
+		zrc_num e = expr(argv[optind]);
+		if (isnan(e) || e < 0) SYNTAX_ERROR
+		num = e;
+	}
+	ssize_t i, len = hist.size();
+	signed char dir;
+	std::function<bool(ssize_t)> cond;
+
+	if (rflag)
+		dir = -1, i = len-1, cond = [&](ssize_t i) { return i >= len-num; };
+	else
+		dir = +1, i = len-num, cond = [&](ssize_t i) { return i < len; };
+
+	std::ofstream fout;
+	std::string fc_file, fc_name;
+	if (!lflag)  {
+		char temp[] = FIFO_DIRNAME;
+		fc_name = mkdtemp(temp);
+		fc_file = fc_name + "/" + FC_FILNAME;
+		fout.open(fc_file);
+	}
+	for (; cond(i); i += dir) {
+		if (lflag) {
+			if (!nflag)
+				std::cout << std::setw(8) << i+1 << ' ';
+			std::cout << hist[i] << '\n';
+		} else {
+			fout << hist[i] << '\n';
+		}
+	}
+	if (!lflag) {
+		fout.close();
+		exec(2, (char*[]){&editor[0], &fc_file[0], nullptr});
+		source(fc_file);
+
+		unlink(fc_file.c_str());
+		rmdir(fc_name.c_str());
+	}
 END
 
 // If/else command
@@ -606,6 +702,33 @@ COMMAND(foreach, <var> <var-list> <eoe>)
 	}
 END
 
+// Bash-style select (similar to foreach)
+COMMAND(select, <var> <list> <eoe>)
+	if (argc < 4) SYNTAX_ERROR
+	block_handler lh(in_loop);
+	auto vlst = lex(argv[2], SPLIT_WORDS).elems;
+	std::map<std::string, int> ind;
+	for (size_t i = 0; i < vlst.size(); ++i) {
+		auto evald = list(vlst[i]);
+		ind[evald] = i + 1;
+		std::cout << i + 1 << ") " << list(vlst[i]) << '\n';
+	}
+	for (;;) {
+		try {
+			std::string str;
+			builtins.at("read")(2, (char*[]){const_cast<char*>("read"), argv[1], nullptr});
+			auto var = getvar(argv[1]);
+			if (ind.find(var) != ind.end())
+				setvar("reply", std::to_string(ind[var]));
+			eoe(argc, argv, 3);
+		} catch (break_handler ex) {
+			break;
+		} catch (continue_handler ex) {
+			continue;
+		}
+	}
+END
+
 // Negation
 COMMAND(!, [<eoe>])
 	if (argc == 1) return vars::status;
@@ -652,7 +775,9 @@ END
 
 // Read from stdin
 COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...])
-	auto delim = (char*)"\n";
+	std::string delim = getvar("ifs");
+	if (delim.empty())
+		delim = "\n";
 	int status = 2, n = -1, fd = STDIN_FILENO;
 	std::string prompt;
 
@@ -686,7 +811,7 @@ COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...
 				ssize_t r = read(fd, &c, 1);
 				if (r == 1) {
 					status = 0;
-					if (strchr(delim, (unsigned char)c))
+					if (strchr(delim.data(), (unsigned char)c))
 						break;
 					ret_val += c;
 				} else if (r == 0) {
@@ -780,7 +905,7 @@ COMMAND(cd, [<dir>])
 		if (pw)
 			chdir(pw->pw_dir);
 		else {
-			std::cerr << "cd: could not find home dir!\n";
+			std::cerr << argv[0] << ": could not find home dir!\n";
 			return "1";
 		}
 	} else {
@@ -985,6 +1110,15 @@ COMMAND(exit, [<val>])
 	if (argc > 2) SYNTAX_ERROR
 	if (argc < 2) exit(expr(vars::status));
 	else exit(atoi(argv[1]))
+END
+
+// Exit but fancier
+COMMAND(logout, [<val>])
+	if (::argv[0][0] != '-') {
+		std::cerr << argv[0] << ": not a login shell: use `exit'\n";
+		return "1";
+	}
+	builtins.at("exit")(argc, argv)
 END
 
 // Directory stack

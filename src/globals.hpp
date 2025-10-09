@@ -143,3 +143,10 @@ zrc_obj list(std::string const&);
 
 // EXPR.L
 extern zrc_num expr(const char*);
+
+// ZLINEEDIT.CPP
+namespace line_edit
+{
+	static inline void init_term(size_t&, size_t&);
+	std::vector<std::string> histfile;
+}
