@@ -465,17 +465,21 @@ COMMAND(help, [<cmd1> <cmd2>...])
 	
 	std::cout << vbuiltins.size() << " builtins:\n";
 	size_t row, col, hc;
-	line_edit::init_term(row, col);
-	hc = col / 2 - 1;
-	bool newl = false;
+	bool newl = false, tty = isatty(STDOUT_FILENO);
+	if (tty) {
+		line_edit::init_term(row, col);
+		hc = col / 2 - 1;
+	}
 	for (auto& cmd : vbuiltins) {
 		cmd += ' ' + help_strs[cmd];
-		if (cmd.length() > hc)
-			cmd = cmd.substr(0, hc - 3) + "...";
-		if (cmd.length() < hc)
-			cmd += std::string(hc - cmd.length(), ' ');
+		if (tty) {
+			if (cmd.length() > hc)
+				cmd = cmd.substr(0, hc - 3) + "...";
+			if (cmd.length() < hc)
+				cmd += std::string(hc - cmd.length(), ' ');
+		}
 		std::replace(cmd.begin(), cmd.end(), '\n', '|');
-		std::cout << cmd << (newl ? "\n" : " ");
+		std::cout << cmd << ((newl || !tty) ? "\n" : " ");
 		newl = !newl;
 	}
 	if (newl) std::cout << '\n';
