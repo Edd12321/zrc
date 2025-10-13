@@ -144,6 +144,7 @@ void exec(int argc, char *argv[])
 		} else if (functions.find("unknown") != functions.end())
 			vars::status = functions.at("unknown")(argc, argv);
 		else {
+			errno = ENOENT;
 			perror(*argv);
 			vars::status = "127";
 		}
@@ -524,7 +525,7 @@ inline bool pipeline::execute_act()
 					case IS_COMMAND_FILE: execv(*argv, argv); perror(*argv); _exit(127);
 					case IS_COMMAND_PATH: execv(full_path.c_str(), argv); perror(*argv); _exit(127);
 					case IS_UNKNOWN: _exit(uint8_t(atoi(functions.at("unknown")(argc, argv).c_str())));
-					case IS_NOTHING: perror(*argv); _exit(127);
+					case IS_NOTHING: errno = ENOENT; perror(*argv); _exit(127);
 				}
 			} else {
 				if (!pgid)
