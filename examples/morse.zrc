@@ -1,0 +1,76 @@
+#!../bin/zrc
+alias log >& 1 2 echo
+
+log Please wait... doing sound stuff.
+systemctl restart --user pulseaudio
+
+set freq = 440 # Hz
+set amp = 127
+set sample_rate = 44100 # samples / s
+set phi = 0
+
+set omega = [expr {2*3.14159265 * $freq}]
+fn beep {
+	let {duration no_samples} {
+		set duration = ${argv 1} # s
+		set no_samples = [expr{$duration * $sample_rate}]
+		
+		set buffer = `{
+			for {set i = 0} {$i < $no_samples} {inc i} {
+				set t = [expr {$i / $sample_rate}]
+				set sample = [expr {floor($amp * sin($omega*$t + $phi))}]
+				echo -n [chr $sample]
+			}
+		}; echo $buffer | >&- 2 aplay -r $sample_rate
+	}
+}
+
+arr morse = {
+	# Letters
+	a .- b -... c -.-. d -.. e .
+	f ..-. g --. h .... i .. j .---
+	k -.- l .-.. m -- n -. o ---
+	p .--. q --.- r .-. s ... t -
+	u ..- v ...- w .-- x -..- y -.--
+	z --..
+
+	# Numbers
+	0 -----
+	1 .----
+	2 ..---
+	3 ...--
+	4 ....-
+	5 .....
+	6 -....
+	7 --...
+	8 ---..
+	9 ----.
+	0 -----
+}
+
+log Welcome to the very slow morse code beeper. Type q to quit.
+while 1 {
+	log -n '> '
+	read phrase
+	if {[str $phrase == 'q']} {
+		exit 0
+	}
+	foreach k `{seq 0 [expr{[str $phrase len]-1}]} {
+		set o = [ord [str $phrase $k]]
+		if {$o >= [ord 'A'] && $o <= [ord 'Z']} {
+			inc o 32
+		}
+		set m = ${morse [chr $o]}
+		if {[str $m len]} {
+			echo -n "$m "
+			foreach c `{seq 0 [expr {[str $m len]-1}]} {
+				beep [expr {[ord [str $m $c]] == [ord '-'] ? 0.175 : 0.035}]
+			}
+			sleep 0.1
+		} else {
+			echo -n "/ "
+			sleep 0.3
+		}
+	}
+	echo
+}
