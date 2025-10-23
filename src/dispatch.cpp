@@ -952,16 +952,18 @@ COMMAND(echo, [<w1> <w2>...])
 END
 
 // Assign to a list of variables
-COMMAND(set, < <var> [<bin-op>]= <val> >...)
+COMMAND(set, < <var> [<expr-binop>|.]= <val> >...)
 	if ((argc-1) % 3 != 0) SYNTAX_ERROR
 	zrc_obj lret;
 	for (int i = 2; i < argc; i += 3) {
 		auto len = strlen(argv[i])-1;
-		if (argv[i][len] != '=')
+		if (argv[i][len] != '=') // All of these must have = at the end.
 			SYNTAX_ERROR
-		if (argv[i][1] == '\0')
+		if (argv[i][1] == '\0') {// Plain =
 			lret = setvar(argv[i-1], argv[i+1]);
-		else {
+		} else if (len == 1 && argv[i][0] == '.') {
+			lret = setvar(argv[i-1], getvar(argv[i-1]) + argv[i+1]);
+		} else { // [op]=
 			argv[i][len] = '\0';
 			lret = setvar(argv[i-1], numtos(expr("("+getvar(argv[i-1])+")"+argv[i]+"("+argv[i+1]+")")));
 		}
