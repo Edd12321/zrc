@@ -231,7 +231,6 @@ int main(int argc, char *argv[])
 		std::cerr << "warning: Could not getrlimit()\n";
 	FD_MAX = rlim.rlim_cur = rlim.rlim_max;
 	FD_MAX /= 2;
-	new_fd::fdcount = FD_MAX;
 	if (setrlimit(RLIMIT_NOFILE, &rlim) < 0)
 		std::cerr << "warning: Could not setrlimit()\n";
 

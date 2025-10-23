@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include <functional>
 #include <map>
@@ -82,18 +83,17 @@ int tty_fd;
 int tty_pid = getpid();
 bool interactive_sesh, login_sesh;
 
+int FD_MAX;
 // Fetches a new FD.
 struct new_fd {
-	static int fdcount;
 	int index;
 
-	new_fd(int fd) { dup2(fd, (index = ++fdcount)); }
-	~new_fd() { close(index), fdcount--; }
+	new_fd(int fd) { index = fcntl(fd, F_DUPFD_CLOEXEC, FD_MAX + 1); }
+	~new_fd() { close(index); }
 
 	inline operator int() const { return index; }
 };
 
-int FD_MAX, new_fd::fdcount;
 
 // MAIN.CPP
 std::unordered_map<std::string, std::string> pathwalk();

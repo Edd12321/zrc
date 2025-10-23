@@ -59,7 +59,7 @@ _syn_error_redir:
 	if (flags & OPTFD_Y) {
 		auto x = stonum(argv[1]);
 		if (!isnan(x)) {
-			if (x < 0 || x >= FD_MAX) {
+			if (x < 0 || x > FD_MAX) {
 				std::cerr << "error: Bad file descriptor " << x << '\n';
 				return "2";
 			}
@@ -101,8 +101,6 @@ void exec_extern(int argc, char *argv[])
 {
 	auto largv = argv[argc];
 	argv[argc] = nullptr;
-	for (; new_fd::fdcount > FD_MAX; --new_fd::fdcount)
-		close(new_fd::fdcount);
 	if (hctable.find(*argv) != hctable.end()) {
 		if (execv(hctable[*argv].c_str(), argv)) {
 			perror(*argv);
@@ -420,12 +418,6 @@ inline bool pipeline::execute_act()
 		}
 	} to_close;
 
-	auto close_stuff = [&]()
-	{
-		for (; new_fd::fdcount > FD_MAX; --new_fd::fdcount)
-			close(new_fd::fdcount);
-	};
-
 	for (size_t i = 0; i < cmds.size() - 1; ++i) {
 		int argc = cmds[i].argc;
 		char **argv = cmds[i].argv.data();
@@ -438,7 +430,6 @@ inline bool pipeline::execute_act()
 			dup2(input, STDIN_FILENO); close(input);
 			dup2(pd[1], STDOUT_FILENO); close(pd[1]);
 			close(pd[0]);
-			close_stuff();
 
 			// If found function, run (atoi used for no throw)
 			if (functions.find(*argv) != functions.end())
@@ -451,10 +442,8 @@ inline bool pipeline::execute_act()
 			if (map.find(*argv) != map.end())
 				execv(map.at(*argv).c_str(), argv);
 			struct stat sb;
-			if (strchr(*argv, '/') && !stat(*argv, &sb)) {
-				close_stuff();
+			if (strchr(*argv, '/') && !stat(*argv, &sb))
 				execv(*argv, argv);
-			}
 			// If that failed, run as `unknown`
 			if (functions.find("unknown") != functions.end()) {
 				auto ret = functions.at("unknown")(argc, argv);
@@ -518,7 +507,6 @@ inline bool pipeline::execute_act()
 			pid_t pid = fork();
 			if (pid == 0) {
 				setpgid(0, pgid);
-				close_stuff();
 				switch (ok) {
 					case IS_FUNCTION: _exit(uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
 					case IS_BUILTIN: _exit(uint8_t(atoi(builtins.at(*argv)(argc, argv).c_str())));
