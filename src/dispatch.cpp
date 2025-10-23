@@ -138,19 +138,19 @@ volatile sig_atomic_t chld_notif;
 class block_handler
 {
 private:
-	bool ok = false, &ref = in_loop;
+	bool ok = false, *ref = &in_loop;
 public:
-	block_handler(bool& ref)
+	block_handler(bool *ref)
 	{
 		this->ref = ref;
-		if (!ref)
+		if (!*ref)
 			ok = true;
-		ref = true;
+		*ref = true;
 	}
 	~block_handler()
 	{
 		if (ok)
-			ref = false;
+			*ref = false;
 	}
 };
 
@@ -221,7 +221,7 @@ struct zrc_fun {
 		zrc_arr zargv_old = vars::argv; char **argv_old = ::argv;
 		vars::argv = copy_argv(argc, argv); ::argv = argv;
 		vars::argc = numtos(argc); ::argc = argc;
-		block_handler fh(in_func);
+		block_handler fh(&in_func);
 		try { eval(body); } catch (return_handler ex) {}
 		vars::argc = zargc_old; ::argc = argc_old;
 		vars::argv = zargv_old; ::argv = argv_old;
@@ -262,7 +262,7 @@ CTRLFLOW_HELPER(func,   return,[<val>],
 #define WHILE_HELPER(x)               \
   COMMAND(x, <expr> <eoe>)            \
     if(argc < 3) SYNTAX_ERROR         \
-    block_handler lh(in_loop);        \
+    block_handler lh(&in_loop);       \
 		x (expr(argv[1])) try { eoe(argc, argv, 2); } catch (break_handler ex) { break; } catch (continue_handler ex) { continue; } \
   END
 WHILE_HELPER(while)
@@ -575,7 +575,7 @@ END
 // For loops
 COMMAND(for, <eval> <expr> <eval> <eoe>)
 	if (argc < 5) SYNTAX_ERROR
-	block_handler bh(in_loop);
+	block_handler bh(&in_loop);
 	for (eval(argv[1]); expr(argv[2]); eval(argv[3]))
 		try { eoe(argc, argv, 4); } catch (break_handler ex) { break; } catch (continue_handler ex) { continue; }
 END
@@ -587,7 +587,7 @@ COMMAND(do, <eoe> while|until <expr>...)
 	bool u = !strcmp(argv[argc-2], "until");
 	if (!w && !u) SYNTAX_ERROR
 
-	block_handler bh(in_loop);
+	block_handler bh(&in_loop);
 	if (w) {
 		do {
 			try { eoe(argc-2, argv, 1); } catch (break_handler ex) { break; } catch (continue_handler ex) { continue; }
@@ -654,7 +654,7 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 		return "1";
 	}
 
-	block_handler sh(in_switch);
+	block_handler sh(&in_switch);
 	bool fell = false;
 	// Try to evaluate
 	for (auto const& it : vec) {
@@ -692,7 +692,7 @@ END
 // For-each loop
 COMMAND(foreach, <var> <var-list> <eoe>)
 	if (argc < 4) SYNTAX_ERROR
-	block_handler lh(in_loop);
+	block_handler lh(&in_loop);
 	auto vlst = lex(argv[2], SPLIT_WORDS).elems;
 	for (auto const& it : vlst) {
 		try {
@@ -709,7 +709,7 @@ END
 // Bash-style select (similar to foreach)
 COMMAND(select, <var> <list> <eoe>)
 	if (argc < 4) SYNTAX_ERROR
-	block_handler lh(in_loop);
+	block_handler lh(&in_loop);
 	auto vlst = lex(argv[2], SPLIT_WORDS).elems;
 	std::map<std::string, int> ind;
 	for (size_t i = 0; i < vlst.size(); ++i) {

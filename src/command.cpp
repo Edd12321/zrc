@@ -169,7 +169,7 @@ static inline std::string get_output(std::string const& str)
 		close(pd[0]);
 		close(pd[1]);
 		eval(str);
-		_exit(0);
+		_exit(stonum(vars::status));
 	} else {
 		close(pd[1]);
 		char c;
