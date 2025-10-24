@@ -115,7 +115,7 @@ const std::map<std::string, int> txt2sig = {
 
 // Helps us to see if we can change control flow
 #define EXCEPTION_CLASS(x)                   \
-  class x##_handler                          \
+  class x##_handler : std::exception         \
   {                                          \
   public:                                    \
     virtual const char *what() const throw() \
@@ -689,6 +689,21 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 			try { return eval(vec[i].block); } catch (fallthrough_handler ex) {}
 END
 
+// Exceptions
+COMMAND(throw, <w1> <w2>...<wn>)
+	throw zrc_obj(concat(argc, argv, 1));
+END
+
+COMMAND(try, <eval> catch <name> <eoe>)
+	if (argc < 5 || strcmp(argv[2], "catch")) SYNTAX_ERROR
+	try {
+		eval(argv[1]);
+	} catch (zrc_obj const& e) {
+		setvar(argv[3], e);
+		eoe(argc, argv, 4);
+	}
+END
+
 // For-each loop
 COMMAND(foreach, <var> <var-list> <eoe>)
 	if (argc < 4) SYNTAX_ERROR
@@ -1072,43 +1087,36 @@ END
 // Lexical scoping
 COMMAND(let, <var-list> <eoe>)
 	if (argc < 3) SYNTAX_ERROR
-
-	auto wlst = lex(argv[1], SPLIT_WORDS).elems;
+	struct let_cleaner {
+		std::unordered_map<std::string, zrc_obj> vmap;
+		std::unordered_map<std::string, zrc_arr> amap;
+		std::unordered_map<std::string, bool> didnt_exist;
 	
-	bool ret = false, brk = false, con = false, fal = false;
-	std::unordered_map<std::string, zrc_obj> vmap;
-	std::unordered_map<std::string, zrc_arr> amap;
-	std::unordered_map<std::string, bool> didnt_exist;
+		let_cleaner(std::vector<token> const& wlst)
+		{
+			for (auto const& it : wlst) {
+				if (vars::amap.find(it) != vars::amap.end())
+					amap[it] = vars::amap[it];
+				else if (vars::vmap.find(it) != vars::vmap.end())
+					vmap[it] = vars::vmap[it];
+				else
+					didnt_exist[it] = true;
+			}
+		}
 
-	for (auto const& it : wlst) {
-		if (vars::amap.find(it) != vars::amap.end())
-			amap[it] = vars::amap[it];
-		else if (vars::vmap.find(it) != vars::vmap.end())
-			vmap[it] = vars::vmap[it];
-		else
-			didnt_exist[it] = true;
-	}
-
-	try {
-		eoe(argc, argv, 2);
-	} catch (return_handler ex)      { ret = true; }
-	  catch (break_handler ex)       { brk = true; }
-	  catch (continue_handler ex)    { con = true; }
-	  catch (fallthrough_handler ex) { fal = true; }
-	
-	for (auto const& it : amap)
-		vars::amap[it.first] = it.second;
-	for (auto const& it : vmap) {
-		unsetvar(it.first);
-		setvar(it.first, it.second);
-	}
-	for (auto const& it : didnt_exist)
-		unsetvar(it.first);
-
-	if (ret) throw return_handler();
-	if (brk) throw break_handler();
-	if (con) throw continue_handler();
-	if (fal) throw fallthrough_handler();
+		~let_cleaner()
+		{
+			for (auto const& it : amap)
+				vars::amap[it.first] = it.second;
+			for (auto const& it : vmap) {
+				unsetvar(it.first);
+				setvar(it.first, it.second);
+			}
+			for (auto const& it : didnt_exist)
+				unsetvar(it.first);
+		}
+	} cleaner(lex(argv[1], SPLIT_WORDS).elems);
+	eoe(argc, argv, 2);
 END
 
 // Close shell

@@ -25,13 +25,14 @@ false { yylval = false; return NUM; }
 "//"      return FDIV;
 "<<"      return SHL;
 ">>"      return SHR;
-"<="      return LEQ;
-">="      return GEQ;
-"=="      return EQ;
-"!="      return NEQ;
+"<="|le   return LEQ;
+">="|ge   return GEQ;
+"=="|eq   return EQ;
+"!="|ne   return NEQ;
 "<=>"     return SPC;
 "&&"|and  return AND;
 "||"|or   return OR;
+"^^"      return XOR;
 
 log10|log                   return LOG10;
 log2                        return LOG2;

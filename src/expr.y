@@ -17,11 +17,12 @@ void yyerror(const char *msg)
 
 %token YYEOF 0
 %token NUM
-%token LOG10 LOG2 LN SQRT SIN COS CTG TG SEC CSC ARCSIN ARCCOS ARCCTG ARCTG ARCSEC ARCCSC FLOOR TRUNC CEIL ABS ROUND ERF ERFC TGAMMA LGAMMA SGN
+%token LOG10 LOG2 LN SQRT SIN COS CTG TG SEC CSC ARCSIN ARCCOS ARCCTG ARCTG ARCSEC ARCCSC FLOOR TRUNC CEIL ABS ROUND ERF ERFC TGAMMA LGAMMA SGN XOR
 
 %left ','
 %right '?' ':'
 %left OR
+%left XOR
 %left AND
 %left '|'
 %left '^'
@@ -53,6 +54,7 @@ expr : expr ',' expr           { $$ = $3; }
      | expr SHL expr           { $$ = (long long)$1 << (long long)$3; }
      | expr SHR expr           { $$ = (long long)$1 >> (long long)$3; }
      | expr AND expr           { $$ = $1 && $3; }
+	 | expr XOR expr           { $$ = !!$1 ^ !!$3; }
      | expr OR expr            { $$ = $1 || $3; }
      | expr POW expr           { $$ = pow($1, $3); }
      | expr EQ expr            { $$ = $1 == $3; }

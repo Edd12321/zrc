@@ -66,6 +66,10 @@ namespace line_edit
 	static inline void tab(std::string& buf)
 	{
 		auto wlist = lex(buf.c_str(), SPLIT_WORDS | SEMICOLON).elems;
+
+#ifndef GLOB_TILDE
+	#define GLOB_TILDE 0 /* what kinda computer is blud on */
+#endif
 		auto globbed = glob((std::string(wlist.back())+"*").c_str(), GLOB_TILDE);
 		if (globbed.size() == 1) {
 			wlist.back() = globbed[0];
