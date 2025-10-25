@@ -1,4 +1,5 @@
 PREFIX = /usr/local
+SYSCONFDIR = /etc
 SRCS = $(wildcard src/*.cpp src/*.hpp)
 CXXFLAGS = -std=gnu++11 -Wno-unused-result -O3
 SHELLPATH = $(DESTDIR)$(PREFIX)/bin/zrc
@@ -20,12 +21,12 @@ src/lex.yy.cpp: src/expr.l
 .PHONY: install
 install:
 	install -Dm755 bin/zrc $(SHELLPATH)
-	@grep -qxF '$(SHELLPATH)' /etc/shells || echo $(SHELLPATH) | tee -a /etc/shells
+	@grep -qxF '$(SHELLPATH)' $(SYSCONFDIR)/shells || echo $(SHELLPATH) | tee -a $(SYSCONFDIR)/shells
 
 .PHONY: uninstall
 uninstall:
 	rm -f $(SHELLPATH)
-	sed -i '\#$(SHELLPATH)#d' /etc/shells
+	sed -i '\#$(SHELLPATH)#d' $(SYSCONFDIR)/shells
 
 .PHONY: clean
 clean:
