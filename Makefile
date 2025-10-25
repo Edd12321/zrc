@@ -21,6 +21,7 @@ src/lex.yy.cpp: src/expr.l
 .PHONY: install
 install:
 	install -Dm755 bin/zrc $(SHELLPATH)
+	mkdir -p $(SYSCONFDIR)
 	@grep -qxF '$(SHELLPATH)' $(SYSCONFDIR)/shells || echo $(SHELLPATH) | tee -a $(SYSCONFDIR)/shells
 
 .PHONY: uninstall
