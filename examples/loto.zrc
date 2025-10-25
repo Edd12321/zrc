@@ -1,0 +1,35 @@
+#!../bin/zrc
+fn random-number {
+	let {l r n} {
+		set l = ${argv 1}
+		set r = ${argv 2}
+		set n = ${argv 3}
+		return `{shuf -i $l-$r -n $n}
+	}
+}
+
+shift
+switch ${argv 1} {
+	case '649' {
+		set L = [random-number 1 49 6]
+		echo 6/49: [list 0 $L] [list 1 $L] [list 2 $L] \
+		           [list 3 $L] [list 4 $L] [list 5 $L]
+	}
+	case '540' {
+		set L = [random-number 1 40 6]
+		echo 5/40: ([list 0 $L] [list 1 $L]  [list 2 $L] \
+		            [list 3 $L] [list 4 $L]) [list 5 $L]
+	}
+	case 'j' {
+		set L = [random-number 1 45 5]
+		set J = [random-number 1 20 1]
+		echo Joker: [list 0 $L] [list 1 $L] [list 2 $L] \
+		            [list 3 $L] [list 4 $L] ($J)
+	}
+	case 'sn' {
+		echo Super Noroc: [random-number 100000 999999 1]
+	}
+	default {
+		die 'usage: ${argv 0} 649|540|j|sn'
+	}
+}
