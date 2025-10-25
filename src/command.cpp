@@ -86,7 +86,13 @@ _syn_error_redir:
 	}
 	new_fd nfd(fd);
 	dup2(ffd, fd);
-	eoe(argc, argv, 2);
+	try {
+		eoe(argc, argv, 2);
+	} catch (...) { // too much effort to make it proper
+		close(ffd);
+		dup2(nfd, fd);
+		throw;
+	}
 	close(ffd);
 	dup2(nfd, fd);
 	return vars::status;
