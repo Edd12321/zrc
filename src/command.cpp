@@ -31,10 +31,10 @@ static inline bool good_fd(int fd)
  * @param {std::string const&}str
  * @return none
  */
-bool run_function(std::string const& str)
+bool run_function(std::string str)
 {
 	if (functions.find(str) != functions.end()) {
-		functions.at(str)(0, nullptr);
+		functions.at(str)(1, (char*[]){&str[0], nullptr});
 		return true;
 	}
 	return false;

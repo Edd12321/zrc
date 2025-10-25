@@ -117,7 +117,7 @@ std::vector<std::string> glob(const char*, int);
 // COMMAND.CPP
 static inline bool good_fd(int);
 static inline zrc_obj redir(int, char**, int, redir_flags);
-bool run_function(std::string const&);
+bool run_function(std::string);
 void exec(int, char**);
 static inline std::string get_output(std::string const&);
 static inline std::string get_fifo(std::string const&);

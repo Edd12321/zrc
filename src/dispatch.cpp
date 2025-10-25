@@ -208,6 +208,14 @@ static inline void prints(std::stack<std::string> sp)
 }
 
 // User functions
+struct zrc_frame {
+	bool is_fun;
+	std::string fun;
+	bool is_script;
+	std::string script;
+};
+std::vector<zrc_frame> callstack;
+
 struct zrc_fun {
 	std::string body;
 
@@ -216,15 +224,49 @@ struct zrc_fun {
 
 	inline zrc_obj operator()(int argc, char *argv[])
 	{
-		// User-facing and internal argc/v are different
-		zrc_obj zargc_old = vars::argc; int argc_old = ::argc;
-		zrc_arr zargv_old = vars::argv; char **argv_old = ::argv;
-		vars::argv = copy_argv(argc, argv); ::argv = argv;
-		vars::argc = numtos(argc); ::argc = argc;
+		// Set args with RAII
+		struct arg_restorer {
+			zrc_obj zargc_old = vars::argc; int argc_old = ::argc;
+			zrc_arr zargv_old = vars::argv; char **argv_old = ::argv;
+			arg_restorer(int argc, char *argv[])
+			{
+				vars::argv = copy_argv(argc, argv); ::argv = argv;
+				vars::argc = numtos(argc); ::argc = argc;
+			}
+			~arg_restorer()
+			{
+				vars::argc = zargc_old; ::argc = argc_old;
+				vars::argv = zargv_old; ::argv = argv_old;
+			}
+		} ar(argc, argv);
+		// Break, continue and fallthrough dont work inside functions
+		struct reset_allowed_exc {
+			bool in_switch, in_loop;
+			reset_allowed_exc()
+			{
+				in_switch = ::in_switch; in_loop = ::in_loop;
+				::in_switch = ::in_loop = false;
+			}
+			~reset_allowed_exc() { ::in_switch = in_switch; ::in_loop = in_loop; }
+		} rae;
+		// For the caller command
+		struct push_callstack {
+			bool is_fun_old = is_fun;
+			std::string fun_name_old = fun_name;
+			push_callstack(std::string const& str)
+			{
+				callstack.push_back({is_fun, fun_name, is_script, script_name});
+				is_fun = true; fun_name = str;
+			}
+			~push_callstack()
+			{
+				is_fun = is_fun_old; fun_name = fun_name_old;
+				callstack.pop_back();
+			}
+		} pc(argv[0]);
+
 		block_handler fh(&in_func);
 		try { eval(body); } catch (return_handler ex) {}
-		vars::argc = zargc_old; ::argc = argc_old;
-		vars::argv = zargv_old; ::argv = argv_old;
 
 		// Don't forget
 		return vars::status;
@@ -690,7 +732,7 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 END
 
 // Exceptions
-COMMAND(throw, <w1> <w2>...<wn>)
+COMMAND(throw, [<w1> <w2>...<wn>])
 	throw zrc_obj(concat(argc, argv, 1));
 END
 
@@ -702,6 +744,25 @@ COMMAND(try, <eval> catch <name> <eoe>)
 		setvar(argv[3], e);
 		eoe(argc, argv, 4);
 	}
+END
+
+// Stack trace
+COMMAND(caller, [<expr>])
+	zrc_num e = expr(concat(argc, argv, 1));
+	if (isnan(e)) SYNTAX_ERROR
+	if (e >= 0 && e < callstack.size()) {
+		zrc_frame f = callstack[callstack.size()-1-e];
+		if (f.is_fun)
+			std::cout << "fn " << list(f.fun);
+		else std::cout << "repl";
+		std::cout << " @ ";
+		if (f.is_script)
+			std::cout << "script " << f.script;
+		else std::cout << "interactive";
+		std::cout << '\n';
+		return "0";
+	}
+	return "1";
 END
 
 // For-each loop

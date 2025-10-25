@@ -9,6 +9,8 @@
 #include <iostream>
 #include <string>
 
+std::string script_name; bool is_script;
+std::string fun_name; bool is_fun;
 int argc; char **argv;
 #include "globals.hpp"
 #include "config.hpp"
@@ -33,6 +35,22 @@ bool source(std::string const& str, bool err/* = true */)
 			perror(str.c_str());
 		return false;
 	} else {
+		struct push_callstack {
+			bool is_script_old = is_script, is_fun_old = is_fun;
+			std::string script_name_old = script_name;
+			push_callstack(std::string const& str)
+			{
+				callstack.push_back({is_fun, fun_name, is_script, script_name});
+				is_fun = false;
+				is_script = true; script_name = str;
+			}
+			~push_callstack()
+			{
+				is_fun = is_fun_old;
+				is_script = is_script_old; script_name = script_name_old;
+				callstack.pop_back();
+			}
+		} ssn(str);
 		eval_stream(f);
 		return true;
 	}
@@ -268,11 +286,12 @@ int main(int argc, char *argv[])
 		run_function("sigchld");
 	});
 	if (argc == 1) {
+		is_script = false;
+		interactive_sesh = true;
 		tcsetpgrp(0, 0);
 		signal(SIGTTOU, SIG_IGN);
 		signal(SIGINT, [](int sig) { run_function("sigint"); });
 		signal(SIGTSTP, [](int sig) { run_function("sigtstp"); });
-		interactive_sesh = true;
 		auto pw = getpwuid(getuid());
 		if (pw) {
 			std::string filename = pw->pw_dir;	
@@ -288,6 +307,8 @@ int main(int argc, char *argv[])
 		}
 		eval_stream(std::cin);
 	} else {
+		is_script = true;
+		interactive_sesh = false;
 		if (!strcmp(argv[1], "--version")) version();
 		if (!strcmp(argv[1], "--help")) usage();
 		if (!strcmp(argv[1], "-c")) {
