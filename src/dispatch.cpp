@@ -383,6 +383,14 @@ COMMAND(job, <n>)
 	return numtos(pid)
 END
 
+// Remove jobs from table
+COMMAND(disown, <n>)
+	if (argc != 2) SYNTAX_ERROR
+	auto x = expr(argv[1]);
+	if (isnan(x)) SYNTAX_ERROR
+	disown_job(x)
+END
+
 // Refresh internal hash table
 COMMAND(rehash,)
 	for (auto const& file : pathwalk()) {
@@ -411,7 +419,8 @@ COMMAND(fn, <name> [<w1> <w2>...])
 		functions[argv[1]] = zrc_fun(concat(argc, argv, 2));
 		if (txt2sig.find(argv[1]) != txt2sig.end()) {
 			std::string sig = argv[1]+3;
-			if (sig == "exit" || sig == "chld" || interactive_sesh && (sig == "int" || sig == "tstp"))
+			if (sig == "exit" || sig == "chld"
+			|| interactive_sesh && (sig == "int" || sig == "tstp" || sig == "hup"))
 				return vars::status; // this gets set in main()
 			signal(txt2sig.at(argv[1]), [](int sig) {
 				for (auto const& it : txt2sig) // signal(2) can't capture fun name
@@ -423,7 +432,8 @@ COMMAND(fn, <name> [<w1> <w2>...])
 		functions.erase(argv[1]);
 		if (txt2sig.find(argv[1]) != txt2sig.end()) {
 			std::string sig = argv[1]+3;
-			if (sig == "exit" || sig == "chld" || interactive_sesh && (sig == "int" || sig == "tstp"))
+			if (sig == "exit" || sig == "chld"
+			|| interactive_sesh && (sig == "int" || sig == "tstp" || sig == "hup"))
 				return vars::status; // this gets set in main()
 			else if (sig == "ttou" && interactive_sesh)
 				signal(SIGTTOU, SIG_IGN); // ignore only sometimes
@@ -1551,7 +1561,7 @@ COMMAND(list, new <w1> <w2> ... \n
 
 	// Get element at index
 	if (argc == 3) return wlst[i];
-	// Set element at inde
+	// Set element at index
 	if (argc == 5 && !strcmp(argv[2], "=")) { wlst[i] = argv[3]; return list(wlst); }
 	// Insert element at index
 	if (argc == 5 && !strcmp(argv[2], "+=")) { wlst.insert(wlst.begin()+i, argv[3]); return list(wlst); }

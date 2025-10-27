@@ -123,6 +123,7 @@ static inline std::string get_output(std::string const&);
 static inline std::string get_fifo(std::string const&);
 int add_job(pipeline const&, pid_t);
 inline void show_jobs();
+inline void disown_job(int);
 pid_t job2pid(int);
 int pid2job(pid_t);
 void jobstate(int, int);

@@ -279,6 +279,8 @@ int main(int argc, char *argv[])
 				source(filename + "/" ZLOGOUT, false);
 			}
 		}
+		if (interactive_sesh)
+			sighupper();
 		run_function("sigexit");
 	});	
 	signal(SIGCHLD, [](int sig) {
@@ -292,6 +294,14 @@ int main(int argc, char *argv[])
 		signal(SIGTTOU, SIG_IGN);
 		signal(SIGINT, [](int sig) { run_function("sigint"); });
 		signal(SIGTSTP, [](int sig) { run_function("sigtstp"); });
+		signal(SIGHUP, [](int sig) {
+			if (functions.find("sighup") != functions.end())
+				run_function("sighup");
+			else {
+				sighupper();
+				exit(129);
+			}
+		});
 		auto pw = getpwuid(getuid());
 		if (pw) {
 			std::string filename = pw->pw_dir;	

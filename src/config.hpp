@@ -1,7 +1,7 @@
 #include <string>
 #include <unordered_map>
 
-#define ZVERSION         "zrc v2.5"         /* Version string */
+#define ZVERSION         "zrc v2.5h"        /* Version string */
 #define ZCONF            ".zrc"             /* Configuration file */
 #define ZHIST            ".zrc_history"     /* History file */
 #define ZLOGIN1          ".zrc_profile"     /* Login filename #1 */

@@ -309,6 +309,20 @@ int add_job(pipeline const& ppl, pipeline::ppl_proc_mode status, pid_t pgid)
 	return jc;
 }
 
+/** Hang up in interactive mode
+ *
+ * @param none
+ * @return void
+ */
+void sighupper()
+{
+	for (auto const& j : jobs) {
+		auto const& job = j.second;
+		kill(-job.pgid, SIGHUP);
+		kill(-job.pgid, SIGCONT);
+	}
+}
+
 /** Reap zombie processes.
  *
  * @param none
@@ -396,6 +410,12 @@ inline void show_jobs()
 		else std::cout << "fg ";
 		std::cout << v.ppl << std::endl;
 	}
+}
+
+inline void disown_job(int n)
+{
+	if (jobs.find(n) != jobs.end())
+		jobs.erase(n);
 }
 
 
