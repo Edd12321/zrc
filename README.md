@@ -26,8 +26,9 @@ git checkout legacy
 - [X] Login/Logout file sourcing
 - [X] Procedures/functions
 	- [X] Function arguments
-		- [X] `${argv "..."}`
+		- [X] `${argv "..."}` or just `$0`, `$1`, ...
 		- [X] `$argc`
+    - [X] Introspection (via `help`)
 - [X] Globbing (via `glob`)
 	- [X] Tilde expansion (on GNU systems)
 	- [X] Wildcards
@@ -53,12 +54,14 @@ git checkout legacy
 	- [X] Variable expansion
 		- [X] Scalars, arrays/hashes (`$`, `${...}`)
 		- [X] Environment scalars, exporting
+        - [X] String concatenation
 	- [X] Command substitution
 		- [X] Output (`` `{...} ``)
         - [X] Process (`<{...}`)
 		- [X] Return value (`[...]`)
 - [X] Built-in commands (like `expr`, etc. but there are too many to list. View `dispatch.hpp`)
 - [X] Tcl-style `unknown` (ex: `fn unknown { expr [arr argv vals] }`)
+- [X] Stack trace (via `caller`)
 - [X] Conditional logic/flow control with full C arithmetic operator set
 	- [X] If/else
     - [X] Unless
@@ -68,6 +71,8 @@ git checkout legacy
 	- [X] Foreach
 	- [X] For
 	- [X] Switch
+    - [X] Select
+    - [X] Try/catch, throw
 	- [X] Subshell (`@ {...}`)
 	- [X] Lexial scoping (`let`)
 	- [X] Until
@@ -82,12 +87,15 @@ git checkout legacy
 	- [X] Job listing command
 	- [X] Job manipulation
 	- [X] Background and foreground processes with `&`
+    - [X] Disowning jobs
 - [ ] Usable regular expressions
     - [X] Basic built-in regex support (`regexp`)
     - [ ] More commandline options
     - [ ] `regcomp`
 - [ ] Pleasant interactive shell
 	- [X] History file
+        - [X] Command fixing
+    - [X] Login shell session
 	- [X] Line editor
 	- [X] Tab completion (need to re-implement)
 	- [ ] Syntax highlighting
