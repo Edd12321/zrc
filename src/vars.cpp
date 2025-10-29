@@ -1,5 +1,6 @@
 #include <math.h>
 
+#include <algorithm>
 #include <iomanip>
 #include <limits>
 #include <sstream>
@@ -66,8 +67,10 @@ static inline std::string getvar(std::string const& str)
 		std::string var = wlst[0];
 		if (amap.find(var) != amap.end())
 			std::cerr << "error: " << var << " is an array!\n";
+		else if (std::all_of(var.begin(), var.end(), isdigit))
+			return getvar("argv " + var);
 		else if (getenv(var.c_str()))
-				return getenv(var.c_str());
+			return getenv(var.c_str());
 		else if (vmap.find(var) != vmap.end())
 			return vmap.at(var);
 
@@ -108,6 +111,8 @@ static inline std::string setvar(std::string const& key, zrc_obj const& val)
 		std::string var = wlst[0];
 		if (amap.find(var) != amap.end())
 			std::cerr << "error: " << var << " is an array!\n";
+		else if (std::all_of(var.begin(), var.end(), isdigit))
+			return setvar("argv " + var, val);
 		else if (getenv(var.c_str()))
 			setenv(var.c_str(), val.c_str(), 1);
 		else

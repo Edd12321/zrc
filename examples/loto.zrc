@@ -1,11 +1,6 @@
 #!../bin/zrc
 fn random-number {
-	let {l r n} {
-		set l = ${argv 1}
-		set r = ${argv 2}
-		set n = ${argv 3}
-		return `{shuf -i $l-$r -n $n}
-	}
+	return `{shuf -i $1-$2 -n $3}
 }
 
 shift
