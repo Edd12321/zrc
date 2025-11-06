@@ -78,8 +78,8 @@ std::unordered_map<std::string, std::string> pathwalk()
 				if (!stat(full_name.c_str(), &sb) && sb.st_mode & S_IXUSR && ret_val.find(short_name) == ret_val.end())
 					ret_val[short_name] = full_name;
 			}
+			closedir(d);
 		}
-		closedir(d);
 	}
 	return ret_val;
 }
