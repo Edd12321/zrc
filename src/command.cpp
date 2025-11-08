@@ -114,10 +114,10 @@ void exec_extern(int argc, char *argv[])
 		}
 	}
 	if (execvp(*argv, argv)) {
+		argv[argc] = largv;
 		perror(*argv);
 		_exit(127);
 	}
-	argv[argc] = largv;
 }
 
 /** Run arguments as a function, builtin or external command.
@@ -176,10 +176,12 @@ static inline std::string get_output(std::string const& str)
 		_exit(stonum(vars::status));
 	} else {
 		close(pd[1]);
-		char c;
-		while (read(pd[0], &c, 1) >= 1)
-			ret_str += c;
+		char buf[BUFSIZ];
+		int n;
+		while ((n = read(pd[0], buf, sizeof buf)) >= 1)
+			ret_str.append(buf, n);
 		close(pd[0]);
+		reaper(pid, 0);
 	}
 	return ret_str;
 }
@@ -333,9 +335,9 @@ void reaper(int who, int how)
 	pid_t pid;
 	int status;
 	while ((pid = waitpid(who, &status, how)) > 0) {
-		int jid = -1;
+		int jid = -1, pgid = getpgid(pid);
 		for (auto const& it : jobs) {
-			if (it.second.pgid == pid) {
+			if (it.second.pgid == pgid || it.second.pgid == pid) {
 				jid = it.first;
 				break;
 			}
@@ -345,6 +347,8 @@ void reaper(int who, int how)
 				// Not a job, so launched by eval-or-exec
 				// This must still return tho
 				vars::status = numtos(WEXITSTATUS(status));
+			else if (WIFSIGNALED(status))
+				vars::status = numtos(128 + WTERMSIG(status));
 			continue;
 		}
 		if (getpid() == tty_pid && interactive_sesh)
@@ -357,6 +361,8 @@ void reaper(int who, int how)
 		if (WIFSIGNALED(status)) {
 			if (interactive_sesh)
 				std::cerr << "[" << jid << "] " << strsignal(WTERMSIG(status)) << std::endl;
+			if (jobs[jid].state != pipeline::ppl_proc_mode::BG)
+				vars::status = numtos(128 + WTERMSIG(status));
 			jobs.erase(jid);
 		}
 		if (WIFEXITED(status)) {
@@ -451,10 +457,15 @@ inline bool pipeline::execute_act()
 		pipe(pd);
 
 		pid_t pid = fork();
+		bool main_shell = (getpid() == tty_pid && interactive_sesh);
 		if (pid == 0) {
-			setpgid(0, pgid);
-			dup2(input, STDIN_FILENO); close(input);
-			dup2(pd[1], STDOUT_FILENO); close(pd[1]);
+			if (main_shell)
+				setpgid(0, pgid);
+			dup2(input, STDIN_FILENO);
+			if (input != STDIN_FILENO)
+				close(input);
+			dup2(pd[1], STDOUT_FILENO);
+			close(pd[1]);
 			close(pd[0]);
 
 			// If found function, run (atoi used for no throw)
@@ -476,8 +487,11 @@ inline bool pipeline::execute_act()
 				_exit(uint8_t(atoi(ret.c_str())));
 			}
 		} else {
-			if (!pgid)
-				pgid = pid;
+			if (main_shell) {
+				if (!pgid)
+					pgid = pid;
+				setpgid(pid, pgid);
+			}
 			close(pd[1]);
 			input = pd[0];
 			to_close.v.push_back(input);
@@ -530,9 +544,12 @@ inline bool pipeline::execute_act()
 		if (ok == IS_UNKNOWN && this->pmode == ppl_proc_mode::FG)
 			vars::status = functions.at("unknown")(argc, argv);
 		else {
+			to_close.cleanup();
 			pid_t pid = fork();
+			bool main_shell = (getpid() == tty_pid && interactive_sesh);
 			if (pid == 0) {
-				setpgid(0, pgid);
+				if (main_shell)
+					setpgid(0, pgid);
 				switch (ok) {
 					case IS_FUNCTION: _exit(uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
 					case IS_BUILTIN: _exit(uint8_t(atoi(builtins.at(*argv)(argc, argv).c_str())));
@@ -541,7 +558,7 @@ inline bool pipeline::execute_act()
 					case IS_UNKNOWN: _exit(uint8_t(atoi(functions.at("unknown")(argc, argv).c_str())));
 					case IS_NOTHING: errno = ENOENT; perror(*argv); _exit(127);
 				}
-			} else {
+			} else if (main_shell) {
 				if (!pgid)
 					pgid = pid;
 				setpgid(pid, pgid);
@@ -550,18 +567,20 @@ inline bool pipeline::execute_act()
 					// Foreground jobs transfer the terminal control to the child
 					if (getpid() == tty_pid && interactive_sesh) {
 						tcsetpgrp(tty_fd, pgid);
-						reaper(pid, WUNTRACED);
+						kill(-pgid, SIGCONT);
+						reaper(-pgid, WUNTRACED);
 						tcsetpgrp(tty_fd, tty_pid);
 					} else
-						reaper(pid, WUNTRACED);
+						reaper(-pgid, WUNTRACED);
 				} else if (interactive_sesh)
 					std::cerr << "[" << jid << "] " << jobs[jid].ppl << std::endl;
+			} else {
+				reaper(pid, WUNTRACED);
 			}
 		}
 	}	
-	to_close.cleanup();
 	dup2(old_input, STDIN_FILENO);
-	close(old_input);
+	//close(old_input);
 	return true;
 }
 

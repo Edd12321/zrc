@@ -57,7 +57,7 @@ fn prompt {
 		# Part 2: cwd (git branch) [optional status]>
 		echo -n ${green}${pwd}
 		echo -n ${reset}"`{
-			>&- 2 {> 1 /dev/null {git tag}}
+			>&- 2 > 1 /dev/null git tag
 			if {!($status)} {
 				echo -n " ("
 				git branch | grep ^* | colrm 1 2 | tr -d '\n'
