@@ -35,22 +35,16 @@ bool source(std::string const& str, bool err/* = true */)
 			perror(str.c_str());
 		return false;
 	} else {
-		struct push_callstack {
-			bool is_script_old = is_script, is_fun_old = is_fun;
-			std::string script_name_old = script_name;
-			push_callstack(std::string const& str)
-			{
-				callstack.push_back({is_fun, fun_name, is_script, script_name});
-				is_fun = false;
-				is_script = true; script_name = str;
-			}
-			~push_callstack()
-			{
-				is_fun = is_fun_old;
-				is_script = is_script_old; script_name = script_name_old;
-				callstack.pop_back();
-			}
-		} ssn(str);
+		bool is_script_old = is_script, is_fun_old = is_fun;
+		std::string script_name_old = script_name;
+		callstack.push_back({is_fun, fun_name, is_script, script_name});
+		is_fun = false;
+		is_script = true; script_name = str;
+		auto cleanup = make_scope_exit([&]() {
+			is_fun = is_fun_old;
+			is_script = is_script_old; script_name = script_name_old;
+			callstack.pop_back();
+		});
 		eval_stream(f);
 		return true;
 	}

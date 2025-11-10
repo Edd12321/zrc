@@ -94,6 +94,16 @@ struct new_fd {
 	inline operator int() const { return index; }
 };
 
+template<typename Fun>
+struct scope_exit {
+	Fun f;
+	~scope_exit() { f(); }
+};
+template<typename Fun>
+scope_exit<Fun> make_scope_exit(Fun&& f)
+{
+	return { std::forward<Fun>(f) };
+};
 
 // MAIN.CPP
 std::unordered_map<std::string, std::string> pathwalk();

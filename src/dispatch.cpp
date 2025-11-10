@@ -224,47 +224,28 @@ struct zrc_fun {
 
 	inline zrc_obj operator()(int argc, char *argv[])
 	{
-		// Set args with RAII
-		struct arg_restorer {
-			zrc_obj zargc_old = vars::argc; int argc_old = ::argc;
-			zrc_arr zargv_old = vars::argv; char **argv_old = ::argv;
-			arg_restorer(int argc, char *argv[])
-			{
-				vars::argv = copy_argv(argc, argv); ::argv = argv;
-				vars::argc = numtos(argc); ::argc = argc;
-			}
-			~arg_restorer()
-			{
-				vars::argc = zargc_old; ::argc = argc_old;
-				vars::argv = zargv_old; ::argv = argv_old;
-			}
-		} ar(argc, argv);
+		zrc_obj zargc_old = vars::argc; int argc_old = ::argc;
+		zrc_arr zargv_old = vars::argv; char **argv_old = ::argv;
+		vars::argv = copy_argv(argc, argv); ::argv = argv;
+		vars::argc = numtos(argc); ::argc = argc;
 		// Break, continue and fallthrough dont work inside functions
-		struct reset_allowed_exc {
-			bool in_switch, in_loop;
-			reset_allowed_exc()
-			{
-				in_switch = ::in_switch; in_loop = ::in_loop;
-				::in_switch = ::in_loop = false;
-			}
-			~reset_allowed_exc() { ::in_switch = in_switch; ::in_loop = in_loop; }
-		} rae;
+		bool in_switch = ::in_switch, in_loop = ::in_loop;
+		::in_switch = ::in_loop = false;
 		// For the caller command
-		struct push_callstack {
-			bool is_fun_old = is_fun;
-			std::string fun_name_old = fun_name;
-			push_callstack(std::string const& str)
-			{
-				callstack.push_back({is_fun, fun_name, is_script, script_name});
-				is_fun = true; fun_name = str;
-			}
-			~push_callstack()
-			{
-				is_fun = is_fun_old; fun_name = fun_name_old;
-				callstack.pop_back();
-			}
-		} pc(argv[0]);
+		bool is_fun_old = is_fun;
+		std::string fun_name_old = fun_name;
+		callstack.push_back({is_fun, fun_name, is_script, script_name});
+		is_fun = true; fun_name = argv[0];
 
+		auto cleanup = make_scope_exit([&]() {
+			vars::argc = zargc_old; ::argc = argc_old;
+			vars::argv = zargv_old; ::argv = argv_old;
+			
+			::in_switch = in_switch, ::in_loop = in_loop;
+
+			is_fun = is_fun_old; fun_name = fun_name_old;
+			callstack.pop_back();
+		});
 		block_handler fh(&in_func);
 		try { eval(body); } catch (return_handler ex) {}
 
@@ -837,12 +818,15 @@ COMMAND(@, [<eoe>])
 	pid_t pid = fork();
 	if (pid == 0) {
 		close(pd[0]);
+		fcntl(pd[1], F_SETFD, O_CLOEXEC);
+		auto cleanup = make_scope_exit([&]() {
+			fflush(stdout);
+			dup2(pd[1], STDOUT_FILENO);
+			close(pd[1]);
+			std::cout << vars::status << std::flush;
+			_exit(0);
+		});
 		eoe(argc, argv, 1);
-		fflush(stdout);
-		dup2(pd[1], STDOUT_FILENO);
-		close(pd[1]);
-		std::cout << vars::status << std::flush;
-		_exit(0);
 	} else {
 		close(pd[1]);
 		char c;
@@ -866,6 +850,8 @@ END
 // Read from stdin
 COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...])
 	std::string delim = getvar("ifs");
+	if (delim.empty())
+		delim = getvar("IFS");
 	if (delim.empty())
 		delim = "\n";
 	int status = 2, n = -1, fd = STDIN_FILENO;
@@ -1158,35 +1144,28 @@ END
 // Lexical scoping
 COMMAND(let, <var-list> <eoe>)
 	if (argc < 3) SYNTAX_ERROR
-	struct let_cleaner {
-		std::unordered_map<std::string, zrc_obj> vmap;
-		std::unordered_map<std::string, zrc_arr> amap;
-		std::unordered_map<std::string, bool> didnt_exist;
-	
-		let_cleaner(std::vector<token> const& wlst)
-		{
-			for (auto const& it : wlst) {
-				if (vars::amap.find(it) != vars::amap.end())
-					amap[it] = vars::amap[it];
-				else if (vars::vmap.find(it) != vars::vmap.end())
-					vmap[it] = vars::vmap[it];
-				else
-					didnt_exist[it] = true;
-			}
+	std::unordered_map<std::string, zrc_obj> vmap;
+	std::unordered_map<std::string, zrc_arr> amap;
+	std::unordered_map<std::string, bool> didnt_exist;
+	auto wlst = lex(argv[1], SPLIT_WORDS).elems;
+	for (auto const& it : wlst) {
+		if (vars::amap.find(it) != vars::amap.end())
+			amap[it] = vars::amap[it];
+		else if (vars::vmap.find(it) != vars::vmap.end())
+			vmap[it] = vars::vmap[it];
+		else
+			didnt_exist[it] = true;
+	}
+	auto cleanup = make_scope_exit([&]() {
+		for (auto const& it : amap)
+			vars::amap[it.first] = it.second;
+		for (auto const& it : vmap) {
+			unsetvar(it.first);
+			setvar(it.first, it.second);
 		}
-
-		~let_cleaner()
-		{
-			for (auto const& it : amap)
-				vars::amap[it.first] = it.second;
-			for (auto const& it : vmap) {
-				unsetvar(it.first);
-				setvar(it.first, it.second);
-			}
-			for (auto const& it : didnt_exist)
-				unsetvar(it.first);
-		}
-	} cleaner(lex(argv[1], SPLIT_WORDS).elems);
+		for (auto const& it : didnt_exist)
+			unsetvar(it.first);
+	});
 	eoe(argc, argv, 2);
 END
 
