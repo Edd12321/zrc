@@ -139,6 +139,7 @@ void exec(int argc, char *argv[])
 		if (map.find(*argv) != map.end()) {
 			pid_t pid = fork();
 			if (pid == 0) {
+				reset_sigs();
 				execv(map.at(*argv).c_str(), argv);
 				perror(*argv);
 				_exit(127);
@@ -169,6 +170,7 @@ static inline std::string get_output(std::string const& str)
 	pipe(pd);
 	pid_t pid = fork();
 	if (pid == 0) {
+		reset_sigs();
 		dup2(pd[1], STDOUT_FILENO);
 		close(pd[0]);
 		close(pd[1]);
@@ -202,6 +204,7 @@ static inline std::string get_fifo(std::string const& str)
 	mkfifo(fifo_file.c_str(), S_IRUSR | S_IWUSR);
 	pid_t pid = fork();
 	if (pid == 0) {
+		reset_sigs();
 		int fd = open(fifo_file.c_str(), O_WRONLY);
 		dup2(fd, STDOUT_FILENO);
 		eval(str);
@@ -380,6 +383,15 @@ void reaper()
 	reaper(WAIT_ANY, WNOHANG | WUNTRACED);
 }
 
+void reset_sigs()
+{
+	for (int sig = 1; sig < NSIG; ++sig) {
+		if (sig == SIGKILL || sig == SIGSTOP)
+			continue;
+		signal(sig, SIG_DFL);
+	}
+}
+
 pid_t job2pid(int jid)
 {
 	if (jobs.find(jid) != jobs.end())
@@ -443,6 +455,7 @@ inline bool pipeline::execute_act()
 		{
 			for (auto const& fd : v)
 				close(fd);
+			v.clear();
 		}
 		~fd_closer_guard()
 		{
@@ -459,6 +472,7 @@ inline bool pipeline::execute_act()
 		pid_t pid = fork();
 		bool main_shell = (getpid() == tty_pid && interactive_sesh);
 		if (pid == 0) {
+			reset_sigs();
 			if (main_shell)
 				setpgid(0, pgid);
 			dup2(input, STDIN_FILENO);
@@ -548,6 +562,7 @@ inline bool pipeline::execute_act()
 			pid_t pid = fork();
 			bool main_shell = (getpid() == tty_pid && interactive_sesh);
 			if (pid == 0) {
+				reset_sigs();
 				if (main_shell)
 					setpgid(0, pgid);
 				switch (ok) {

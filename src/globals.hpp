@@ -139,6 +139,7 @@ int pid2job(pid_t);
 void jobstate(int, int);
 void reaper();
 void reaper(int, int);
+void reset_sigs();
 
 // DISPATCH.CPP
 static inline std::string concat(int, char**, int);

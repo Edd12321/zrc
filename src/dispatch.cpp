@@ -817,6 +817,7 @@ COMMAND(@, [<eoe>])
 	pipe(pd);
 	pid_t pid = fork();
 	if (pid == 0) {
+		reset_sigs();
 		close(pd[0]);
 		fcntl(pd[1], F_SETFD, O_CLOEXEC);
 		auto cleanup = make_scope_exit([&]() {
