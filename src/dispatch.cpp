@@ -1292,7 +1292,7 @@ COMMAND(regexp, <reg> <txt> <var1> <var2...>)
 	regmatch_t pmatch;
 	int k = 3;
 	if (regcomp(&rexp, pattern, REG_EXTENDED))
-		return "1";
+		SYNTAX_ERROR
 	std::string ret_val = "2", match;
 	while (!regexec(&rexp, it, 1, &pmatch, 0)) {
 		ret_val = "0";
@@ -1323,7 +1323,7 @@ END
  ****************************************/
 
 // Strings
-COMMAND(str, <s> > | >= | == | != | <\x3d> | <= | < <p> \n
+COMMAND(str, <s> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
              <s> len \n
              <s> <ind> \n
              <s> + <ptr> \n
@@ -1336,6 +1336,18 @@ COMMAND(str, <s> > | >= | == | != | <\x3d> | <= | < <p> \n
 	STROP(>, > 0) STROP(==, == 0) STROP(<=, <= 0)
 	STROP(<, < 0) STROP(!=, != 0) STROP(>=, >= 0)
 	STROP(<\x3d>,) // <=>, to make clang++ shut up
+	
+	// Regex comparison
+	if (argc == 4 && !strcmp(argv[2], "=~")) {
+		regex_t rexp;
+		const char *pattern = argv[3], *txt = argv[1];
+		regmatch_t pmatch;
+		if (regcomp(&rexp, pattern, REG_EXTENDED))
+			SYNTAX_ERROR
+		auto ret_val = !regexec(&rexp, txt, 1, &pmatch, 0) ? "true" : "false";
+		regfree(&rexp);
+		return ret_val;
+	}
 
 	// Return string length
 	if (argc == 3 && !strcmp(argv[2], "len")) return numtos(strlen(argv[1]));
