@@ -36,7 +36,7 @@ struct bind {
 };
 #define Sc(x) std::string(1, char(x))
 std::unordered_map<std::string, bind> kv_bindkey {
-	{ Sc(CTRL('D')), { "exit"             , 1 } },
+	{ Sc(CTRL('D')), { "echo; exit"       , 1 } },
 	{ Sc(CTRL('A')), { "cursor-move-begin", 0 } },
 	{ Sc(CTRL('E')), { "cursor-move-end"  , 0 } },
 	{ Sc(BACKSPACE), { "cursor-erase"     , 0 } },

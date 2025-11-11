@@ -239,6 +239,7 @@ class raw_input_mode
 {
 private:
 	struct termios term, old;
+	bool new_one;
 public:
 	raw_input_mode()
 	{
@@ -247,6 +248,12 @@ public:
 		term.c_lflag &= ~ICANON;
 		term.c_lflag &= ~ECHO;
 		tcsetattr(STDIN_FILENO, TCSANOW, &term);
+		new_one = true;
+	}
+	void toggle()
+	{
+		tcsetattr(STDIN_FILENO, TCSADRAIN, &(new_one ? old : term));
+		new_one = !new_one;
 	}
 	~raw_input_mode()
 	{
@@ -265,6 +272,8 @@ static inline bool zlineedit(std::string& buf)
 	std::string s;
 	char c;
 
+	raw_input_mode raw;
+
 	// Execute key binding action
 	auto exec_act = [&]()
 	{
@@ -272,9 +281,11 @@ static inline bool zlineedit(std::string& buf)
 			return false;
 		if (kv_bindkey.find(s) == kv_bindkey.end())
 			s.clear();
-		if (kv_bindkey[s].zrc_cmd)
+		if (kv_bindkey[s].zrc_cmd) {
+			raw.toggle();
 			eval(kv_bindkey[s].cmd);
-		else if (actions.find(kv_bindkey[s].cmd) != actions.end())
+			raw.toggle();
+		} else if (actions.find(kv_bindkey[s].cmd) != actions.end())
 			return actions[kv_bindkey[s].cmd](buf, c);
 		else
 			std::cerr << "syntax error: Invalid line editor command " << kv_bindkey[s].cmd << std::endl;
@@ -296,7 +307,6 @@ static inline bool zlineedit(std::string& buf)
 	
 	R_histfile(); buf.clear();
 	actions["hist-go-down"](buf, 0);
-	raw_input_mode raw;
 
 	// Main loop
 	for (;;) {
