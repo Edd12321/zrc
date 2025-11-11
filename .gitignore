@@ -3,3 +3,5 @@ src/y.tab.c*
 src/y.tab.h*
 src/lex.yy.c*
 bin/zrc
+pkg/zrc-*.pkg.tar.zst
+pkg/zrc

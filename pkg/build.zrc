@@ -1,0 +1,5 @@
+#!../bin/zrc
+makepkg -siC --clean
+if {[str $2 != "keep"]} {
+	rm -rf {*}[glob zrc-*.pkg.tar.zst] zrc
+}
