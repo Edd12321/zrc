@@ -1,4 +1,4 @@
-#!/usr/lib/zrc/bin/zrc
+#!../bin/zrc
 set nsecs = 0 tfnd = 0 flags = 0
 
 shift

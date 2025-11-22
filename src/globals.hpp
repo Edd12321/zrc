@@ -34,8 +34,7 @@ typedef long double zrc_num;
 #define ARG(...) __VA_ARGS__
 #define FLAG_TYPE(x, y)                                                       \
   enum x##_flags : unsigned char { y };                                       \
-  inline x##_flags operator|(x##_flags a, x##_flags b)                        \
-  {                                                                           \
+  inline x##_flags operator|(x##_flags a, x##_flags b) {                      \
     return static_cast<x##_flags>(static_cast<int>(a) | static_cast<int>(b)); \
   }
 
@@ -55,6 +54,7 @@ FLAG_TYPE(redir, ARG(
 	OPTFD_N      = 1 << 6, // 01000000
 ))
 
+class command;
 class pipeline;
 class return_handler;
 class break_handler;
@@ -65,7 +65,6 @@ class block_handler;
 struct substit;
 struct token;
 struct token_list;
-struct command;
 struct job;
 struct zrc_fun;
 
@@ -100,8 +99,7 @@ struct scope_exit {
 	~scope_exit() { f(); }
 };
 template<typename Fun>
-scope_exit<Fun> make_scope_exit(Fun&& f)
-{
+scope_exit<Fun> make_scope_exit(Fun&& f) {
 	return { std::forward<Fun>(f) };
 };
 
@@ -141,6 +139,12 @@ void reaper();
 void reaper(int, int);
 void reset_sigs();
 
+template<typename Fun>
+zrc_obj invoke(Fun const&, std::initializer_list<const char*>);
+
+template<typename Fun>
+void invoke_void(Fun const&, std::initializer_list<const char*>);
+
 // DISPATCH.CPP
 static inline std::string concat(int, char**, int);
 static inline zrc_num expr(std::string const&);
@@ -148,7 +152,7 @@ static inline void eoe(int, char**, int);
 static inline void prints(std::stack<std::string>);
 
 // LIST.CPP
-zrc_obj list(int, char**);
+zrc_obj list(int, const char**);
 zrc_obj list(std::vector<token>&);
 zrc_obj list(std::string&);
 zrc_obj list(std::string const&);
@@ -157,8 +161,7 @@ zrc_obj list(std::string const&);
 extern zrc_num expr(const char*);
 
 // ZLINEEDIT.CPP
-namespace line_edit
-{
+namespace line_edit {
 	static inline void init_term(size_t&, size_t&);
 	std::vector<std::string> histfile;
 }

@@ -45,7 +45,6 @@ arr morse = {
 	7 --...
 	8 ---..
 	9 ----.
-	0 -----
 }
 
 log Welcome to the very slow morse code beeper. Type q to quit.

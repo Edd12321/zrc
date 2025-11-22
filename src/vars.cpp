@@ -8,8 +8,7 @@
 #include <unordered_map>
 
 template<typename T>
-std::string numtos(const T x)
-{
+std::string numtos(const T x) {
 	std::string content;
 	/* EMPTY */ {
 		std::stringstream ss;
@@ -25,8 +24,7 @@ std::string numtos(const T x)
 	return content;
 }
 
-zrc_num stonum(std::string const& str)
-{
+zrc_num stonum(std::string const& str) {
 	try {
 		zrc_num ret = std::stold(str);
 		return ret;
@@ -38,8 +36,7 @@ zrc_num stonum(std::string const& str)
 #define ARR(x) zrc_arr& x = amap[#x];
 #define VAR(x) zrc_obj& x = vmap[#x];
 
-namespace vars
-{
+namespace vars {
 	std::unordered_map<std::string, zrc_obj> vmap;
 	std::unordered_map<std::string, zrc_arr> amap;
 
@@ -53,8 +50,7 @@ namespace vars
  * @param {std::string const&}str
  * @return std::string
  */
-static inline std::string getvar(std::string const& str)
-{
+static inline std::string getvar(std::string const& str) {
 	using namespace vars;
 
 	auto wlst = lex(str.c_str(), SPLIT_WORDS).elems;
@@ -97,8 +93,7 @@ static inline std::string getvar(std::string const& str)
  * @param {std::string const&}str
  * @return std::string
  */
-static inline std::string setvar(std::string const& key, zrc_obj const& val)
-{
+static inline std::string setvar(std::string const& key, zrc_obj const& val) {
 	using namespace vars;
 
 	auto wlst = lex(key.c_str(), SPLIT_WORDS).elems;
@@ -134,8 +129,7 @@ static inline std::string setvar(std::string const& key, zrc_obj const& val)
  * @param {std::string const&} str
  * @return none
  */
-static inline void unsetvar(std::string const& key)
-{
+static inline void unsetvar(std::string const& key) {
 	using namespace vars;
 
 	auto wlst = lex(key.c_str(), SPLIT_WORDS).elems;

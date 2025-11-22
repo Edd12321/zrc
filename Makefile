@@ -1,7 +1,7 @@
 PREFIX = /usr/local
 SYSCONFDIR = /etc
 SRCS = $(wildcard src/*.cpp src/*.hpp)
-CXXFLAGS = -std=gnu++11 -Wno-unused-result -O3
+CXXFLAGS = -std=c++11 -pedantic -Wno-unused-result -O3
 SHELLPATH = $(DESTDIR)$(PREFIX)/bin/zrc
 CXX ?= g++
 

@@ -6,8 +6,7 @@
 #include <string>
 #include <vector>
 
-void display_prompt(bool show_secondary_prompt)
-{
+void display_prompt(bool show_secondary_prompt) {
 	auto old_status = vars::status;
 
 	if (show_secondary_prompt)
@@ -18,8 +17,7 @@ void display_prompt(bool show_secondary_prompt)
 	vars::status = old_status;
 }
 
-namespace line_edit
-{
+namespace line_edit {
 	long cursor_pos, histmax, histpos;
 	bool dp_list, first_word, start_bind;
 	// defined in globals.hpp
@@ -27,16 +25,14 @@ namespace line_edit
 	std::string filename;
 	std::fstream io;
 
-	static inline void init_term(size_t& row, size_t& col)
-	{
+	static inline void init_term(size_t& row, size_t& col) {
 		struct winsize term;
 		ioctl(STDOUT_FILENO, TIOCGWINSZ, &term);
 		row = term.ws_row;
 		col = term.ws_col;
 	}
 
-	static inline bool list(std::vector<std::string> const& vec)
-	{
+	static inline bool list(std::vector<std::string> const& vec) {
 		size_t i = 0, term_hi, term_wd;
 		init_term(term_hi, term_wd);
 		std::cerr << '\n';
@@ -63,8 +59,7 @@ namespace line_edit
 		return dp_list = i;
 	}
 
-	static inline void tab(std::string& buf)
-	{
+	static inline void tab(std::string& buf) {
 		auto wlist = lex(buf.c_str(), SPLIT_WORDS | SEMICOLON).elems;
 
 #ifndef GLOB_TILDE
@@ -89,8 +84,7 @@ namespace line_edit
 		}
 	}
 
-	static inline void cmd(std::string& buf)
-	{
+	static inline void cmd(std::string& buf) {
 		std::vector<std::string> vec;
 		for (auto const& it : !hctable.empty() ? hctable : pathwalk())
 			if (!it.first.rfind(buf, 0))
@@ -114,8 +108,7 @@ namespace line_edit
 		}
 	}
 
-	static inline void R_histfile()
-	{
+	static inline void R_histfile() {
 		struct passwd *pw = getpwuid(getuid());
 		std::string tmp;
 		
@@ -131,8 +124,7 @@ namespace line_edit
 		histpos = histmax-1;
 	}
 
-	static inline void W_histfile(std::string const& str)
-	{
+	static inline void W_histfile(std::string const& str) {
 		if (!std::all_of(str.begin(), str.end(), isspace)) {
 			io.open(filename, std::fstream::out | std::fstream::app);
 			io << str << std::endl;
@@ -235,14 +227,12 @@ namespace line_edit
 	};
 }
 
-class raw_input_mode
-{
+class raw_input_mode {
 private:
 	struct termios term, old;
 	bool new_one;
 public:
-	raw_input_mode()
-	{
+	raw_input_mode() {
 		tcgetattr(STDIN_FILENO, &term);
 		old = term;
 		term.c_lflag &= ~ICANON;
@@ -250,13 +240,11 @@ public:
 		tcsetattr(STDIN_FILENO, TCSANOW, &term);
 		new_one = true;
 	}
-	void toggle()
-	{
+	void toggle() {
 		tcsetattr(STDIN_FILENO, TCSADRAIN, &(new_one ? old : term));
 		new_one = !new_one;
 	}
-	~raw_input_mode()
-	{
+	~raw_input_mode() {
 		tcsetattr(STDIN_FILENO, TCSADRAIN, &old);
 	}
 };
@@ -266,8 +254,7 @@ public:
  * @param {std::string&}buf
  * @return bool
  */
-static inline bool zlineedit(std::string& buf)
-{
+static inline bool zlineedit(std::string& buf) {
 	using namespace line_edit;
 	std::string s;
 	char c;
@@ -275,8 +262,7 @@ static inline bool zlineedit(std::string& buf)
 	raw_input_mode raw;
 
 	// Execute key binding action
-	auto exec_act = [&]()
-	{
+	auto exec_act = [&]() {
 		if (s.empty())
 			return false;
 		if (kv_bindkey.find(s) == kv_bindkey.end())
@@ -293,8 +279,7 @@ static inline bool zlineedit(std::string& buf)
 	};
 	
 	// Check if the keyboard was hit
-	static auto kbhit = []()
-	{
+	static auto kbhit = []() {
 		struct timeval time = { 0, ZRC_BIND_TIMEOUT };
 		fd_set val;
 
@@ -342,8 +327,7 @@ static inline bool zlineedit(std::string& buf)
  * @param {std::istream&}in,{std::string&}str,{bool}show_secondary_prompt
  * @return bool
  */
-bool zrc_getline(std::istream& in, std::string& str, bool show_secondary_prompt = false)
-{
+bool zrc_getline(std::istream& in, std::string& str, bool show_secondary_prompt = false) {
 	if (&in == &std::cin && isatty(fileno(stdin))) {
 		display_prompt(show_secondary_prompt);
 		return zlineedit(str);

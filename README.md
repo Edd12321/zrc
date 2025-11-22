@@ -1,4 +1,4 @@
-<img src="img/zrc.svg" width=100 height=auto />
+<img src="img/zrc1.png" width=100 height=auto />
 <p>
 <b>This is the new, better and REWRITTEN version of Zrc (master branch)! It has way less bugs, a better codebase, nicer syntax, etc.
 </b>

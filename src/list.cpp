@@ -3,8 +3,7 @@
  * @param {int}argc,{char**}argv
  * @return zrc_obj
  */
-zrc_obj list(int argc, char *argv[])
-{
+zrc_obj list(int argc, char *argv[]) {
 	zrc_obj ret;
 
 	for (int i = 0; i < argc; ++i) {
@@ -46,8 +45,7 @@ zrc_obj list(int argc, char *argv[])
 }
 
 /* Ditto */
-zrc_obj list(std::vector<token>& vec)
-{
+zrc_obj list(std::vector<token>& vec) {
 	char **argv = new char*[vec.size()];
 	for (size_t i = 0; i < vec.size(); ++i)
 		argv[i] = strdup(std::string(vec[i]).data());
@@ -59,14 +57,12 @@ zrc_obj list(std::vector<token>& vec)
 }
 
 /* Ditto */
-zrc_obj list(std::string& str)
-{
+zrc_obj list(std::string& str) {
 	char *argv[] = { &str[0], nullptr };
 	return list(1, argv);
 }
 
 /* Ditto */
-zrc_obj list(std::string const& str)
-{
+zrc_obj list(std::string const& str) {
 	return list(const_cast<std::string&>(str));
 }

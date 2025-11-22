@@ -15,14 +15,12 @@ struct token {
 	bool bareword, brac;
 	std::vector<substit> parts;
 
-	inline void add_part(std::string& str, substit::type type)
-	{
+	inline void add_part(std::string& str, substit::type type) {
 		parts.push_back({ type, str });
 		str.clear();
 	}
 
-	operator std::string() const
-	{
+	operator std::string() const {
 		using TT = substit::type;
 
 		// This is where we do all of the substitutions.
@@ -63,16 +61,14 @@ struct token {
 	token() : bareword(true), brac(false) {}
 	
 	template<typename T>
-	token(T const& t) : bareword(true), brac(false)
-	{
+	token(T const& t) : bareword(true), brac(false) {
 		parts.push_back({ substit::type::PLAIN_TEXT, std::string(t) });
 	}
 };
 
 struct token_list {
 	std::vector<token> elems;
-	inline void add_word(token& tok)
-	{
+	inline void add_word(token& tok) {
 		if (!tok.parts.empty()) {
 			elems.push_back(tok);
 			tok.parts.clear();
@@ -86,8 +82,7 @@ struct token_list {
  * @param {const char*}str,{int}flags
  * @return none
  */
-std::vector<std::string> glob(const char *s, int flags)
-{
+std::vector<std::string> glob(const char *s, int flags) {
 	std::vector<std::string> ret;
 	glob_t gvl;
 	memset(&gvl, 0, sizeof(glob_t));
@@ -105,8 +100,7 @@ std::vector<std::string> glob(const char *s, int flags)
  * Lexer *
  *       *
  *********/
-token_list lex(const char *p, lexer_flags flags)
-{
+token_list lex(const char *p, lexer_flags flags) {
 	using TT = substit::type;
 	static const auto allowed_var_chars =
 		"qwertyuiopasdfghjklzxcvbnm"
@@ -121,8 +115,7 @@ token_list lex(const char *p, lexer_flags flags)
 	bool quoted_single = false, quoted_double = false;
 
 	// Completes a token with leftover text
-	auto add_remaining_txt = [&](std::string str = "", bool start_new_word = 0)
-	{
+	auto add_remaining_txt = [&](std::string str, bool start_new_word) {
 		if (!text.empty())
 			curr.add_part(text, TT::PLAIN_TEXT);
 		if (start_new_word) {
@@ -135,10 +128,9 @@ token_list lex(const char *p, lexer_flags flags)
 	};
 
 	// Balanced quoting (e.g. [...], {...})
-	auto append_bquoted_str = [&](TT type, char c1, char c2)
-	{
+	auto append_bquoted_str = [&](TT type, char c1, char c2) {
 		long cmpnd = 1, brac = (*p && *p == '{');
-		add_remaining_txt();
+		add_remaining_txt("", 0);
 
 		for (++p; *p; ++p) {
 			if (*p == '\\') {
@@ -169,7 +161,7 @@ token_list lex(const char *p, lexer_flags flags)
 				if (!quoted_double) {
 					if (text.empty())
 						curr.add_part(text, TT::PLAIN_TEXT);
-					else add_remaining_txt();
+					else add_remaining_txt("", 0);
 				}
 				break;
 			case '\'':
@@ -178,7 +170,7 @@ token_list lex(const char *p, lexer_flags flags)
 				if (!quoted_single) {
 					if (text.empty())
 						curr.add_part(text, TT::PLAIN_TEXT);
-					else add_remaining_txt();
+					else add_remaining_txt("", 0);
 				}
 				break;
 
@@ -222,7 +214,7 @@ token_list lex(const char *p, lexer_flags flags)
 				if (*++p == '{')
 					append_bquoted_str(TT::VARIABLEB, '{', '}');
 				else {
-					add_remaining_txt();
+					add_remaining_txt("", 0);
 					text.clear();
 					for (; *p && strchr(allowed_var_chars, *p); ++p)
 						text += *p;
@@ -301,7 +293,7 @@ token_list lex(const char *p, lexer_flags flags)
 					text += *p;
 				else {
 					if (!text.empty())
-						add_remaining_txt();
+						add_remaining_txt("", 0);
 					for (; *p && *p != '\n'; ++p) {} --p;
 				}
 				break;
@@ -314,13 +306,11 @@ token_list lex(const char *p, lexer_flags flags)
 	return wlst;
 }
 
-std::string subst(const char *text)
-{
+std::string subst(const char *text) {
 	if (!*text) return std::string();
 	return lex(text, SUBSTITUTE).elems[0];
 }
 
-std::string subst(std::string const& text)
-{
+std::string subst(std::string const& text) {
 	return subst(text.c_str());
 }

@@ -35,8 +35,7 @@
 #undef END
 
 // To reuse getopt inside a builtin, without affecting external state
-class getopt_guard
-{
+class getopt_guard {
 private:
 	int saved_optind = 1, saved_opterr = 1, saved_optopt = 0;
 	char *saved_optarg = nullptr;
@@ -44,8 +43,7 @@ private:
 	int saved_optreset = 0;
 #endif
 public:
-	getopt_guard(int new_opterr = 1)
-	{
+	getopt_guard(int new_opterr = 1) {
 		// Get all the original ones
 		saved_optind = optind;
 		saved_opterr = opterr;
@@ -66,8 +64,7 @@ public:
 		optopt = 0;
 	}
 
-	~getopt_guard()
-	{
+	~getopt_guard() {
 		optind = saved_optind;
 		opterr = saved_opterr;
 		optopt = saved_optopt;
@@ -114,14 +111,12 @@ const std::map<std::string, int> txt2sig = {
 };
 
 // Helps us to see if we can change control flow
-#define EXCEPTION_CLASS(x)                   \
-  class x##_handler : std::exception         \
-  {                                          \
-  public:                                    \
-    virtual const char *what() const throw() \
-    {                                        \
-      return "Caught " #x;                   \
-    }                                        \
+#define EXCEPTION_CLASS(x)                      \
+  class x##_handler : std::exception {          \
+  public:                                       \
+    virtual const char *what() const throw () { \
+      return "Caught " #x;                      \
+    }                                           \
   };
 EXCEPTION_CLASS(fallthrough)
 EXCEPTION_CLASS(break)
@@ -135,27 +130,23 @@ bool in_func;
 
 volatile sig_atomic_t chld_notif;
 
-class block_handler
-{
+class block_handler {
 private:
 	bool ok = false, *ref = &in_loop;
 public:
-	block_handler(bool *ref)
-	{
+	block_handler(bool *ref) {
 		this->ref = ref;
 		if (!*ref)
 			ok = true;
 		*ref = true;
 	}
-	~block_handler()
-	{
+	~block_handler() {
 		if (ok)
 			*ref = false;
 	}
 };
 
-static inline std::string concat(int argc, char *argv[], int i)
-{
+static inline std::string concat(int argc, char *argv[], int i) {
 	std::string ret;
 	for (; i < argc; ++i) {
 		ret += argv[i];
@@ -165,14 +156,12 @@ static inline std::string concat(int argc, char *argv[], int i)
 	return ret;
 }
 
-static inline zrc_num expr(std::string const& str)
-{
+static inline zrc_num expr(std::string const& str) {
 	return expr(str.c_str());
 }
 
 // Eval-or-exec behaviour on arguments
-static inline void eoe(int argc, char *argv[], int i)
-{
+static inline void eoe(int argc, char *argv[], int i) {
 	if (argc == i+1) 
 		eval(argv[i]);
 	else
@@ -180,8 +169,7 @@ static inline void eoe(int argc, char *argv[], int i)
 }
 
 // Match ERE
-bool regex_match(std::string const& txt, std::string const& reg, int cflags = REG_NOSUB | REG_EXTENDED)
-{
+bool regex_match(std::string const& txt, std::string const& reg, int cflags = REG_NOSUB | REG_EXTENDED) {
 	regex_t regex;
 
 	if (regcomp(&regex, reg.c_str(), cflags))
@@ -196,8 +184,7 @@ std::stack<std::string> pstack;
 // Path hashing
 std::unordered_map<std::string, std::string> hctable;
 
-static inline void prints(std::stack<std::string> sp)
-{
+static inline void prints(std::stack<std::string> sp) {
 	if (!sp.empty())
 		chdir(sp.top().c_str());
 	while (!sp.empty()) {
@@ -219,11 +206,10 @@ std::vector<zrc_frame> callstack;
 struct zrc_fun {
 	std::string body;
 
-	zrc_fun()=default;
+	zrc_fun() = default;
 	zrc_fun(std::string const& b) : body(b) {}
 
-	inline zrc_obj operator()(int argc, char *argv[])
-	{
+	inline zrc_obj operator()(int argc, char *argv[]) const {
 		zrc_obj zargc_old = vars::argc; int argc_old = ::argc;
 		zrc_arr zargv_old = vars::argv; char **argv_old = ::argv;
 		vars::argv = copy_argv(argc, argv); ::argv = argv;
@@ -579,7 +565,7 @@ COMMAND(fc, [-e <editor>] [-lnr] [<num>])
 	}
 	if (!lflag) {
 		fout.close();
-		exec(2, (char*[]){&editor[0], &fc_file[0], nullptr});
+		invoke_void(exec, {editor.c_str(), fc_file.c_str()});
 		source(fc_file);
 
 		unlink(fc_file.c_str());
@@ -787,7 +773,7 @@ COMMAND(select, <var> <list> <eoe>)
 	for (;;) {
 		try {
 			std::string str;
-			builtins.at("read")(2, (char*[]){const_cast<char*>("read"), argv[1], nullptr});
+			invoke_void(builtins.at("read"), {"read", argv[1]});
 			auto var = getvar(argv[1]);
 			if (ind.find(var) != ind.end())
 				setvar("reply", std::to_string(ind[var]));
@@ -878,8 +864,7 @@ COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...
 				SYNTAX_ERROR
 		}
 	}
-	auto read_str = [&]()
-	{
+	auto read_str = [&]() {
 		status = 2;
 		if (n < 0) {
 			std::string ret_val;
@@ -888,7 +873,7 @@ COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...
 				ssize_t r = read(fd, &c, 1);
 				if (r == 1) {
 					status = 0;
-					if (strchr(delim.data(), (unsigned char)c))
+					if (strchr(delim.c_str(), (unsigned char)c))
 						break;
 					ret_val += c;
 				} else if (r == 0) {
@@ -995,7 +980,7 @@ COMMAND(cd, [<dir>])
 				std::string tmp;
 				while (getline(iss, tmp, ':')) {
 					char t[PATH_MAX];
-					snprintf(t, sizeof t, "%s/%s", tmp.data(), argv[1]);
+					snprintf(t, sizeof t, "%s/%s", tmp.c_str(), argv[1]);
 					if (!stat(t, &sb) && S_ISDIR(sb.st_mode)) {
 						chdir(t);
 						return vars::status;
@@ -1517,7 +1502,7 @@ COMMAND(list, new <w1> <w2> ... \n
 		for (auto& it : wlst) {
 			// Very very careful
 			std::string str = it;
-			it = f(2, (char*[]){LAM_STR, &str[0]});
+			it = invoke(f, {LAM_STR, str.c_str()});
 		}
 		return list(wlst);
 	}
@@ -1525,7 +1510,7 @@ COMMAND(list, new <w1> <w2> ... \n
 		zrc_fun f(argv[2]);
 		for (size_t i = 0; i < wlst.size(); ++i) {
 			std::string str = wlst[i];
-			auto e = expr(f(2, (char*[]){LAM_STR, &str[0]}));
+			auto e = expr(invoke(f, {LAM_STR, str.c_str()}));
 			if (isnan(e) || !e)
 				wlst.erase(wlst.begin() + i--);
 		}
@@ -1539,10 +1524,10 @@ COMMAND(list, new <w1> <w2> ... \n
 		}
 		zrc_fun f(argv[2]);
 		std::string s1 = wlst[0], s2 = wlst[1];
-		zrc_obj ret_val = f(3, (char*[]){LAM_STR, &s1[0], &s2[0]});
+		zrc_obj ret_val = invoke(f, {LAM_STR, s1.c_str(), s2.c_str()});
 		for (size_t i = 2; i < wlst.size(); ++i) {
 			std::string str = wlst[i];
-			ret_val = f(3, (char*[]){LAM_STR, &ret_val[0], &str[0]});
+			ret_val = invoke(f, {LAM_STR, ret_val.c_str(), str.c_str()});
 		}
 		return ret_val;
 	}

@@ -27,8 +27,7 @@ int argc; char **argv;
  * @param {std::string const&}str
  * @return none
  */
-bool source(std::string const& str, bool err/* = true */)
-{
+bool source(std::string const& str, bool err/* = true */) {
 	std::ifstream f(str);
 	if (!f) {
 		if (err)
@@ -55,8 +54,7 @@ bool source(std::string const& str, bool err/* = true */)
  * @param none
  * @return std::vector<std::string>
  */
-std::unordered_map<std::string, std::string> pathwalk()
-{
+std::unordered_map<std::string, std::string> pathwalk() {
 	std::istringstream iss{getvar(PATH)};
 	std::string tmp;
 	std::unordered_map<std::string, std::string> ret_val;
@@ -84,16 +82,14 @@ std::unordered_map<std::string, std::string> pathwalk()
  * @param {std::string const&}str
  * @return std::string
  */
-static inline std::string eval(std::string const& str)
-{
+static inline std::string eval(std::string const& str) {
 	auto wlst = lex(str.c_str(), SEMICOLON | SPLIT_WORDS).elems;
 	pipeline ppl;
 	command cmd;
 	bool can_alias = true;
 	using pm = pipeline::ppl_proc_mode;
 	using rm = pipeline::ppl_run_mode;
-	auto run_pipeline = [&](rm run, pm proc)
-	{
+	auto run_pipeline = [&](rm run, pm proc) {
 		ppl.pmode = proc;
 		
 		ppl.add_cmd(cmd); // Just in case
@@ -123,7 +119,7 @@ static inline std::string eval(std::string const& str)
 		}
 
 		// Aliases
-		if (can_alias == true && !cmd.argc && kv_alias.find(conv) != kv_alias.end()) {
+		if (can_alias == true && !cmd.argc() && kv_alias.find(conv) != kv_alias.end()) {
 			can_alias = false;
 			auto alst = lex(kv_alias[conv].c_str(), SEMICOLON | SPLIT_WORDS).elems;
 			wlst.insert(wlst.begin()+i+1, alst.begin(), alst.end());
@@ -200,8 +196,7 @@ bool get_phrase(std::istream& in, std::string& str) {
  * @param {std::istream&}in
  * @return none
  */
-static inline void eval_stream(std::istream& in)
-{
+static inline void eval_stream(std::istream& in) {
 	std::string str;
 	while (get_phrase(in, str))
 		eval(str);
@@ -212,8 +207,7 @@ static inline void eval_stream(std::istream& in)
  * @param {int}argc,{char**}argv
  * @return zrc_arr
  */
-zrc_arr copy_argv(int argc, char *argv[])
-{
+zrc_arr copy_argv(int argc, char *argv[]) {
 	zrc_arr ret;
 	for (int i = 0; i < argc; ++i)
 		ret[std::to_string(i)] = argv[i];
@@ -222,20 +216,17 @@ zrc_arr copy_argv(int argc, char *argv[])
 }
 
 /** Random message printers **/
-static inline void usage()
-{
+static inline void usage() {
 	std::cerr << "usage: zrc [--help|--version] [-c <script>|<file>] [<args...>]" << std::endl;
 	exit(EXIT_FAILURE);
 }
 
-static inline void version()
-{
+static inline void version() {
 	std::cerr << ZVERSION << std::endl;
 	exit(EXIT_FAILURE);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	std::ios_base::sync_with_stdio(false);
 	// It's over 9000! (not really)
 	struct rlimit rlim;

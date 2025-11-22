@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <array>
 #include <functional>
 #include <vector>
 // volatile sig_atomic_t chld_notif;
@@ -21,8 +20,7 @@
  * @param {int}fd
  * @return bool
  */
-static inline bool good_fd(int fd)
-{
+static inline bool good_fd(int fd) {
 	return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
 }
 
@@ -31,10 +29,9 @@ static inline bool good_fd(int fd)
  * @param {std::string const&}str
  * @return none
  */
-bool run_function(std::string str)
-{
+bool run_function(std::string str) {
 	if (functions.find(str) != functions.end()) {
-		functions.at(str)(1, (char*[]){&str[0], nullptr});
+		invoke(functions.at(str), {str.c_str(), nullptr});
 		return true;
 	}
 	return false;
@@ -45,8 +42,7 @@ bool run_function(std::string str)
  * @param {int}argc,{char**}argv,{redir_flags}flags
  * @return int
  */
-static inline zrc_obj redir(int argc, char *argv[], int fd, redir_flags flags)
-{
+static inline zrc_obj redir(int argc, char *argv[], int fd, redir_flags flags) {
 	if (argc < 3) {
 _syn_error_redir:
 		std::cerr << "syntax error: " << argv[0];
@@ -103,8 +99,7 @@ _syn_error_redir:
  * @param {int}argc,{char**}argv
  * @return void
  */
-void exec_extern(int argc, char *argv[])
-{
+void exec_extern(int argc, char *argv[]) {
 	auto largv = argv[argc];
 	argv[argc] = nullptr;
 	if (hctable.find(*argv) != hctable.end()) {
@@ -125,8 +120,7 @@ void exec_extern(int argc, char *argv[])
  * @param {int}argc,{char**}argv
  * @return none
  */
-void exec(int argc, char *argv[])
-{
+void exec(int argc, char *argv[]) {
 	// If found function, run
 	if (functions.find(*argv) != functions.end())
 		vars::status = functions.at(*argv)(argc, argv);
@@ -161,8 +155,7 @@ void exec(int argc, char *argv[])
  * @param {std::string const&}str
  * @return std::string
  */
-static inline std::string get_output(std::string const& str)
-{
+static inline std::string get_output(std::string const& str) {
 	std::string ret_str;
 	ret_str.reserve(RESERVE_STR); // Try to speed up just a bit
 	int pd[2];
@@ -195,8 +188,7 @@ std::vector<std::string> fifo_cleanup;
  * @param {std::string const&}str
  * @return std::string
  */
-static inline std::string get_fifo(std::string const& str)
-{
+static inline std::string get_fifo(std::string const& str) {
 	char temp[] = FIFO_DIRNAME;
 	std::string fifo_name = mkdtemp(temp);
 	std::string fifo_file = fifo_name+"/" FIFO_FILNAME;
@@ -216,46 +208,59 @@ static inline std::string get_fifo(std::string const& str)
 	}
 }
 
-struct command {
-	std::array<char*, 4096> argv;
-	int argc = 0;
-	command()=default;
+class command {
+private:
+	std::vector<char*> args = {nullptr};
+public:
+	command() = default;
+	command(command const&) = delete;
+	command& operator=(command const&) = delete;
+	command& operator=(command&&) = delete;
+	command(command&& cmd) {
+		swap(args, cmd.args);
+		cmd.args = {nullptr};
+	};
 
-	command(command&& cmd)
-	{
-		std::swap(argv, cmd.argv);
-		argc = cmd.argc;
-		cmd.argv = std::array<char*, 4096>();
-		cmd.argc = 0;
-	}
-
-	~command()
-	{
-		for (int i = 0; i < argc; ++i)
-			free(argv[i]);
+	~command() {
+		for (int i = 0; i < argc(); ++i)
+			free(args[i]);
 	}
 public:
-
-	inline void add_arg(const char *str)
-	{
-		if (argc == argv.size()-2) {
-			std::cerr << "Too many args!\n";
+	command(std::initializer_list<const char*> list) {
+		args = {nullptr};
+		for (auto const& elem : list)
+			add_arg(elem);
+	}
+	// note: NEVER call .add_arg() after .argv()
+	inline char **argv() noexcept { return args.data(); }
+	inline int argc() const noexcept { return args.size() - 1; }
+	inline void add_arg(const char *str) {
+		if (!str)
 			return;
-		} else {
-			argv[argc++] = strdup(str);
-			argv[argc] = NULL;
-		}
+		char *s = strdup(str);
+		if (!s) throw std::bad_alloc();
+		args.back() = s;
+		args.push_back(nullptr);
 	}
 };
 
-/* Ditto */
-static inline void exec(command& cmd)
-{
-	exec(cmd.argc, cmd.argv.data());
+template<typename Fun>
+zrc_obj invoke(Fun const& f, std::initializer_list<const char*> list) {
+	command cmd(list);
+	return f(cmd.argc(), cmd.argv());
 }
 
-class pipeline
-{
+template<typename Fun>
+void invoke_void(Fun const& f, std::initializer_list<const char*> list) {
+	command cmd(list);
+	f(cmd.argc(), cmd.argv());
+}
+
+static inline void exec(command& cmd) {
+	exec(cmd.argc(), cmd.argv());
+}
+
+class pipeline {
 public:
 	enum ppl_run_mode {
 		AND, OR, NORMAL
@@ -269,17 +274,15 @@ public:
 	void execute();
 	std::vector<command> cmds;
 
-	inline void add_cmd(command& cmd)
-	{
-		if (cmd.argc)
+	inline void add_cmd(command& cmd) {
+		if (cmd.argc())
 			cmds.push_back(std::move(cmd));
 	}
 
-	operator std::string() const
-	{
+	operator std::string() {
 		std::string ret;
 		for (size_t i = 0; i < cmds.size(); ++i) {
-			ret += list(cmds[i].argc, const_cast<char**>(cmds[i].argv.data())) + " ";
+			ret += list(cmds[i].argc(), cmds[i].argv()) + " ";
 			if (i < cmds.size()-1)
 				ret += "| ";
 		}
@@ -306,8 +309,7 @@ unsigned long long jc;
  * @param {pipeline const&}ppl,{pipeline::ppl_proc_mode}status,{pid_t}pgid
  * @return int
  */
-int add_job(pipeline const& ppl, pipeline::ppl_proc_mode status, pid_t pgid)
-{
+int add_job(pipeline& ppl, pipeline::ppl_proc_mode status, pid_t pgid) {
 	jc = jobs.empty() ? 1 : ((*jobs.rbegin()).first + 1);
 	jobs[jc] = { (std::string)ppl, status, pgid };
 
@@ -319,8 +321,7 @@ int add_job(pipeline const& ppl, pipeline::ppl_proc_mode status, pid_t pgid)
  * @param none
  * @return void
  */
-void sighupper()
-{
+void sighupper() {
 	for (auto const& j : jobs) {
 		auto const& job = j.second;
 		kill(-job.pgid, SIGHUP);
@@ -333,8 +334,7 @@ void sighupper()
  * @param none
  * @return void
  */
-void reaper(int who, int how)
-{
+void reaper(int who, int how) {
 	pid_t pid;
 	int status;
 	while ((pid = waitpid(who, &status, how)) > 0) {
@@ -378,13 +378,11 @@ void reaper(int who, int how)
 	}
 }
 
-void reaper()
-{
+void reaper() {
 	reaper(WAIT_ANY, WNOHANG | WUNTRACED);
 }
 
-void reset_sigs()
-{
+void reset_sigs() {
 	for (int sig = 1; sig < NSIG; ++sig) {
 		if (sig == SIGKILL || sig == SIGSTOP)
 			continue;
@@ -392,23 +390,20 @@ void reset_sigs()
 	}
 }
 
-pid_t job2pid(int jid)
-{
+pid_t job2pid(int jid) {
 	if (jobs.find(jid) != jobs.end())
 		return jobs[jid].pgid;
 	return -1;
 }
 
-int pid2job(pid_t pid)
-{
+int pid2job(pid_t pid) {
 	for (auto const& it : jobs)
 		if (it.second.pgid == pid)
 			return it.first;
 	return -1;
 }
 
-void jobstate(int job, int st)
-{
+void jobstate(int job, int st) {
 	jobs[job].state = static_cast<pipeline::ppl_proc_mode>(st);
 }
 
@@ -417,8 +412,7 @@ void jobstate(int job, int st)
  * @param none
  * @return void
  */
-inline void show_jobs()
-{
+inline void show_jobs() {
 	using pp = pipeline::ppl_proc_mode;
 	for (auto const& it : jobs) {
 		auto& v = it.second;
@@ -430,8 +424,7 @@ inline void show_jobs()
 	}
 }
 
-inline void disown_job(int n)
-{
+inline void disown_job(int n) {
 	if (jobs.find(n) != jobs.end())
 		jobs.erase(n);
 }
@@ -443,8 +436,7 @@ inline void disown_job(int n)
  * @return none
  */
 // !!! Beware of dragons !!!
-inline bool pipeline::execute_act()
-{
+inline bool pipeline::execute_act() {
 	int input = STDIN_FILENO;
 	new_fd old_input(input);
 	int pgid = 0;
@@ -464,8 +456,8 @@ inline bool pipeline::execute_act()
 	} to_close;
 
 	for (size_t i = 0; i < cmds.size() - 1; ++i) {
-		int argc = cmds[i].argc;
-		char **argv = cmds[i].argv.data();
+		int argc = cmds[i].argc();
+		char **argv = cmds[i].argv();
 		int pd[2];
 		pipe(pd);
 
@@ -515,8 +507,8 @@ inline bool pipeline::execute_act()
 		dup2(input, STDIN_FILENO);
 
 	// Last one!
-	int argc = cmds.back().argc;
-	char **argv = cmds.back().argv.data();
+	int argc = cmds.back().argc();
+	char **argv = cmds.back().argv();
 	// This is literally the exec function but with extra stuff:
 
 	bool is_fun = functions.find(*argv) != functions.end();
@@ -600,8 +592,7 @@ inline bool pipeline::execute_act()
 }
 
 /* Ditto */
-void pipeline::execute()
-{
+void pipeline::execute() {
 	reaper();
 	if (cmds.empty())
 		return;
