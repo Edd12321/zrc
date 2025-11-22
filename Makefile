@@ -1,4 +1,4 @@
-PREFIX = /usr/local
+PREFIX = /usr#/local
 SYSCONFDIR = /etc
 SRCS = $(wildcard src/*.cpp src/*.hpp)
 CXXFLAGS = -std=c++11 -pedantic -Wno-unused-result -O3
