@@ -1115,16 +1115,16 @@ COMMAND(chr, <expr1> <expr2>...)
 	if (argc != 2) SYNTAX_ERROR
 	std::string ret;
 	auto e = expr(concat(argc, argv, 1));
-	if (isnan(e))
+	if (isnan(e) || e < 0 || e > 255)
 		ret = "error";
 	else
-		ret += (char)e;
+		ret += static_cast<unsigned char>(e);
 	return ret
 END
 
 COMMAND(ord, <c>)
 	if (argc != 2) SYNTAX_ERROR
-	return std::to_string(argv[1][0])
+	return std::to_string(static_cast<unsigned char>(argv[1][0]))
 END
 
 // Lexical scoping

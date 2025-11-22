@@ -19,7 +19,7 @@ fn beep {
 			for {set i = 0} {$i < $no_samples} {inc i} {
 				set t = [expr {$i / $sample_rate}]
 				set sample = [expr {floor($amp * sin($omega*$t + $phi))}]
-				echo -n [chr $sample]
+				echo -n [chr {$sample + 128}]
 			}
 		}; echo $buffer | >&- 2 aplay -r $sample_rate
 	}
