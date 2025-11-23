@@ -82,15 +82,11 @@ _syn_error_redir:
 	}
 	new_fd nfd(fd);
 	dup2(ffd, fd);
-	try {
-		eoe(argc, argv, 2);
-	} catch (...) { // too much effort to make it proper
+	auto cleanup = make_scope_exit([&]() {
 		close(ffd);
 		dup2(nfd, fd);
-		throw;
-	}
-	close(ffd);
-	dup2(nfd, fd);
+	});
+	eoe(argc, argv, 2);
 	return vars::status;
 }
 
@@ -354,8 +350,8 @@ void reaper(int who, int how) {
 				vars::status = numtos(128 + WTERMSIG(status));
 			continue;
 		}
-		if (getpid() == tty_pid && interactive_sesh)
-			tcsetpgrp(tty_fd, tty_pid);
+		//if (getpid() == tty_pid && interactive_sesh)
+		//	tcsetpgrp(tty_fd, tty_pid);
 		if (WIFSTOPPED(status)) {
 			if (interactive_sesh)
 				std::cerr << "[" << jid << "] Stopped" << std::endl;
@@ -443,14 +439,12 @@ inline bool pipeline::execute_act() {
 
 	struct fd_closer_guard {
 		std::vector<int> v;
-		inline void cleanup()
-		{
+		inline void cleanup() {
 			for (auto const& fd : v)
 				close(fd);
 			v.clear();
 		}
-		~fd_closer_guard()
-		{
+		~fd_closer_guard() {
 			cleanup();
 		}
 	} to_close;
@@ -468,11 +462,10 @@ inline bool pipeline::execute_act() {
 			if (main_shell)
 				setpgid(0, pgid);
 			dup2(input, STDIN_FILENO);
-			if (input != STDIN_FILENO)
-				close(input);
 			dup2(pd[1], STDOUT_FILENO);
 			close(pd[1]);
 			close(pd[0]);
+			to_close.cleanup();
 
 			// If found function, run (atoi used for no throw)
 			if (functions.find(*argv) != functions.end())

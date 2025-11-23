@@ -11,6 +11,7 @@ all: bin/zrc
 bin/zrc: $(SRCS) src/y.tab.cpp src/lex.yy.cpp
 	mkdir -p bin
 	$(CXX) $(CXXFLAGS) src/lex.yy.cpp src/y.tab.cpp src/main.cpp -o bin/zrc
+	strip bin/zrc
 
 src/y.tab.cpp: src/expr.y
 	bison -d src/expr.y -o src/y.tab.cpp
