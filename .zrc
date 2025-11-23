@@ -65,22 +65,20 @@ fn prompt {
 			}
 		}"
 		echo -n "`{
-			if {![str `{>& 2 1 expr $s} len]} {
-				if {1 <= ($s) && ($s) <= 255} {
-					if {[str $last_status != $s]} {
-						let {width right pos} {
-							set width = `{tput cols}
-							set right = :(
+			if {[str 1 <= $s] && [str $s <= 255]} {
+				if {[str $last_status != $s]} {
+					let {width right pos} {
+						set width = `{tput cols}
+						set right = :(
 
-							set pos = [expr {$width - [str $right len]}]
-							echo -n "\e\[s"                    # Saves cursor position
-							echo -n "\e\[${pos}G"              # Move cursor to calculated column
-							echo -n "${rbold}${right}${reset}" # Print the frowny
-							echo -n "\e\[u"                    # Restore cursor
-						}
+						set pos = [expr {$width - [str $right len]}]
+						echo -n "\e\[s"                    # Saves cursor position
+						echo -n "\e\[${pos}G"              # Move cursor to calculated column
+						echo -n "${rbold}${right}${reset}" # Print the frowny
+						echo -n "\e\[u"                    # Restore cursor
 					}
-					echo -n \ $red\[${rbold}${s}${red}\]$reset
 				}
+				echo -n \ $red\[${rbold}${s}${red}\]$reset
 			}
 		}"'> '
 		set last_status = $s
@@ -88,19 +86,16 @@ fn prompt {
 }
 
 bindkey -c "\cl" {
-	>& 1 2 eval {
-		clear; prompt
-	}
+	>& 1 2 clear
+	prompt
 }
 bindkey -c "\e?" {
-	>& 1 2 eval {
-		echo && l; prompt
-	}
+	>& 1 2 eval { echo && l }
+	prompt
 }
 bindkey -c "\en" {
-	>& 1 2 eval {
-		archey3; prompt
-	}
+	>& 1 2 archey3
+	prompt
 }
 bindkey -c "\cb"  { firefox & }
 bindkey -c "\ct"  { $TERMINAL & }
@@ -210,7 +205,7 @@ fn expvar {
 }
 expvar AUTH    doas
 expvar CDPATH  $CDPATH:$HOME
-expvar PATH    /usr/lib/zrc/bin:$HOME/.local/bin:$PATH
+expvar PATH    $HOME/.local/bin:$PATH
 expvar PAGER   most
 expvar BROWSER firefox
 expvar EDITOR  nvim

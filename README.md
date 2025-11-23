@@ -108,5 +108,5 @@ As mentioned on [the Oil wiki's Alternative Shells list](https://github.com/oils
 * [Tcl](https://www.tcl.tk)
 * [Powershell](https://learn.microsoft.com/en-us/powershell/)
 * [Plan 9's rc](https://9fans.github.io/plan9port/man/man1/rc.html)
-* [es] (https://wryun.github.io/es-shell/)
+* [es](https://wryun.github.io/es-shell/)
 * [(t)csh](https://en.wikipedia.org/wiki/C_shell)

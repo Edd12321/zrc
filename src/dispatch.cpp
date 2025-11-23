@@ -826,6 +826,10 @@ END
 
 // Fork off a new process, C-style
 COMMAND(fork,)
+	if (interactive_sesh) {
+		std::cerr << "can't fork, not in a script\n";
+		return "-1";
+	}
 	return numtos(fork())
 END
 

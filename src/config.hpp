@@ -1,3 +1,4 @@
+#include <sys/cdefs.h>
 #include <string>
 #include <unordered_map>
 
@@ -9,7 +10,11 @@
 #define ZLOGOUT          ".zrc_logout"      /* Logout filename */
 #define DEFAULT_PPROMPT  "zrc% "            /* Defualt primary prompt */
 #define DEFAULT_SPROMPT  "> "               /* Default secondary prompt */
+#ifdef __TERMUX__
+#define FIFO_DIRNAME     "/data/data/com.termux/files/usr/tmp/zrc.XXXXXXX"
+#else
 #define FIFO_DIRNAME     "/tmp/zrc.XXXXXXX" /* Default dir name for FIFOs / FCs */
+#endif
 #define FIFO_FILNAME     "fifo"             /* Default filename for FIFOs */
 #define FC_FILNAME       "fc"               /* Default filename for FCs */
 #define CDPATH           "CDPATH"           /* What variable to use as our $CDPATH */ 
