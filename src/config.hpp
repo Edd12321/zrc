@@ -1,4 +1,3 @@
-#include <sys/cdefs.h>
 #include <string>
 #include <unordered_map>
 
