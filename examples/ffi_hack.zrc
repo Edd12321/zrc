@@ -1,0 +1,46 @@
+#!../bin/zrc
+
+fn ffi {
+	if {$argc != 4} {
+		>& 2 1 echo 'usage: ffi <fname> requires <includes>'
+		return error
+	}
+	let {prog i tmpfile} {
+		foreach i $3 {
+			if {![str $i =~ {^[a-zA-Z0-9]+$}]} {
+				>& 2 1 echo 'syntax error: header must be alphanum'
+				return error
+			}
+			set prog .= '#include <$i.h>\n'
+		}
+		set prog .= '#include <stdio.h>\nint main(int argc, char *argv\\\[\\\]) \\\{'
+		fn $1 '
+			let \{arg res tmpfile ret fname\} \{
+				set tmpfile = `\{mktemp\}
+				eval \{
+					set fname = \$0
+					echo -n "$prog\n\ttypeof(\$fname("; shift
+					foreach arg \[arr argv vals\] \{
+						set res .= (\$arg),
+					\}
+					set res = \[str \$res - \[str \$res len\]-1\]
+					echo "\$res)) ret = \$fname(\$res);"
+					echo "\tFILE *wr = fopen(argv\\\[2\\\], \\\"wb\\\");"
+					echo "\tfprintf(wr, \\\"(signed char\\\[\\\])\\\{\\\");"
+					echo "\tfor (size_t i = 0; i < sizeof(ret); ++i)"
+					echo "\t\tfprintf(wr, \\\"%hhd%s\\\", ((signed char*)&ret)\\\[i\\\], i + 1 < sizeof(ret) ? \\\", \\\" : \\\"\\\");"
+					echo "\tfprintf(wr, \\\"\\\}\\\");"
+					echo "\tfclose(wr);"
+					echo "\treturn 0;\\\n\\\}"
+				\} | tcc -run - -- \$tmpfile
+				set ret = `\{cat \$tmpfile\}
+				>&- rm -f \$tmpfile
+				return \$ret
+			\}
+		'
+	}
+}
+
+if {[str `{caller} != "repl @ interactive"]} {
+	echo source me
+}

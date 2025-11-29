@@ -153,9 +153,9 @@ static inline void prints(std::stack<std::string>);
 
 // LIST.CPP
 zrc_obj list(int, const char**);
-zrc_obj list(std::vector<token>&);
-zrc_obj list(std::string&);
-zrc_obj list(std::string const&);
+inline zrc_obj list(int, char**);
+inline zrc_obj list(std::vector<token>&);
+inline zrc_obj list(std::string const&);
 
 // EXPR.L
 extern zrc_num expr(const char*);

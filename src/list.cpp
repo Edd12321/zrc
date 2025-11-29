@@ -3,7 +3,7 @@
  * @param {int}argc,{char**}argv
  * @return zrc_obj
  */
-zrc_obj list(int argc, char *argv[]) {
+zrc_obj list(int argc, const char *argv[]) {
 	zrc_obj ret;
 
 	for (int i = 0; i < argc; ++i) {
@@ -19,15 +19,16 @@ zrc_obj list(int argc, char *argv[]) {
 			ret += "\'\'";
 		for (int j = 0, c; (c = argv[i][j]); ++j) {
 			switch (c) {
-				case  '<':
+				case  '<': /* FALLTHROUGH */
+				case  '`':
 					if (argv[i][j+1] == '{')
 						ret += '\\';
 					ret += c;
 					break;
 
+				case  '"': /* FALLTHROUGH */
 				case  '[': /* FALLTHROUGH */
 				case  '$': /* FALLTHROUGH */
-				case  '`': /* FALLTHROUGH */
 				case '\'': /* FALLTHROUGH */ 
 				case '\\':
 					ret += '\\';
@@ -44,25 +45,23 @@ zrc_obj list(int argc, char *argv[]) {
 	return ret;
 }
 
+inline zrc_obj list(int argc, char *argv[]) {
+	return list(argc, const_cast<const char**>(argv));
+}
+
 /* Ditto */
-zrc_obj list(std::vector<token>& vec) {
-	char **argv = new char*[vec.size()];
-	for (size_t i = 0; i < vec.size(); ++i)
-		argv[i] = strdup(std::string(vec[i]).data());
-	auto ret = list(vec.size(), argv);
-	for (size_t i = 0; i < vec.size(); ++i)
-		free(argv[i]);
-	delete [] argv;
+inline zrc_obj list(std::vector<token>& vec) {
+	zrc_obj ret;
+	for (size_t i = 0; i < vec.size(); ++i) {
+		ret += list((std::string)vec[i]);
+		if (i < vec.size() - 1)
+			ret += ' ';
+	}
 	return ret;
 }
 
 /* Ditto */
-zrc_obj list(std::string& str) {
-	char *argv[] = { &str[0], nullptr };
+inline zrc_obj list(std::string const& str) {
+	const char *argv[] = { str.c_str(), nullptr };
 	return list(1, argv);
-}
-
-/* Ditto */
-zrc_obj list(std::string const& str) {
-	return list(const_cast<std::string&>(str));
 }
