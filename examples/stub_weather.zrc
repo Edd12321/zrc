@@ -1,0 +1,174 @@
+#!../bin/zrc
+# Code ported from Rc to Zrc from:
+# https://rosettacode.org/wiki/Rc
+
+# sadly rainmaker.wunderground.com BBS doesnt work anymore
+# so i pieced together how the script would've behaved until 2018
+# this is purely a simulation to show how the shell handles i/o
+fn con {
+echo '------------------------------------------------------------------------------
+*               Welcome to THE WEATHER UNDERGROUND telnet service!            *
+------------------------------------------------------------------------------
+*                                                                            *
+*   National Weather Service information provided by Alden Electronics, Inc. *
+*    and updated each minute as reports come in over our data feed.          *
+*                                                                            *
+*   **Note: If you cannot get past this opening screen, you must use a       *
+*   different version of the "telnet" program--some of the ones for IBM      *
+*   compatible PC\'s have a bug that prevents proper connection.              *
+*                                                                            *
+------------------------------------------------------------------------------\n'
+	echo -n 'Press Return to continue:'
+	read
+	echo -n 'Press Return for menu\n'
+	echo -n 'or enter 3 letter forecast city code-- '
+	read input
+
+	set errmsg = 'Not implemented'
+	if {[str $input len]} { die $errmsg }
+	while 1 {
+		echo -n '
+                 WEATHER UNDERGROUND MAIN MENU
+                ******************************
+                 1) US forecasts and climate data
+                 2) Canadian forecasts
+                 3) Current weather observations
+                 4) Ski conditions
+                 5) Long-range forecasts
+                 6) Latest earthquake reports
+                 7) Severe weather
+                 8) Hurricane advisories
+                 9) Weather summary for the past month
+                10) International data
+                11) Marine forecasts and observations
+                12) Ultraviolet light forecast
+                 X) Exit program
+                 C) Change scrolling to screen
+                 H) Help and information for new users
+                 ?) Answers to all your questions
+                   Selection:'
+		read input
+		switch $input {
+			case 'c' fallthrough
+			case 'C' {
+				echo -n '
+                OPTION TO CHANGE SCROLLING TO SCREEN
+
+                Select the number of lines printed to screen at one time:
+                ---------------------------------------------------------
+                1) 24 lines (default)
+                2) 48 lines
+                3) 60 lines
+                4) Unlimited
+                5) 12 lines 
+
+                   Selection:'
+				read input
+				if {[str $input != '4']} { die $errmsg }
+			}
+
+			case '1' {
+				echo -n '
+                         CITY FORECAST MENU
+                ---------------------------------------------------
+                1) Print forecast for selected city
+                2) Print climatic data for selected city
+                3) Display 3-letter city codes for a selected state
+                4) Display all 2-letter state codes
+                M) Return to main menu
+                X) Exit program
+                ?) Help
+                   Selection:'
+				read input
+				if {[str $input != '1'] && [str $input != '3']} { die $errmsg }
+				echo -n '
+          Enter 3-letter city code: '
+				read input
+				date '+
+          Fake Weather Conditions at %H:%M %p %Z on %d %b %Y for ${input}City.
+          Temp(F)    Humidity(%)    Wind(mph)    Pressure(in)    Weather
+          ========================================================================
+            51          63%         EAST at 15       29.88      Mostly Cloudy
+
+          Forecast for ${input}City, ${input}State.'
+				read input 
+				echo '
+          blah1 today.'
+				read input 
+				echo '
+          blah2 tomorrow.'
+				read input 
+				echo '
+          blah3 thursday with a chance of acid rain.'
+				read input 
+				echo '
+          blah4 fry-day.'
+
+				echo -n '
+          Press Return to continue, M to return to menu, X to exit: '
+		  		read input
+				if {[str $input != 'x'] && [str $input != 'X']} { die $errmsg }
+				exit
+			}
+
+			case 'x' fallthrough
+			case 'X' {
+				echo $input
+				exit
+			}
+
+			default { die $errmsg }
+		}
+	}
+}
+
+set DEFAULT = ewr
+
+fn usage {
+	>& 2 1 echo 'usage: weather 3-letter-city-code'
+	>& 2 1 echo 'for a list of cities in new york, say'
+	>& 2 1 echo '\tweather ny'
+	exit
+}
+
+shift; shift # zrc handles args differently than rc
+switch $argc {
+	case 0 {
+		set arg = $DEFAULT
+		if {[str $weather len]} {
+			set arg = $weather
+		}
+	}
+	case 1 {
+		set arg = $0
+	}
+	default {
+		usage
+	}
+}
+if {[str $arg == 'fake']} {
+	con -nrl tcp!rainmaker.wunderground.com!telnet
+	exit
+}
+switch $arg {
+	regex {[a-zA-Z][a-zA-Z][a-zA-Z]} {
+		set script = [list new '' '' 'C' '4' '1' '1' $arg '' '' '' '' 'X']
+	}
+	regex {[a-zA-Z][a-zA-Z]} {
+		set script = [list new '' '' 'C' '4' '1' '3' $arg '' '' '' '' 'X']
+	}
+	default {
+		usage
+	}
+}
+
+foreach i $script {
+	echo $i
+} | con -nrl tcp!rainmaker.wunderground.com!telnet \
+  | sed -n {/Enter .-letter .* code:/,/CITY FORECAST MENU/p} \
+  | sed   {s/Enter .-letter .* code: //} \
+  | sed   {s/   Press Return to continue, M to return to menu, X to exit: //} \
+  | grep -v 'CITY FORECAST MENU' \
+  | sed {s/ *$//} \
+  | uniq
+# | tr -d '\n'
