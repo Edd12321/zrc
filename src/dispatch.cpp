@@ -362,7 +362,10 @@ END
 COMMAND(rehash,)
 	for (auto const& file : pathwalk()) {
 		std::string path = file.first, full = file.second;
-		char *name = basename(&path[0]);
+		char *path_c = strdup(path.c_str());
+		auto cleanup = make_scope_exit([&](){free(path_c);});
+		if (path_c == NULL) throw std::bad_alloc();
+		char *name = basename(path_c);
 		hctable[name] = full;
 		std::cout << "Added " << name << " (" << full << ")\n";
 	}
@@ -983,10 +986,10 @@ COMMAND(cd, [<dir>])
 				std::istringstream iss{getvar(CDPATH)};
 				std::string tmp;
 				while (getline(iss, tmp, ':')) {
-					char t[PATH_MAX];
-					snprintf(t, sizeof t, "%s/%s", tmp.c_str(), argv[1]);
-					if (!stat(t, &sb) && S_ISDIR(sb.st_mode)) {
-						chdir(t);
+					tmp += "/";
+					tmp += argv[1];
+					if (!stat(tmp.c_str(), &sb) && S_ISDIR(sb.st_mode)) {
+						chdir(tmp.c_str());
 						return vars::status;
 					}
 				}

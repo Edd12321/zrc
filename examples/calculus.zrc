@@ -1,0 +1,34 @@
+#!../bin/zrc
+set N = 400000
+
+fn derivative {
+	let {N dx f} {
+		set N = $1 f = $2 x = $3
+		set dx = [expr {1 / ($N)}]
+		echo d/d\$1 $f @ $x = [expr {
+			([apply "expr {$f}" [expr ($x) + ($dx)]] - [apply "expr {$f}" [expr $x]])
+			/ $dx
+		}]
+	}
+}
+derivative $N {$1**2 + 2*$1 + 3} 5
+derivative $N {4*$1 + sin(cos(lgamma($1)))} 2
+
+fn integral {
+	let {a b N dx f} {
+		set a = $1 b = $2 N = $3 f = $4
+		set dx = [expr ($b - $a) / ($N)]
+		echo ∫(a=$a, b=$b) $f d\$1 ≈ [list reduce {
+			let {tmp} {
+				set tmp = $1
+				set 1 = $2
+				set 2 = $tmp
+			}
+			expr $2 + (($f) * {$dx})
+		} `{seq [expr $a] $dx [expr $b]}] (N=$N)
+	}
+}
+integral 0 1 $N {sin($1)}
+integral -1/2014 1/2014 $N {$1**2014 * arccos(2014*$1)}
+integral -5 5 $N {abs($1)}
+integral 1 2025 $N {ceil(2025 / floor($1)) - floor(2025 / ceil($1))}
