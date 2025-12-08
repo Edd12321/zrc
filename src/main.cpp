@@ -64,13 +64,16 @@ std::unordered_map<std::string, std::string> pathwalk() {
 		struct dirent *entry;
 		DIR *d = opendir(tmp.c_str());
 		if (d) {
+			auto cleanup = make_scope_exit([&](){closedir(d);});
 			while ((entry = readdir(d))) {
 				std::string short_name = entry->d_name;
 				std::string full_name = tmp + "/" + short_name;
-				if (!stat(full_name.c_str(), &sb) && sb.st_mode & S_IXUSR && ret_val.find(short_name) == ret_val.end())
+				if ((!stat(full_name.c_str(), &sb))
+				&&  (S_ISREG(sb.st_mode))
+				&&  (sb.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))
+				&&  (ret_val.find(short_name) == ret_val.end()))
 					ret_val[short_name] = full_name;
 			}
-			closedir(d);
 		}
 	}
 	return ret_val;
