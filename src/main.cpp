@@ -314,8 +314,16 @@ int main(int argc, char *argv[]) {
 				eval(argv[2]);
 			else
 				usage();
-		} else if (!source(argv[1]))
-			return EXIT_FAILURE;
+		} else {
+			// Don't use source so `caller` is empty
+			std::ifstream fin(argv[1]);
+			if (!fin) {
+				perror(argv[1]);
+				return EXIT_FAILURE;
+			}
+			eval_stream(fin);
+			exit(stonum(vars::status));
+		}
 	}
-	return EXIT_SUCCESS;
+	return stonum(vars::status);
 }

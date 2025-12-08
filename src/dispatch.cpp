@@ -1593,10 +1593,12 @@ COMMAND(>&, [<fd1>] <fd2> <eoe>)
 	}
 	new_fd fd(fd1);
 	dup2(fd2, fd1);
+	auto cleanup = make_scope_exit([&]() {
+		dup2(fd, fd1);
+		if (!is_valid)
+			close(fd1);
+	});
 	eoe(argc, argv, 2);
-	dup2(fd, fd1);
-	if (!is_valid)
-		close(fd1);
 END
 
 // Close fds
@@ -1617,9 +1619,11 @@ COMMAND(>&-, [<fd>] <eoe>)
 
 	new_fd nfd(fd);
 	close(fd);
+	auto cleanup = make_scope_exit([&]() {
+		if (is_valid)
+			dup2(nfd, fd);
+	});
 	eoe(argc, argv, 1);
-	if (is_valid)
-		dup2(nfd, fd);
 END
 
 };

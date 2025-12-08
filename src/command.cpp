@@ -580,7 +580,6 @@ inline bool pipeline::execute_act() {
 		}
 	}	
 	dup2(old_input, STDIN_FILENO);
-	//close(old_input);
 	return true;
 }
 
@@ -589,15 +588,17 @@ void pipeline::execute() {
 	reaper();
 	if (cmds.empty())
 		return;
+	auto cleanup = make_scope_exit([&]() {
+		cmds.clear();
+		for (auto const& it : fifo_cleanup) {
+			unlink((it + "/" FIFO_FILNAME).c_str());
+			rmdir(it.c_str());
+		}
+		fifo_cleanup.clear();
+	});
 	switch (rmode) {
 		case ppl_run_mode::AND: !stonum(vars::status) && execute_act(); break;
 		case ppl_run_mode::OR:  !stonum(vars::status) || execute_act(); break;
 		case ppl_run_mode::NORMAL:                       execute_act(); break;
 	}
-	cmds.clear();
-	for (auto const& it : fifo_cleanup) {
-		unlink((it+"/" FIFO_FILNAME).c_str());
-		rmdir(it.c_str());
-	}
-	fifo_cleanup.clear();
 }
