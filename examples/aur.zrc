@@ -1,0 +1,48 @@
+#!/usr/bin/env zrc
+###################################
+# Original bash scripts by Andrei #
+###################################
+fn dieit {
+	die '\e\[3mError: $1\e\[0m'
+}
+
+switch `{basename $1} {
+	case aur.zrc {
+		shift # Scapam de "zrc"
+		shift # Scapam de "aur.zrc"
+		while {$argc} {
+			if {[str $0 =~ '~'] || [str $0 =~ '/']} {
+				dieit '$0 is not a valid package name'
+			}
+			git clone https://aur.archlinux.org/$0
+			if {![test -d $0]} {
+				cd $0
+				makepkg -si
+				cd ..
+				rm -rf $0
+				shift
+			} else exit 1
+		}
+	}
+	case uaur.zrc {
+		set LANG = C; export LANG
+		
+		# Get the list of AUR packages and their versions in one go
+		arr packages := `{pacman -Qm | awk {$1 !~ /-git$/ {print $1}}}
+		arr versions := `{pacman -Qi {*}[arr packages vals] | awk {/Version/{print $3}}}
+	
+		# Fetch all package info from AUR in one request
+		set info = `{curl -s https://aur.archlinux.org/rpc/v5/info?&arg\[]=[arr packages vals]}
+
+		# Loop through each package and check versions
+		foreach i [arr packages keys] {
+			set package = ${packages $i}
+			if {[str ${versions $i} != `{echo $info | jq -r '.results\[] | select (.Name == "$package") | .Version'}]} {
+				echo $package
+			}
+		}
+	}
+	default {
+		dieit 'Link me to aur.zrc and uaur.zrc in your \$PATH'
+	}
+}
