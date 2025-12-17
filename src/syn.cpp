@@ -9,14 +9,16 @@ struct substit {
 		OUTPUT, OUTPUTQ, PBRANCH, RETURN, VARIABLE, VARIABLEB, PLAIN_TEXT
 	} tok_type;
 	std::string contents;
+	substit(type const& t, std::string&& c)
+		: contents(std::move(c)), tok_type(t) {}
 };
 
 struct token {
 	bool bareword, brac;
 	std::vector<substit> parts;
 
-	inline void add_part(std::string& str, substit::type type) {
-		parts.push_back({ type, str });
+	inline void add_part(std::string&& str, substit::type type) {
+		parts.emplace_back(type, std::string(str));
 		str.clear();
 	}
 
@@ -25,6 +27,10 @@ struct token {
 
 		// This is where we do all of the substitutions.
 		std::string ret_str;
+		size_t n = 0;
+		for (auto const& it : parts) n += it.contents.length();
+		ret_str.reserve(n);
+
 		for (auto const& it : parts) {
 			switch (it.tok_type) {
 				case TT::RETURN:
@@ -41,10 +47,13 @@ struct token {
 					break;
 				case TT::OUTPUT:
 					/* empty */ {
+						static const char ws[] = " \t\n\r\f\v";
 						auto tmp = get_output(it.contents);
-						while (!tmp.empty() && isspace(tmp.front())) tmp.erase(0, 1);
-						while (!tmp.empty() && isspace(tmp.back()))  tmp.pop_back();
-						ret_str += tmp;
+						auto b = tmp.find_first_not_of(ws);
+						if (b != std::string::npos) {
+							auto e = tmp.find_last_not_of(ws);
+							ret_str += tmp.substr(b, e - b + 1);
+						}
 					}
 					break;
 				case TT::OUTPUTQ:
@@ -58,7 +67,9 @@ struct token {
 		return ret_str;
 	}
 
-	token() : bareword(true), brac(false) {}
+	token() : bareword(true), brac(false) {
+		parts.reserve(4);
+	}
 	
 	template<typename T>
 	token(T const& t) : bareword(true), brac(false) {
@@ -68,11 +79,10 @@ struct token {
 
 struct token_list {
 	std::vector<token> elems;
-	inline void add_word(token& tok) {
+	inline void add_word(token&& tok) {
 		if (!tok.parts.empty()) {
-			elems.push_back(tok);
-			tok.parts.clear();
-			tok.bareword = true, tok.brac = false;
+			elems.emplace_back(std::move(tok));
+			tok = token();
 		}
 	}
 };
@@ -115,15 +125,15 @@ token_list lex(const char *p, lexer_flags flags) {
 	bool quoted_single = false, quoted_double = false;
 
 	// Completes a token with leftover text
-	auto add_remaining_txt = [&](std::string str, bool start_new_word) {
+	auto add_remaining_txt = [&](std::string const& str, bool start_new_word) {
 		if (!text.empty())
-			curr.add_part(text, TT::PLAIN_TEXT);
+			curr.add_part(std::move(text), TT::PLAIN_TEXT);
 		if (start_new_word) {
 			if (!str.empty())
 				text = str;
 			if (!text.empty())
-				curr.add_part(text, TT::PLAIN_TEXT);
-			wlst.add_word(curr);
+				curr.add_part(std::move(text), TT::PLAIN_TEXT);
+			wlst.add_word(std::move(curr));
 		}
 	};
 
@@ -147,7 +157,7 @@ token_list lex(const char *p, lexer_flags flags) {
 				break;
 			text += *p;
 		}
-		curr.add_part(text, type);
+		curr.add_part(std::move(text), type);
 	};
 
 	for (; *p; ++p) {
@@ -160,7 +170,7 @@ token_list lex(const char *p, lexer_flags flags) {
 				if (!quoted_single) quoted_double = !quoted_double; else text += *p;
 				if (!quoted_double) {
 					if (text.empty())
-						curr.add_part(text, TT::PLAIN_TEXT);
+						curr.add_part(std::move(text), TT::PLAIN_TEXT);
 					else add_remaining_txt("", 0);
 				}
 				break;
@@ -169,7 +179,7 @@ token_list lex(const char *p, lexer_flags flags) {
 				if (!quoted_double) quoted_single = !quoted_single; else text += *p;
 				if (!quoted_single) {
 					if (text.empty())
-						curr.add_part(text, TT::PLAIN_TEXT);
+						curr.add_part(std::move(text), TT::PLAIN_TEXT);
 					else add_remaining_txt("", 0);
 				}
 				break;
@@ -218,7 +228,7 @@ token_list lex(const char *p, lexer_flags flags) {
 					text.clear();
 					for (; *p && strchr(allowed_var_chars, *p); ++p)
 						text += *p;
-					curr.add_part(text, TT::VARIABLE);
+					curr.add_part(std::move(text), TT::VARIABLE);
 					--p;
 				}
 				break;
@@ -247,7 +257,7 @@ token_list lex(const char *p, lexer_flags flags) {
 
 					add_remaining_txt("", 1);
 					append_bquoted_str(TT::PLAIN_TEXT, '{', '}');
-					wlst.add_word(curr);
+					wlst.add_word(std::move(curr));
 				} else
 					text += *p;
 				break;
