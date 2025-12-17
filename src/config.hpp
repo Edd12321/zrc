@@ -16,8 +16,6 @@
 #endif
 #define FIFO_FILNAME     "fifo"             /* Default filename for FIFOs */
 #define FC_FILNAME       "fc"               /* Default filename for FCs */
-#define CDPATH           "CDPATH"           /* What variable to use as our $CDPATH */ 
-#define PATH             "PATH"             /* What variable to use as our $PATH */
 #define FC_EDITOR        "vi"               /* Default fallback editor for fc */
 char    LAM_STR[] =      "<lambda>";        /* ${argv 0} in a lambda, mutable for reasons */
 

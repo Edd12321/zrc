@@ -7,7 +7,7 @@
 #include <vector>
 
 void display_prompt(bool show_secondary_prompt) {
-	auto old_status = vars::status;
+	zrc_obj old_status = vars::status;
 
 	if (show_secondary_prompt)
 		std::cerr << DEFAULT_SPROMPT;

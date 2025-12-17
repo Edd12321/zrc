@@ -300,20 +300,20 @@ COMMAND(jobs,                 )  show_jobs()                                 END
 COMMAND(getopts, <opt> <var>)
 	if (argc != 3) SYNTAX_ERROR
 
-	auto s_opterr = getvar("opterr");
+	zrc_obj s_opterr = vars::opterr;
 	if (s_opterr.empty())
-		setvar("opterr", std::to_string(opterr));
+		vars::opterr = std::to_string(opterr);
 	else opterr = stonum(s_opterr);
 	
-	auto s_optind = getvar("optind");
+	zrc_obj s_optind = vars::optind;
 	if (s_optind.empty())
-		setvar("optind", std::to_string(optind));
+		vars::optind = std::to_string(optind);
 	else optind = stonum(s_optind);
 	
 	int opt = getopt(::argc, ::argv, argv[1]);
 	setvar(argv[2], opt != -1 ? std::string(1, opt) : "");
-	setvar("optarg", optarg ? optarg : "");
-	setvar("optind", std::to_string(optind));
+	vars::optarg = optarg ? optarg : "";
+	vars::optind = std::to_string(optind);
 
 	return opt != -1 ? std::to_string(opt) : "false";
 END
@@ -512,9 +512,9 @@ COMMAND(fc, [-e <editor>] [-lnr] [<num>])
 	int opt;
 	getopt_guard gg;
 	bool lflag = false, nflag = false, rflag = false;
-	auto editor = getvar("editor");
+	zrc_obj editor = vars::editor;
 	if (editor.empty())
-		editor = getvar("EDITOR");
+		editor = vars::EDITOR;
 	if (editor.empty())
 		editor = FC_EDITOR;
 	while ((opt = getopt(argc, argv, "e:lnr")) != -1) {
@@ -829,8 +829,8 @@ END
 
 // Fork off a new process, C-style
 COMMAND(fork,)
-	if (interactive_sesh) {
-		std::cerr << "can't fork, not in a script\n";
+	if (interactive_sesh && callstack.empty()) {
+		std::cerr << "can't fork from a shell prompt\n";
 		return "-1";
 	}
 	return numtos(fork())
@@ -843,9 +843,9 @@ END
 
 // Read from stdin
 COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...])
-	std::string delim = getvar("ifs");
+	std::string delim = vars::ifs;
 	if (delim.empty())
-		delim = getvar("IFS");
+		delim = vars::IFS;
 	if (delim.empty())
 		delim = "\n";
 	int status = 2, n = -1, fd = STDIN_FILENO;
@@ -983,7 +983,7 @@ COMMAND(cd, [<dir>])
 			chdir(argv[1]);
 		else {
 			/* empty */ {
-				std::istringstream iss{getvar(CDPATH)};
+				std::istringstream iss{vars::CDPATH};
 				std::string tmp;
 				while (getline(iss, tmp, ':')) {
 					tmp += "/";

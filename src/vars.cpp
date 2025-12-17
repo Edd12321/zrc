@@ -33,16 +33,37 @@ zrc_num stonum(std::string const& str) {
 	}
 }
 
-#define ARR(x) zrc_arr& x = amap[#x];
-#define VAR(x) zrc_obj& x = vmap[#x];
-
 namespace vars {
 	std::unordered_map<std::string, zrc_obj> vmap;
 	std::unordered_map<std::string, zrc_arr> amap;
 
-	VAR(status) // Last return value
-	VAR(argc)   // Argument count
-	ARR(argv)   // Argument vector
+	zrc_arr& argv = amap["argv"];
+	class zrc_var {
+	private:
+		std::string key;
+	public:
+		explicit zrc_var(std::string k)
+			: key(std::move(k)) {}
+		inline operator std::string() const {
+			return getvar(key);
+		}
+		inline zrc_obj operator=(zrc_obj const& val) const {
+			return setvar(key, val);
+		}
+		zrc_var() = delete;
+		~zrc_var() = default;
+		zrc_var& operator=(zrc_var const&) = delete;
+		zrc_var& operator=(zrc_var&&) = delete;
+		zrc_var(zrc_var const&) = delete;
+		zrc_var(zrc_var&&) = delete;
+		inline friend std::ostream& operator<<(std::ostream&, zrc_var const&);
+	} ifs("ifs"), argc("argc"), status("status"),
+	  IFS("IFS"), CDPATH("CDPATH"), PATH("PATH"), EDITOR("EDITOR"),
+	  editor("editor"), optind("optind"), opterr("opterr"), optarg("optarg");
+
+	inline std::ostream& operator<<(std::ostream& out, zrc_var const& var) {
+		return out << (zrc_obj)var;
+	}
 }
 
 /** Get a variable's value

@@ -55,7 +55,7 @@ bool source(std::string const& str, bool err/* = true */) {
  * @return std::vector<std::string>
  */
 std::unordered_map<std::string, std::string> pathwalk() {
-	std::istringstream iss{getvar(PATH)};
+	std::istringstream iss{vars::PATH};
 	std::string tmp;
 	std::unordered_map<std::string, std::string> ret_val;
 	struct stat sb;
