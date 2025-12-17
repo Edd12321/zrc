@@ -6,14 +6,14 @@
 fn sigexit {
 	stty cooked
 	stty echo
-	printf "\\e\[?25h"
+	echo -n "\e\[?25h"
 }
 
 #########################
 # Move cursor to (0,0). #
 #########################
 fn clear2 {
-	printf "\\033\[0;0H\\e\[?25l"
+	echo -n "\e\[0;0H\e\[?25l"
 }
 
 ####################

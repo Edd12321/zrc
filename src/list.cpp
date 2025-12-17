@@ -21,12 +21,16 @@ zrc_obj list(int argc, const char *argv[]) {
 			switch (c) {
 				case  '<': /* FALLTHROUGH */
 				case  '`':
-					if (argv[i][j+1] == '{')
-						ret += '\\';
+					if (argv[i][j+1] == '{') {
+						ret += "\\{";
+						++j;
+					}
 					ret += c;
 					break;
 
+				case  '#': /* FALLTHROUGH */
 				case  '"': /* FALLTHROUGH */
+				case  '{': /* FALLTHROUGH */
 				case  '[': /* FALLTHROUGH */
 				case  '$': /* FALLTHROUGH */
 				case '\'': /* FALLTHROUGH */ 
