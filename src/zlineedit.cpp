@@ -1,6 +1,6 @@
 #include <sys/ioctl.h>
 #include <termios.h>
-
+#include <poll.h>
 #include <algorithm>
 #include <fstream>
 #include <string>
@@ -280,12 +280,10 @@ static inline bool zlineedit(std::string& buf) {
 	
 	// Check if the keyboard was hit
 	static auto kbhit = []() {
-		struct timeval time = { 0, ZRC_BIND_TIMEOUT };
-		fd_set val;
-
-		FD_ZERO(&val);
-		FD_SET(0, &val);
-		return select(1, &val, NULL, NULL, &time) > 0;
+		struct pollfd pfd;
+		pfd.fd = STDIN_FILENO;
+		pfd.events = POLLIN;
+		return poll(&pfd, 1, ZRC_BIND_TIMEOUT / 1000) > 0;
 	};
 
 	dp_list = first_word = cursor_pos = start_bind = 0;
