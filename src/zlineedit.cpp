@@ -88,7 +88,7 @@ namespace line_edit {
 		std::vector<std::string> vec;
 		for (auto const& it : !hctable.empty() ? hctable : pathwalk())
 			if (!it.first.rfind(buf, 0))
-				vec.emplace_back(basename(it.first.c_str()));
+				vec.emplace_back(basename(it.first));
 					
 		for (auto const& j : functions)
 			if (!j.first.rfind(buf, 0))

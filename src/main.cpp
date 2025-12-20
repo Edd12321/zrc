@@ -1,13 +1,16 @@
 #pragma GCC optimize("O3")
 #include <sys/resource.h>
 #include <sys/stat.h>
-#include <fstream>
 #include <pwd.h>
-
 #include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+
+#include <fstream>
 #include <istream>
 #include <iostream>
 #include <string>
+#include <set>
 
 std::string script_name; bool is_script;
 std::string fun_name; bool is_fun;
@@ -55,11 +58,32 @@ bool source(std::string const& str, bool err/* = true */) {
  * @return std::vector<std::string>
  */
 std::unordered_map<std::string, std::string> pathwalk() {
-	std::istringstream iss{vars::PATH};
+	std::stringstream iss;
 	std::string tmp;
 	std::unordered_map<std::string, std::string> ret_val;
-	struct stat sb;
-	
+	struct stat sb;	
+#if WINDOWS
+	std::vector<std::string> pathext;
+	std::set<std::string> replaceable;
+	iss << vars::PATHEXT;
+	while (getline(iss, tmp, ';'))
+		pathext.push_back(tmp);
+	iss.str(std::string());
+	iss.clear();
+#endif
+	iss << vars::PATH;
+	auto is_ok_file = [&](std::string const& name, std::string const& short_name) {
+		struct stat sb;	
+		return (stat(name.c_str(), &sb) == 0)
+		&&     (S_ISREG(sb.st_mode))
+		&&     (sb.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))
+		&&     (
+#if WINDOWS
+					replaceable.find(short_name) != replaceable.end() ||
+#endif
+					ret_val.find(short_name) == ret_val.end()
+	           );
+	};
 	while (getline(iss, tmp, ':')) {
 		struct dirent *entry;
 		DIR *d = opendir(tmp.c_str());
@@ -68,11 +92,26 @@ std::unordered_map<std::string, std::string> pathwalk() {
 			while ((entry = readdir(d))) {
 				std::string short_name = entry->d_name;
 				std::string full_name = tmp + "/" + short_name;
-				if ((!stat(full_name.c_str(), &sb))
-				&&  (S_ISREG(sb.st_mode))
-				&&  (sb.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))
-				&&  (ret_val.find(short_name) == ret_val.end()))
+				if (is_ok_file(full_name, short_name)) {
 					ret_val[short_name] = full_name;
+#if WINDOWS
+					bool has_ext = false;
+					for (auto const& ext : pathext) {
+						if (short_name.length() > ext.length()) {
+							size_t dif = short_name.length() - ext.length();
+							std::string suff = short_name.substr(dif);
+							if (!strcasecmp(suff.c_str(), ext.c_str())) {
+								has_ext = true;
+								std::string file_no_ext = short_name.substr(0, dif);
+								replaceable.insert(file_no_ext);
+								ret_val[file_no_ext] = full_name;
+							}
+						}
+					}
+					if (!has_ext)
+						replaceable.erase(short_name);
+#endif			
+				}
 			}
 		}
 	}
@@ -241,8 +280,6 @@ int main(int argc, char *argv[]) {
 		std::cerr << "warning: Could not setrlimit()\n";
 
 	// For PGID stuff
-	new_fd tty_fd(STDOUT_FILENO);
-	::tty_fd = tty_fd;
 	setpgrp();
 
 	// Shells have no buffering
@@ -269,17 +306,28 @@ int main(int argc, char *argv[]) {
 		}
 		if (interactive_sesh)
 			sighupper();
-		run_function("sigexit");
+		if (!killed_sigexit)
+			run_function("sigexit");
 	});	
 	signal(SIGCHLD, [](int sig) {
 		chld_notif = true;
 		run_function("sigchld");
 	});
 	if (argc == 1) {
+		int target_fd = open("/dev/tty", O_RDWR);
+		if (target_fd < 0) {
+			perror("open");
+			return EXIT_FAILURE;
+		}
+		new_fd tty_fd(target_fd);
+		close(target_fd);
+		::tty_fd = tty_fd;
+		
 		is_script = false;
 		interactive_sesh = true;
 		tcsetpgrp(0, 0);
 		signal(SIGTTOU, SIG_IGN);
+		signal(SIGTTIN, SIG_IGN);
 		signal(SIGINT, [](int sig) { run_function("sigint"); });
 		signal(SIGTSTP, [](int sig) { run_function("sigtstp"); });
 		signal(SIGHUP, [](int sig) {

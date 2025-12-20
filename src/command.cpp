@@ -214,7 +214,6 @@ public:
 	command& operator=(command&&) = delete;
 	command(command&& cmd) {
 		swap(args, cmd.args);
-		cmd.args = {nullptr};
 	};
 
 	~command() {
@@ -223,7 +222,6 @@ public:
 	}
 public:
 	command(std::initializer_list<const char*> list) {
-		args = {nullptr};
 		for (auto const& elem : list)
 			add_arg(elem);
 	}
@@ -379,11 +377,12 @@ void reaper() {
 }
 
 void reset_sigs() {
-	for (int sig = 1; sig < NSIG; ++sig) {
-		if (sig == SIGKILL || sig == SIGSTOP)
-			continue;
-		signal(sig, SIG_DFL);
-	}
+	for (auto const& it : txt2sig) {
+		int sig = it.second;
+		if (sig == SIGEXIT)
+			killed_sigexit = true;
+		else signal(sig, SIG_DFL);
+	}	
 }
 
 pid_t job2pid(int jid) {

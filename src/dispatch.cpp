@@ -361,13 +361,9 @@ END
 // Refresh internal hash table
 COMMAND(rehash,)
 	for (auto const& file : pathwalk()) {
-		std::string path = file.first, full = file.second;
-		char *path_c = strdup(path.c_str());
-		auto cleanup = make_scope_exit([&](){free(path_c);});
-		if (path_c == NULL) throw std::bad_alloc();
-		char *name = basename(path_c);
-		hctable[name] = full;
-		std::cout << "Added " << name << " (" << full << ")\n";
+		std::string path = basename(file.first), full = file.second;
+		hctable[path] = full;
+		std::cout << "Added " << path << " (" << full << ")\n";
 	}
 END
 
@@ -381,7 +377,7 @@ COMMAND(builtin, <arg1> <arg2>...)
 		exec(argc, argv)
 END
 
-// Add/remove a new function
+// Add/remove a new function + do signal trapping
 COMMAND(fn, <name> [<w1> <w2>...])
 	if (argc >= 3) {
 		// Function body
@@ -407,6 +403,8 @@ COMMAND(fn, <name> [<w1> <w2>...])
 				return vars::status; // this gets set in main()
 			else if (sig == "ttou" && interactive_sesh)
 				signal(SIGTTOU, SIG_IGN); // ignore only sometimes
+			else if (sig == "ttin" && interactive_sesh)
+				signal(SIGTTIN, SIG_IGN); // ditto above
 			else signal(txt2sig.at(argv[1]), SIG_DFL);
 			return vars::status;
 		}

@@ -13,6 +13,10 @@
 #include <unordered_map>
 #include <vector>
 
+#if defined(_WIN32) || defined(__CYGWIN__) || defined(__MSYS__)
+	#define WINDOWS 1 /* POSIX API-capable windows thing */
+#endif
+
 #ifndef WAIT_ANY
   #define WAIT_ANY -1
 #endif
@@ -54,6 +58,13 @@ FLAG_TYPE(redir, ARG(
 	OPTFD_N      = 1 << 6, // 01000000
 ))
 
+std::string basename(std::string const& str) {
+	auto fnd = str.rfind('/');
+	if (fnd == std::string::npos)
+		return str;
+	return str.substr(fnd + 1);
+}
+
 class command;
 class pipeline;
 class return_handler;
@@ -80,14 +91,18 @@ std::unordered_map<std::string, std::string> kv_alias;
 
 int tty_fd;
 int tty_pid = getpid();
-bool interactive_sesh, login_sesh;
+bool interactive_sesh, login_sesh, killed_sigexit;
 
 int FD_MAX;
 // Fetches a new FD.
 struct new_fd {
 	int index;
 
-	new_fd(int fd) { index = fcntl(fd, F_DUPFD_CLOEXEC, FD_MAX + 1); }
+	new_fd(int fd) {
+		index = fcntl(fd, F_DUPFD_CLOEXEC, FD_MAX + 1);
+		if (index < 0)
+			throw std::runtime_error("could not create new fd");
+	}
 	~new_fd() { close(index); }
 
 	inline operator int() const { return index; }

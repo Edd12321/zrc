@@ -59,7 +59,12 @@ namespace vars {
 		inline friend std::ostream& operator<<(std::ostream&, zrc_var const&);
 	} ifs("ifs"), argc("argc"), status("status"),
 	  IFS("IFS"), CDPATH("CDPATH"), PATH("PATH"), EDITOR("EDITOR"),
-	  editor("editor"), optind("optind"), opterr("opterr"), optarg("optarg");
+	  editor("editor"), optind("optind"), opterr("opterr"), optarg("optarg")
+#if WINDOWS
+	, PATHEXT("PATHEXT");
+#else
+	;
+#endif
 
 	inline std::ostream& operator<<(std::ostream& out, zrc_var const& var) {
 		return out << (zrc_obj)var;
