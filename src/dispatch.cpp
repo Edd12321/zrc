@@ -324,17 +324,21 @@ END
     if (argc != 2) SYNTAX_ERROR                  \
     auto n = expr(argv[1]);                      \
     if (isnan(n)) SYNTAX_ERROR                   \
+	if (!interactive_sesh) {                     \
+	  std::cerr << "Can't FG/BG in a script\n";  \
+	  return "2";                                \
+	}                                            \
     auto p = pid2job(n);                         \
     if (p < 0) {                                 \
       std::cerr << "Bad PID\n";                  \
-      return "2";                                \
+      return "3";                                \
     }                                            \
     kill(-getpgid(n), SIGCONT);                  \
     jobstate(p, z); y;                           \
     if (getpid() == tty_pid && interactive_sesh) \
        tcsetpgrp(tty_fd, tty_pid)                \
   END
-FGBG(1, fg, if (interactive_sesh) tcsetpgrp(tty_fd, getpgid(n)); reaper(n, WUNTRACED))
+FGBG(1, fg, tcsetpgrp(tty_fd, getpgid(n)); reaper(n, WUNTRACED))
 FGBG(0, bg,)
 
 // JID to PID
@@ -342,10 +346,14 @@ COMMAND(job, <n>)
 	if (argc != 2) SYNTAX_ERROR
 	auto x = expr(argv[1]);
 	if (isnan(x)) SYNTAX_ERROR
+	if (!interactive_sesh) {
+		std::cerr << "Can't get JID in a script\n";
+		return "-1";
+	}
 	auto pid = job2pid(x);
 	if (pid < 0) {
 		std::cerr << "Expected a valid JID" << std::endl;
-		return "-1";
+		return "-2";
 	}
 	return numtos(pid)
 END
@@ -355,6 +363,10 @@ COMMAND(disown, <n>)
 	if (argc != 2) SYNTAX_ERROR
 	auto x = expr(argv[1]);
 	if (isnan(x)) SYNTAX_ERROR
+	if (!interactive_sesh) {
+		std::cerr << "Can't disown a job in a script\n";
+		return "2";
+	}
 	disown_job(x)
 END
 

@@ -89,8 +89,7 @@ std::unordered_map<std::string, zrc_fun> functions;
 // Alias table
 std::unordered_map<std::string, std::string> kv_alias;
 
-int tty_fd;
-int tty_pid = getpid();
+int tty_fd, tty_pid;
 bool interactive_sesh, login_sesh, killed_sigexit;
 
 int FD_MAX;

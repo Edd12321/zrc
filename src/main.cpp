@@ -1,4 +1,3 @@
-#pragma GCC optimize("O3")
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <pwd.h>
@@ -61,7 +60,6 @@ std::unordered_map<std::string, std::string> pathwalk() {
 	std::stringstream iss;
 	std::string tmp;
 	std::unordered_map<std::string, std::string> ret_val;
-	struct stat sb;	
 #if WINDOWS
 	std::vector<std::string> pathext;
 	std::set<std::string> replaceable;
@@ -279,9 +277,6 @@ int main(int argc, char *argv[]) {
 	if (setrlimit(RLIMIT_NOFILE, &rlim) < 0)
 		std::cerr << "warning: Could not setrlimit()\n";
 
-	// For PGID stuff
-	setpgrp();
-
 	// Shells have no buffering
 	std::cout << std::unitbuf;
 	std::cerr << std::unitbuf;
@@ -319,15 +314,31 @@ int main(int argc, char *argv[]) {
 			perror("open");
 			return EXIT_FAILURE;
 		}
-		new_fd tty_fd(target_fd);
+		::tty_pid = getpid();
+		::tty_fd = fcntl(target_fd, F_DUPFD, FD_MAX + 1);
+		if (::tty_fd < 0) {
+			perror("fcntl");
+			return EXIT_FAILURE;
+		}
 		close(target_fd);
-		::tty_fd = tty_fd;
-		
+
 		is_script = false;
 		interactive_sesh = true;
-		tcsetpgrp(0, 0);
+		
+		pid_t pgid;
+		while (tcgetpgrp(::tty_fd) != (pgid = getpgrp()))
+			kill(-pgid, SIGTTIN);
+		
 		signal(SIGTTOU, SIG_IGN);
 		signal(SIGTTIN, SIG_IGN);
+		if (getsid(0) != tty_pid && setpgid(0, pgid) < 0) {
+			perror("setpgrp");
+			return EXIT_FAILURE;
+		}
+		if (tcsetpgrp(::tty_fd, pgid) < 0) {
+			perror("tcsetpgrp");
+			return EXIT_FAILURE;
+		}
 		signal(SIGINT, [](int sig) { run_function("sigint"); });
 		signal(SIGTSTP, [](int sig) { run_function("sigtstp"); });
 		signal(SIGHUP, [](int sig) {

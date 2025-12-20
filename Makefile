@@ -3,7 +3,7 @@ SYSCONFDIR = /etc
 SRCS = $(wildcard src/*.cpp src/*.hpp)
 CXXFLAGS = -D_XOPEN_SOURCE=700 -std=c++11 -pedantic -Wno-unused-result
 RELFLAGS = -O3
-DBGFLAGS = -O0 -g -Wall -Wextra -fsanitize=undefined -fno-strict-alias -fwrapv -fno-omit-frame-pointer
+DBGFLAGS = -O0 -g -Wall -Wextra -fsanitize=undefined -fno-strict-aliasing -fwrapv -fno-omit-frame-pointer
 SHELLPATH = $(DESTDIR)$(PREFIX)/bin/zrc
 CXX ?= g++
 

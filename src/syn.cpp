@@ -10,7 +10,7 @@ struct substit {
 	} tok_type;
 	std::string contents;
 	substit(type const& t, std::string&& c)
-		: contents(std::move(c)), tok_type(t) {}
+		: tok_type(t), contents(std::move(c)) {}
 };
 
 struct token {
@@ -97,7 +97,7 @@ std::vector<std::string> glob(const char *s, int flags) {
 	glob_t gvl;
 	memset(&gvl, 0, sizeof(glob_t));
 	if (!glob(s, flags, NULL, &gvl))
-		for (int i = 0; i < gvl.gl_pathc; ++i)
+		for (size_t i = 0; i < gvl.gl_pathc; ++i)
 			ret.push_back(list(gvl.gl_pathv[i]));
 	if (ret.empty())
 		ret.push_back(list(s));
