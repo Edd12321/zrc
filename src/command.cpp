@@ -424,7 +424,6 @@ inline void disown_job(int n) {
 		jobs.erase(n);
 }
 
-
 /** Executes a pipeline.
  *
  * @param none
@@ -436,20 +435,10 @@ inline bool pipeline::execute_act() {
 	new_fd old_input(input);
 	pid_t pid, pgid = 0;
 
-	struct fd_closer_guard {
-		std::vector<int> v;
-		inline void cleanup() {
-			for (auto const& fd : v)
-				close(fd);
-			v.clear();
-		}
-		~fd_closer_guard() {
-			cleanup();
-		}
-	} to_close;
-
 	auto cleanup = make_scope_exit([&]() {
 		dup2(old_input, STDIN_FILENO);
+		if (input != STDIN_FILENO && input >= 0)
+			close(input);
 	});
 
 	bool main_shell = (getpid() == tty_pid && interactive_sesh);
@@ -463,16 +452,17 @@ inline bool pipeline::execute_act() {
 		if (pid == 0) {
 			reset_sigs();
 			if (main_shell) {
-				if (!pgid)
-					pgid = getpid();
+				if (!pgid) pgid = getpid();
 				setpgid(0, pgid);
 			}
-			if (input != STDIN_FILENO)
+			if (input != STDIN_FILENO) {
 				dup2(input, STDIN_FILENO);
+				close(input);
+			}
 			dup2(pd[1], STDOUT_FILENO);
 			close(pd[1]);
 			close(pd[0]);
-			to_close.cleanup();
+			close(old_input);
 
 			// If found function, run (atoi used for no throw)
 			if (functions.find(*argv) != functions.end())
@@ -492,20 +482,26 @@ inline bool pipeline::execute_act() {
 				auto ret = functions.at("unknown")(argc, argv);
 				_exit(uint8_t(atoi(ret.c_str())));
 			}
+			perror(argv[0]);
+			_exit(127);
 		} else {
 			if (main_shell) {
 				if (!pgid)
 					pgid = pid;	
 				setpgid(pid, pgid);
 			}
-			if (input != STDIN_FILENO) close(input);
+			if (input != STDIN_FILENO)
+				close(input);
+			input = fcntl(pd[0], F_DUPFD_CLOEXEC, FD_MAX + 1);
+			close(pd[0]);
 			close(pd[1]);
-			input = pd[0];
-			to_close.v.push_back(input);
 		}
 	}
-	if (input != STDIN_FILENO)
+	if (input != STDIN_FILENO) {
 		dup2(input, STDIN_FILENO);
+		close(input);
+		input = -1;
+	}
 
 	// Last one!
 	int argc = cmds.back().argc();
@@ -551,7 +547,6 @@ inline bool pipeline::execute_act() {
 		if (ok == IS_UNKNOWN && this->pmode == ppl_proc_mode::FG)
 			vars::status = functions.at("unknown")(argc, argv);
 		else {
-			to_close.cleanup();
 			pid = fork();
 			if (pid == 0) {
 				reset_sigs();
@@ -560,6 +555,7 @@ inline bool pipeline::execute_act() {
 						pgid = getpid();
 					setpgid(0, pgid);
 				}
+				close(old_input);
 				switch (ok) {
 					case IS_FUNCTION: _exit(uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
 					case IS_BUILTIN: _exit(uint8_t(atoi(builtins.at(*argv)(argc, argv).c_str())));
@@ -568,6 +564,7 @@ inline bool pipeline::execute_act() {
 					case IS_UNKNOWN: _exit(uint8_t(atoi(functions.at("unknown")(argc, argv).c_str())));
 					case IS_NOTHING: errno = ENOENT; perror(*argv); _exit(127);
 				}
+				_exit(127); // just in case
 			} else if (main_shell) {
 				if (!pgid)
 					pgid = pid;

@@ -77,9 +77,9 @@ std::unordered_map<std::string, std::string> pathwalk() {
 		&&     (sb.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))
 		&&     (
 #if WINDOWS
-					replaceable.find(short_name) != replaceable.end() ||
+		           replaceable.find(short_name) != replaceable.end() ||
 #endif
-					ret_val.find(short_name) == ret_val.end()
+		           ret_val.find(short_name) == ret_val.end()
 	           );
 	};
 	while (getline(iss, tmp, ':')) {
@@ -315,7 +315,7 @@ int main(int argc, char *argv[]) {
 			return EXIT_FAILURE;
 		}
 		::tty_pid = getpid();
-		::tty_fd = fcntl(target_fd, F_DUPFD, FD_MAX + 1);
+		::tty_fd = fcntl(target_fd, F_DUPFD_CLOEXEC, FD_MAX + 1);
 		if (::tty_fd < 0) {
 			perror("fcntl");
 			return EXIT_FAILURE;

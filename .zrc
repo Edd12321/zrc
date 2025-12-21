@@ -104,17 +104,17 @@ bindkey -c "\cft" { thunar & }
 
 set __use_lsd = false
 fn enable_lsd {
-	if {!($__use_lsd) && ![>&- 2 >&- which lsd]} {
+	if {!($__use_lsd) && ![>&- 2 >&- which lsd] && [str `{tty} =~ pts]} {
 		alias ls "lsd"
 		alias l "lsd -hF"
 		alias lt "lsd -althrF"
-		alias la "lsd -all"
+		alias la "lsd -al"
 		set __use_lsd = true
 	} else {
-		unalias ls
-		alias l "ls -hF --color"
-		alias lt "ls -altrhF --color"
-		alias la "ls -all"
+		alias ls "ls --color"
+		alias l "ls --color -hF"
+		alias lt "ls --color -altrhF"
+		alias la "ls --color -al"
 		set __use_lsd = false
 	}
 }
