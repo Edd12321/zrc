@@ -72,12 +72,16 @@ class break_handler;
 class return_handler;
 class return_handler;
 class block_handler;
+class new_fd;
+class ttybuf;
 
 struct substit;
 struct token;
 struct token_list;
 struct job;
 struct zrc_fun;
+template<typename T>
+struct scope_exit;
 
 // Command dispatch tables
 extern CMD_TBL builtins;
@@ -107,6 +111,7 @@ struct new_fd {
 	inline operator int() const { return index; }
 };
 
+// General RAII stuff
 template<typename Fun>
 struct scope_exit {
 	Fun f;
@@ -116,6 +121,20 @@ template<typename Fun>
 scope_exit<Fun> make_scope_exit(Fun&& f) {
 	return { std::forward<Fun>(f) };
 };
+
+// TTY streambuf
+class ttybuf : public std::streambuf {
+protected:
+	virtual int overflow(int ch) override {
+		if (ch != EOF) {
+			char c = ch;
+			if (write(tty_fd, &c, 1) != 1)
+				return EOF;
+		}
+		return ch;
+	}
+} _ttybuf;
+std::ostream tty(&_ttybuf);
 
 // MAIN.CPP
 std::unordered_map<std::string, std::string> pathwalk();

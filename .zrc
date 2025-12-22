@@ -1,8 +1,10 @@
 #!/usr/bin/env zrc
 # My personal config (~/.zrc)
 # Beware of envvars, stuff that you might not want, etc.
-echo "Welcome to Zrc!"
-echo "The time is: `{date}"
+> /dev/tty eval {
+	echo "Welcome to Zrc!"
+	echo "The time is: `{date}"
+}
 
 set __use_unknown = false
 fn enable_unknown {
@@ -31,8 +33,8 @@ fn enable_title {
 	}
 }
 
-fn prompt {
-	>& 1 2 let {green red rbold reset pwd home lpwd lhome s} {
+set prompt1 = {"`{
+	let {green red rbold reset pwd home lpwd lhome s} {
 		set s = $status
 		set green = "\e\[0;32m" red = "\e\[0;31m" rbold = "\e\[1;31m" reset = "\e\[0m"
 		set pwd = `{pwd} home = [glob -t ~]
@@ -83,18 +85,22 @@ fn prompt {
 		}"'> '
 		set last_status = $s
 	}
+}"}
+
+fn prompt {
+	> /dev/tty eval echo -n $prompt1
 }
 
 bindkey -c "\cl" {
-	>& 1 2 clear
+	> /dev/tty clear
 	prompt
 }
 bindkey -c "\e?" {
-	>& 1 2 eval { echo && l }
+	> /dev/tty eval { echo && l }
 	prompt
 }
 bindkey -c "\en" {
-	>& 1 2 archey3
+	> /dev/tty archey3
 	prompt
 }
 bindkey -c "\cb"  { firefox & }

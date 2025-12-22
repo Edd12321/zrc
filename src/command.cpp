@@ -350,12 +350,12 @@ void reaper(pid_t who, int how) {
 		}
 		if (WIFSTOPPED(status)) {
 			if (interactive_sesh)
-				std::cerr << "[" << jid << "] Stopped" << std::endl;
+				tty << "[" << jid << "] Stopped" << std::endl;
 			break;
 		}
 		if (WIFSIGNALED(status)) {
 			if (interactive_sesh)
-				std::cerr << "[" << jid << "] " << strsignal(WTERMSIG(status)) << std::endl;
+				tty << "[" << jid << "] " << strsignal(WTERMSIG(status)) << std::endl;
 			if (jobs[jid].state != pipeline::ppl_proc_mode::BG)
 				vars::status = numtos(128 + WTERMSIG(status));
 			jobs.erase(jid);
@@ -363,7 +363,7 @@ void reaper(pid_t who, int how) {
 		if (WIFEXITED(status)) {
 			if (jobs[jid].state == pipeline::ppl_proc_mode::BG) {
 				if (interactive_sesh)
-					std::cerr << "[" << jid << "] Done" << std::endl;
+					tty << "[" << jid << "] Done" << std::endl;
 			} else vars::status = numtos(WEXITSTATUS(status));
 			jobs.erase(jid);
 		}
@@ -641,7 +641,7 @@ inline bool pipeline::execute_act() {
 					if (tcsetpgrp(tty_fd, getpgrp()) < 0)
 						perror("tcsetpgrp #2");
 				} else {
-					std::cerr << "[" << jid << "] " << jobs[jid].ppl << std::endl;
+					tty << "[" << jid << "] " << jobs[jid].ppl << std::endl;
 				}
 			} else {
 				reaper(pid, WUNTRACED);

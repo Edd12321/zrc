@@ -59,7 +59,8 @@ namespace vars {
 		inline friend std::ostream& operator<<(std::ostream&, zrc_var const&);
 	} ifs("ifs"), argc("argc"), status("status"),
 	  IFS("IFS"), CDPATH("CDPATH"), PATH("PATH"), EDITOR("EDITOR"),
-	  editor("editor"), optind("optind"), opterr("opterr"), optarg("optarg")
+	  editor("editor"), optind("optind"), opterr("opterr"), optarg("optarg"),
+	  prompt1("prompt1"), prompt2("prompt2")
 #if WINDOWS
 	, PATHEXT("PATHEXT");
 #else

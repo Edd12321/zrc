@@ -284,6 +284,9 @@ int main(int argc, char *argv[]) {
 	// Setup arguments
 	::argc = argc, ::argv = argv;
 	vars::argv = copy_argv(argc, argv);
+	// Setup prompts
+	vars::prompt1 = DEFAULT_PPROMPT;
+	vars::prompt2 = DEFAULT_SPROMPT;
 
 	// Setup getopts stuff
 	setvar("opterr", std::to_string(opterr));

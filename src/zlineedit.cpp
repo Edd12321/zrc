@@ -9,11 +9,7 @@
 void display_prompt(bool show_secondary_prompt) {
 	zrc_obj old_status = vars::status;
 	auto cleanup = make_scope_exit([&]() { vars::status = old_status; });
-
-	if (show_secondary_prompt)
-		std::cerr << DEFAULT_SPROMPT;
-	else if (!run_function("prompt"))
-		std::cerr << DEFAULT_PPROMPT;
+	tty << subst(show_secondary_prompt ? vars::prompt2 : vars::prompt1);
 }
 
 namespace line_edit {
@@ -34,27 +30,27 @@ namespace line_edit {
 	static inline bool list(std::vector<std::string> const& vec) {
 		size_t i = 0, term_hi, term_wd;
 		init_term(term_hi, term_wd);
-		std::cerr << '\n';
+		tty << std::endl;
 		for (; i < vec.size(); ++i) {
-			std::cerr << std::setw(term_wd / 3) << vec[i];
+			tty << std::setw(term_wd / 3) << vec[i];
 			if ((i + 1) % 3 == 0) {
-				std::cerr << '\n';
+				tty << std::endl;
 				if (term_hi * 3 - 6 <= i) {
-					std::cerr << "--More--";
+					tty << "--More--";
 					int tmp;
 					while ((tmp = getchar()) != EOF) {
 						if (tmp == 'q' || tmp == 'Q') {
-							std::cerr << std::endl;
+							tty << std::endl;
 							return dp_list = i;
 						} else if (tmp == KEY_RET) {
-							std::cerr << "\b \b\b \b\b \b\b \b\b \b\b \b\b \b\b \b";
+							tty << "\b \b\b \b\b \b\b \b\b \b\b \b\b \b\b \b";
 							break;
 						}
 					}
 				}
 			}
 		}
-		std::cerr << std::endl;
+		tty << std::endl;
 		return dp_list = i;
 	}
 
@@ -73,10 +69,10 @@ namespace line_edit {
 				buf += wlist[i], buf += ' ';
 			buf += wlist.back();
 // ANSI terminal cursor
-#define CURSOR_FWD(X) std::cerr << "\033[" << X << 'C' << std::flush
-#define CURSOR_BWD(X) std::cerr << "\033[" << X << 'D' << std::flush
+#define CURSOR_FWD(X) tty << "\033[" << X << 'C' << std::flush
+#define CURSOR_BWD(X) tty << "\033[" << X << 'D' << std::flush
 			CURSOR_BWD(cursor_pos);
-			std::cerr << buf;
+			tty << buf;
 			cursor_pos = buf.length();	
 		} else if (!globbed.empty()) {
 			list(globbed);
@@ -98,7 +94,7 @@ namespace line_edit {
 		if (vec.size() == 1) {
 			buf = vec[0];
 			CURSOR_BWD(cursor_pos);
-			std::cerr << buf;
+			tty << buf;
 			cursor_pos = buf.length();
 		} else if (!vec.size()) {
 			tab(buf);
@@ -147,10 +143,10 @@ namespace line_edit {
   if (cursor_pos)                 \
     CURSOR_BWD(cursor_pos);       \
   for (long i = 0; i < len; ++i)  \
-    std::cerr << ' ';             \
+    tty << ' ';                   \
   if (len)                        \
     CURSOR_BWD(len);              \
-  std::cerr << buf;               \
+  tty << buf;                     \
   cursor_pos = buf.length()       \
 
 
@@ -190,7 +186,7 @@ namespace line_edit {
 			if (cursor_pos > 0 && cursor_pos <= len) {
 				CURSOR_BWD(cursor_pos);
 				buf.erase(--cursor_pos, 1);
-				std::cerr << buf << ' ';
+				tty << buf << ' ';
 				CURSOR_BWD(len-cursor_pos);
 			}
 		END
@@ -199,14 +195,14 @@ namespace line_edit {
 			if (cursor_pos) CURSOR_BWD(cursor_pos);
 
 			buf.insert(cursor_pos++, 1, c);
-			std::cerr << buf;
+			tty << buf;
 			size_t len = buf.length();
 			if (cursor_pos != len)
 				CURSOR_BWD(len-cursor_pos);
 		END
 		// Other
 		ACTION(key-return)
-			std::cerr << std::endl;
+			tty << std::endl;
 			W_histfile(buf);
 			std::cin.clear();
 			return true;
@@ -219,7 +215,7 @@ namespace line_edit {
 				cmd(buf);
 			if (dp_list) {
 				display_prompt(false);
-				std::cerr << buf;
+				tty << buf;
 			}
 			dp_list = 0;
 		END
