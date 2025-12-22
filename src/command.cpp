@@ -295,7 +295,8 @@ public:
 struct job {
 	std::string ppl;
 	pipeline::ppl_proc_mode state;
-	pid_t pgid;
+	pid_t pgid, last_pid;
+	std::set<pid_t> pids;
 };
 std::map<int, job> jobs;
 unsigned long long jc;
@@ -305,10 +306,14 @@ unsigned long long jc;
  * @param {pipeline const&}ppl,{pipeline::ppl_proc_mode}status,{pid_t}pgid
  * @return int
  */
-int add_job(pipeline& ppl, pipeline::ppl_proc_mode status, pid_t pgid) {
+int add_job(pipeline& ppl, pipeline::ppl_proc_mode status, pid_t pgid, pid_t last_pid, std::set<pid_t>& pids) {
 	jc = jobs.empty() ? 1 : ((*jobs.rbegin()).first + 1);
-	jobs[jc] = { (std::string)ppl, status, pgid };
-
+	
+	jobs[jc].ppl = (std::string)ppl;
+	jobs[jc].state = status;
+	jobs[jc].pgid = pgid;
+	jobs[jc].last_pid = last_pid;
+	jobs[jc].pids = std::move(pids);
 	return jc;
 }
 
@@ -331,47 +336,62 @@ void sighupper() {
  * @return void
  */
 void reaper(pid_t who, int how) {
-	pid_t pid;
-	int status;
-	while ((pid = waitpid(who, &status, how)) > 0) {
-		int jid = -1, pgid = getpgid(pid);
+    pid_t pid;
+    int status;
+    for (;;) {
+		pid = waitpid(who, &status, how);
+		if (pid < 0) {
+			if (errno == EINTR)
+				continue; 
+			if (errno == ECHILD)
+				break;
+			perror("waitpid (reaper)");
+			break; 
+		}
+		if (pid == 0) 
+			break;
+		int jid = -1;
 		for (auto const& it : jobs) {
-			if (it.second.pgid == pgid || it.second.pgid == pid) {
+			if (it.second.pids.find(pid) != it.second.pids.end()) {
 				jid = it.first;
 				break;
 			}
 		}
 		if (jid < 0) {
 			if (WIFEXITED(status))
-				// Not a job, so launched by eval-or-exec
-				// This must still return tho
 				vars::status = numtos(WEXITSTATUS(status));
 			else if (WIFSIGNALED(status))
 				vars::status = numtos(128 + WTERMSIG(status));
 			continue;
 		}
+		auto& job = jobs[jid];
 		if (WIFSTOPPED(status)) {
 			if (interactive_sesh)
-				tty << "[" << jid << "] Stopped" << std::endl;
-			break;
+				tty << '[' << jid << "] Stopped" << std::endl;
+			if (who == -job.pgid && !(how & WNOHANG))
+				return;
+			continue; 
 		}
-		if (WIFSIGNALED(status)) {
-			if (interactive_sesh)
-				tty << "[" << jid << "] " << strsignal(WTERMSIG(status)) << std::endl;
-			if (jobs[jid].state != pipeline::ppl_proc_mode::BG)
+		job.pids.erase(pid);
+		bool lproc = pid == job.last_pid;
+		if (lproc && job.state == pipeline::ppl_proc_mode::FG) {
+			if (WIFEXITED(status))
+				vars::status = numtos(WEXITSTATUS(status));
+			else if (WIFSIGNALED(status))
 				vars::status = numtos(128 + WTERMSIG(status));
-			jobs.erase(jid);
 		}
-		if (WIFEXITED(status)) {
-			if (jobs[jid].state == pipeline::ppl_proc_mode::BG) {
-				if (interactive_sesh)
-					tty << "[" << jid << "] Done" << std::endl;
-			} else vars::status = numtos(WEXITSTATUS(status));
+		if (job.pids.empty()) {
+			if (interactive_sesh) {
+				if (job.state == pipeline::ppl_proc_mode::BG && WIFEXITED(status))
+					tty << '[' << jid << "] Done" << std::endl;
+				else if (WIFSIGNALED(status))
+					tty << '[' << jid << "] " << strsignal(WTERMSIG(status)) << std::endl;
+			}
 			jobs.erase(jid);
+			if (who < -1)
+				break;
 		}
 	}
-	if (pid == -1 && errno != ECHILD)
-		perror("waitpid");
 }
 
 void reaper() {
@@ -437,6 +457,9 @@ inline bool pipeline::execute_act() {
 	new_fd old_input(input);
 	pid_t pid, pgid = 0;
 
+	// for reaper 
+	std::set<pid_t> pids;
+
 	// not a subshell
 	bool main_shell = (getpid() == tty_pid && interactive_sesh);
 
@@ -448,7 +471,10 @@ inline bool pipeline::execute_act() {
 		perror("mmap");
 		exit(EXIT_FAILURE);
 	}
-	sem_init(sem, 1, 0);
+	if (sem_init(sem, 1, 0) < 0) {
+		perror("sem_init");
+		exit(EXIT_FAILURE);
+	}
 
 	auto cleanup = make_scope_exit([&]() {
 		sem_destroy(sem);
@@ -503,6 +529,7 @@ inline bool pipeline::execute_act() {
 			_exit(127);
 		} else {
 			if (main_shell) {
+				pids.insert(pid);
 				if (!pgid)
 					pgid = pid;	
 				if (setpgid(pid, pgid) < 0)
@@ -589,22 +616,28 @@ inline bool pipeline::execute_act() {
 			}
 			_exit(127); // just in case
 		} else if (main_shell) {
+			pids.insert(pid);
 			if (!pgid)
 				pgid = pid;
 			if (setpgid(pid, pgid) < 0)
 				perror("setpgid (final)");
-			auto jid = add_job(*this, pmode, pgid);	
+			
+			auto jid = add_job(*this, pmode, pgid, pid, pids);	
 			if (this->pmode == ppl_proc_mode::FG) {
 				// Foreground jobs transfer the terminal control to the child
 				if (tcsetpgrp(tty_fd, pgid) < 0)
 					perror("tcsetpgrp #1");
 				for (int i = 0; i < cmds.size(); ++i)
 					sem_post(sem);
+#if WINDOWS
+				struct timespec ts = { CYG_HACK_TIMEOUT }; // 4 ms
+				nanosleep(&ts, nullptr); // no idea.
+#endif
 				reaper(-pgid, WUNTRACED);
 				if (tcsetpgrp(tty_fd, getpgrp()) < 0)
 					perror("tcsetpgrp #2");
 			} else {
-				tty << "[" << jid << "] " << jobs[jid].ppl << std::endl;
+				tty << '[' << jid << "] " << jobs[jid].ppl << std::endl;
 			}
 		} else {
 			reaper(pid, WUNTRACED);
@@ -615,7 +648,8 @@ inline bool pipeline::execute_act() {
 
 /* Ditto */
 void pipeline::execute() {
-	reaper();
+	if (!jobs.empty())
+		reaper();
 	if (cmds.empty())
 		return;
 	auto cleanup = make_scope_exit([&]() {
