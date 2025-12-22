@@ -1,9 +1,11 @@
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
 #include <fcntl.h>
 #include <math.h>
+#include <semaphore.h>
 #include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
@@ -424,66 +426,6 @@ inline void disown_job(int n) {
 		jobs.erase(n);
 }
 
-// An extremely overengineered tool for getting rid of race conditions
-class comm_fork {
-private:
-	int c2p[2], p2c[2];
-	pid_t forkval;
-public:
-	comm_fork() {
-		if (pipe(c2p) < 0) {
-			perror("pipe (C2P)");
-			exit(EXIT_FAILURE);
-		}
-		if (pipe(p2c) < 0) {
-			perror("pipe (P2C)");
-			exit(EXIT_FAILURE);
-		}
-		forkval = fork();
-		if (forkval < 0) {
-			perror("fork");
-			exit(EXIT_FAILURE);
-		}
-		if (forkval == 0) {
-			close(c2p[0]); close(p2c[1]);
-			fcntl(p2c[0], F_SETFD, FD_CLOEXEC);
-			fcntl(c2p[1], F_SETFD, FD_CLOEXEC);
-		} else {
-			close(p2c[0]); close(c2p[1]);
-			fcntl(c2p[0], F_SETFD, FD_CLOEXEC);
-			fcntl(p2c[1], F_SETFD, FD_CLOEXEC);
-		}
-	}
-	
-	pid_t pid() const noexcept {
-		return forkval;
-	}
-	
-	void send_msg(char msg) {
-		int fd = (forkval == 0 ? c2p : p2c)[1];
-		write(fd, &msg, 1);
-	}
-	
-	void recv_msg(char expected) {
-		int rd, fd = (forkval == 0 ? p2c : c2p)[0];
-		char msg;
-		for (;;) {
-			if ((rd = read(fd, &msg, 1)) > 0) {
-				if (msg == expected)
-					return;
-			} else _exit(1);
-		}
-	}
-	
-	~comm_fork() {
-		if (forkval == 0) {
-			close(c2p[1]); close(p2c[0]);
-		} else {
-			close(p2c[1]); close(c2p[0]);
-		}
-	}
-};
-
 /** Executes a pipeline.
  *
  * @param none
@@ -495,24 +437,41 @@ inline bool pipeline::execute_act() {
 	new_fd old_input(input);
 	pid_t pid, pgid = 0;
 
+	// not a subshell
+	bool main_shell = (getpid() == tty_pid && interactive_sesh);
+
+	// release children after tcsetpgrp
+	sem_t *sem = (sem_t*)mmap(nullptr, sizeof(sem_t),
+			PROT_READ | PROT_WRITE,
+			MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+	if (sem == MAP_FAILED) {
+		perror("mmap");
+		exit(EXIT_FAILURE);
+	}
+	sem_init(sem, 1, 0);
+
 	auto cleanup = make_scope_exit([&]() {
+		sem_destroy(sem);
+		munmap(sem, sizeof(sem_t));
 		dup2(old_input, STDIN_FILENO);
 		if (input != STDIN_FILENO && input >= 0)
 			close(input);
 	});
-
-	bool main_shell = (getpid() == tty_pid && interactive_sesh);
 	for (size_t i = 0; i < cmds.size() - 1; ++i) {
 		int argc = cmds[i].argc();
 		char **argv = cmds[i].argv();
 		int pd[2];
 		pipe(pd);
 
-		comm_fork f;
-		if ((pid = f.pid()) == 0) {
+		if ((pid = fork()) == 0) {
 			reset_sigs();
-			if (main_shell)
-				f.recv_msg('1'); // wait for parent to setpgid
+			if (main_shell) {
+				if (!pgid)
+					pgid = getpid();
+				setpgid(0, pgid);
+				if (this->pmode == ppl_proc_mode::FG)
+					sem_wait(sem);
+			}
 			if (input != STDIN_FILENO) {
 				dup2(input, STDIN_FILENO);
 				close(input);
@@ -548,7 +507,6 @@ inline bool pipeline::execute_act() {
 					pgid = pid;	
 				if (setpgid(pid, pgid) < 0)
 					perror("setpgid (pipeline)");
-				f.send_msg('1'); // did setpgid
 			}
 			if (input != STDIN_FILENO)
 				close(input);
@@ -570,82 +528,86 @@ inline bool pipeline::execute_act() {
 
 	bool is_fun = functions.find(*argv) != functions.end();
 	bool is_builtin = builtins.find(*argv) != builtins.end();
+
 	// If found function and FG, run (for side effects in the shell)
-	if (this->pmode == ppl_proc_mode::FG && is_fun)
+	if (this->pmode == ppl_proc_mode::FG && is_fun && cmds.size() == 1) {
 		vars::status = functions.at(*argv)(argc, argv);
+		return true;
+	}
 	// If found builtin and FG, run (for side effects in the shell)
-	else if (this->pmode == ppl_proc_mode::FG && is_builtin)
+	else if (this->pmode == ppl_proc_mode::FG && is_builtin && cmds.size() == 1) {
 		vars::status = builtins.at(*argv)(argc, argv);
+		return true;
+	}
 	// Try to run as external/BG
+	std::string full_path;
+	enum stuff_known {
+		IS_NOTHING,
+		IS_UNKNOWN,
+		IS_FUNCTION,
+		IS_BUILTIN,
+		IS_COMMAND_PATH,
+		IS_COMMAND_FILE,
+	} ok = IS_NOTHING;
+	if (is_fun)
+		ok = IS_FUNCTION;
+	else if (is_builtin)
+		ok = IS_BUILTIN;
 	else {
-		std::string full_path;
-		enum stuff_known {
-			IS_NOTHING,
-			IS_UNKNOWN,
-			IS_FUNCTION,
-			IS_BUILTIN,
-			IS_COMMAND_PATH,
-			IS_COMMAND_FILE,
-		} ok = IS_NOTHING;
-		if (is_fun)
-			ok = IS_FUNCTION;
-		else if (is_builtin)
-			ok = IS_BUILTIN;
-		else {
-			struct stat sb;
-			if (strchr(*argv, '/') && !stat(*argv, &sb))
-				ok = IS_COMMAND_FILE;
-			else {	
-				auto const& map = !hctable.empty() ? hctable : pathwalk();
-				if (map.find(*argv) != map.end()) {
-					ok = IS_COMMAND_PATH;
-					full_path = map.at(*argv);
-				} else if (functions.find("unknown") != functions.end())
-					ok = IS_UNKNOWN;
-			}
+		struct stat sb;
+		if (strchr(*argv, '/') && !stat(*argv, &sb))
+			ok = IS_COMMAND_FILE;
+		else {	
+			auto const& map = !hctable.empty() ? hctable : pathwalk();
+			if (map.find(*argv) != map.end()) {
+				ok = IS_COMMAND_PATH;
+				full_path = map.at(*argv);
+			} else if (functions.find("unknown") != functions.end())
+				ok = IS_UNKNOWN;
 		}
-		if (ok == IS_UNKNOWN && this->pmode == ppl_proc_mode::FG)
-			vars::status = functions.at("unknown")(argc, argv);
-		else {
-			comm_fork f;
-			if ((pid = f.pid()) == 0) {
-				reset_sigs();
-				if (main_shell) {
-					f.recv_msg('1'); // wait for setpgid
-					if (this->pmode == ppl_proc_mode::FG)
-						f.recv_msg('2'); // wait for tcsetpgrp
-				}
-				close(old_input);
-				switch (ok) {
-					case IS_FUNCTION: _exit(uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
-					case IS_BUILTIN: _exit(uint8_t(atoi(builtins.at(*argv)(argc, argv).c_str())));
-					case IS_COMMAND_FILE: execv(*argv, argv); perror(*argv); _exit(127);
-					case IS_COMMAND_PATH: execv(full_path.c_str(), argv); perror(*argv); _exit(127);
-					case IS_UNKNOWN: _exit(uint8_t(atoi(functions.at("unknown")(argc, argv).c_str())));
-					case IS_NOTHING: errno = ENOENT; perror(*argv); _exit(127);
-				}
-				_exit(127); // just in case
-			} else if (main_shell) {
+	}
+	if (ok == IS_UNKNOWN && this->pmode == ppl_proc_mode::FG)
+		vars::status = functions.at("unknown")(argc, argv);
+	else {
+		if ((pid = fork()) == 0) {
+			reset_sigs();
+			if (main_shell) {
 				if (!pgid)
-					pgid = pid;
-				if (setpgid(pid, pgid) < 0)
-					perror("setpgid (final)");
-				f.send_msg('1'); // did setpgid
-				auto jid = add_job(*this, pmode, pgid);	
-				if (this->pmode == ppl_proc_mode::FG) {
-					// Foreground jobs transfer the terminal control to the child
-					if (tcsetpgrp(tty_fd, pgid) < 0)
-						perror("tcsetpgrp #1");
-					f.send_msg('2'); // did tcsetpgrp
-					reaper(-pgid, WUNTRACED);
-					if (tcsetpgrp(tty_fd, getpgrp()) < 0)
-						perror("tcsetpgrp #2");
-				} else {
-					tty << "[" << jid << "] " << jobs[jid].ppl << std::endl;
-				}
-			} else {
-				reaper(pid, WUNTRACED);
+					pgid = getpid();
+				setpgid(0, pgid);
+				if (this->pmode == ppl_proc_mode::FG)
+					sem_wait(sem);
 			}
+			close(old_input);
+			switch (ok) {
+				case IS_FUNCTION: _exit(uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
+				case IS_BUILTIN: _exit(uint8_t(atoi(builtins.at(*argv)(argc, argv).c_str())));
+				case IS_COMMAND_FILE: execv(*argv, argv); perror(*argv); _exit(127);
+				case IS_COMMAND_PATH: execv(full_path.c_str(), argv); perror(*argv); _exit(127);
+				case IS_UNKNOWN: _exit(uint8_t(atoi(functions.at("unknown")(argc, argv).c_str())));
+				case IS_NOTHING: errno = ENOENT; perror(*argv); _exit(127);
+			}
+			_exit(127); // just in case
+		} else if (main_shell) {
+			if (!pgid)
+				pgid = pid;
+			if (setpgid(pid, pgid) < 0)
+				perror("setpgid (final)");
+			auto jid = add_job(*this, pmode, pgid);	
+			if (this->pmode == ppl_proc_mode::FG) {
+				// Foreground jobs transfer the terminal control to the child
+				if (tcsetpgrp(tty_fd, pgid) < 0)
+					perror("tcsetpgrp #1");
+				for (int i = 0; i < cmds.size(); ++i)
+					sem_post(sem);
+				reaper(-pgid, WUNTRACED);
+				if (tcsetpgrp(tty_fd, getpgrp()) < 0)
+					perror("tcsetpgrp #2");
+			} else {
+				tty << "[" << jid << "] " << jobs[jid].ppl << std::endl;
+			}
+		} else {
+			reaper(pid, WUNTRACED);
 		}
 	}
 	return true;
