@@ -8,13 +8,12 @@
 
 void display_prompt(bool show_secondary_prompt) {
 	zrc_obj old_status = vars::status;
+	auto cleanup = make_scope_exit([&]() { vars::status = old_status; });
 
 	if (show_secondary_prompt)
 		std::cerr << DEFAULT_SPROMPT;
 	else if (!run_function("prompt"))
 		std::cerr << DEFAULT_PPROMPT;
-
-	vars::status = old_status;
 }
 
 namespace line_edit {

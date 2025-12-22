@@ -150,7 +150,7 @@ pid_t job2pid(int);
 int pid2job(pid_t);
 void jobstate(int, int);
 void reaper();
-void reaper(int, int);
+void reaper(pid_t, int, bool continue_job = false);
 void reset_sigs();
 
 template<typename Fun>

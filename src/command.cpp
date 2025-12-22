@@ -328,7 +328,7 @@ void sighupper() {
  * @param none
  * @return void
  */
-void reaper(int who, int how) {
+void reaper(pid_t who, int how, bool continue_job /* false */) {
 	pid_t pid;
 	int status;
 	while ((pid = waitpid(who, &status, how)) > 0) {
@@ -349,8 +349,14 @@ void reaper(int who, int how) {
 			continue;
 		}
 		if (WIFSTOPPED(status)) {
-			if (interactive_sesh)
-				std::cerr << "[" << jid << "] Stopped" << std::endl;
+			if (interactive_sesh) {
+				if (continue_job) { // this is just for tcsetpgrp
+					kill(-jid, SIGCONT);
+					continue_job = false;
+					continue;
+				}
+				else std::cerr << "[" << jid << "] Stopped" << std::endl;
+			}
 			break;
 		}
 		if (WIFSIGNALED(status)) {
@@ -377,9 +383,7 @@ void reaper() {
 void reset_sigs() {
 	for (auto const& it : txt2sig) {
 		int sig = it.second;
-		if (sig == SIGTTIN || sig == SIGTTOU)
-			signal(sig, SIG_IGN);
-		else if (sig == SIGEXIT)
+		if (sig == SIGEXIT)
 			killed_sigexit = true;
 		else signal(sig, SIG_DFL);
 	}	
@@ -549,12 +553,12 @@ inline bool pipeline::execute_act() {
 		else {
 			pid = fork();
 			if (pid == 0) {
-				reset_sigs();
 				if (main_shell) {
 					if (!pgid)
 						pgid = getpid();
 					setpgid(0, pgid);
 				}
+				reset_sigs();
 				close(old_input);
 				switch (ok) {
 					case IS_FUNCTION: _exit(uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
@@ -573,10 +577,10 @@ inline bool pipeline::execute_act() {
 				if (this->pmode == ppl_proc_mode::FG) {
 					// Foreground jobs transfer the terminal control to the child
 					if (tcsetpgrp(tty_fd, pgid) < 0)
-						perror("tcsetpgrp #1 (last in pipeline)");
-					reaper(-pgid, WUNTRACED);
+						perror("tcsetpgrp #1 (parent)");
+					reaper(-pgid, WUNTRACED, true);
 					if (tcsetpgrp(tty_fd, getpgrp()) < 0)
-						perror("tcsetpgrp #2 (last in pipeline)");
+						perror("tcsetpgrp #2 (parent)");
 				} else {
 					std::cerr << "[" << jid << "] " << jobs[jid].ppl << std::endl;
 				}
