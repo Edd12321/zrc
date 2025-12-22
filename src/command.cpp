@@ -328,7 +328,7 @@ void sighupper() {
  * @param none
  * @return void
  */
-void reaper(pid_t who, int how, bool continue_job /* false */) {
+void reaper(pid_t who, int how) {
 	pid_t pid;
 	int status;
 	while ((pid = waitpid(who, &status, how)) > 0) {
@@ -349,14 +349,8 @@ void reaper(pid_t who, int how, bool continue_job /* false */) {
 			continue;
 		}
 		if (WIFSTOPPED(status)) {
-			if (interactive_sesh) {
-				if (continue_job) { // this is just for tcsetpgrp
-					kill(-jid, SIGCONT);
-					continue_job = false;
-					continue;
-				}
-				else std::cerr << "[" << jid << "] Stopped" << std::endl;
-			}
+			if (interactive_sesh)
+				std::cerr << "[" << jid << "] Stopped" << std::endl;
 			break;
 		}
 		if (WIFSIGNALED(status)) {
@@ -374,6 +368,8 @@ void reaper(pid_t who, int how, bool continue_job /* false */) {
 			jobs.erase(jid);
 		}
 	}
+	if (pid == -1 && errno != ECHILD)
+		perror("waitpid");
 }
 
 void reaper() {
@@ -428,6 +424,66 @@ inline void disown_job(int n) {
 		jobs.erase(n);
 }
 
+// An extremely overengineered tool for getting rid of race conditions
+class comm_fork {
+private:
+	int c2p[2], p2c[2];
+	pid_t forkval;
+public:
+	comm_fork() {
+		if (pipe(c2p) < 0) {
+			perror("pipe (C2P)");
+			exit(EXIT_FAILURE);
+		}
+		if (pipe(p2c) < 0) {
+			perror("pipe (P2C)");
+			exit(EXIT_FAILURE);
+		}
+		forkval = fork();
+		if (forkval < 0) {
+			perror("fork");
+			exit(EXIT_FAILURE);
+		}
+		if (forkval == 0) {
+			close(c2p[0]); close(p2c[1]);
+			fcntl(p2c[0], F_SETFD, FD_CLOEXEC);
+			fcntl(c2p[1], F_SETFD, FD_CLOEXEC);
+		} else {
+			close(p2c[0]); close(c2p[1]);
+			fcntl(c2p[0], F_SETFD, FD_CLOEXEC);
+			fcntl(p2c[1], F_SETFD, FD_CLOEXEC);
+		}
+	}
+	
+	pid_t pid() const noexcept {
+		return forkval;
+	}
+	
+	void send_msg(char msg) {
+		int fd = (forkval == 0 ? c2p : p2c)[1];
+		write(fd, &msg, 1);
+	}
+	
+	void recv_msg(char expected) {
+		int rd, fd = (forkval == 0 ? p2c : c2p)[0];
+		char msg;
+		for (;;) {
+			if ((rd = read(fd, &msg, 1)) > 0) {
+				if (msg == expected)
+					return;
+			} else _exit(1);
+		}
+	}
+	
+	~comm_fork() {
+		if (forkval == 0) {
+			close(c2p[1]); close(p2c[0]);
+		} else {
+			close(p2c[1]); close(c2p[0]);
+		}
+	}
+};
+
 /** Executes a pipeline.
  *
  * @param none
@@ -452,13 +508,11 @@ inline bool pipeline::execute_act() {
 		int pd[2];
 		pipe(pd);
 
-		pid = fork();
-		if (pid == 0) {
+		comm_fork f;
+		if ((pid = f.pid()) == 0) {
 			reset_sigs();
-			if (main_shell) {
-				if (!pgid) pgid = getpid();
-				setpgid(0, pgid);
-			}
+			if (main_shell)
+				f.recv_msg('1'); // wait for parent to setpgid
 			if (input != STDIN_FILENO) {
 				dup2(input, STDIN_FILENO);
 				close(input);
@@ -492,7 +546,9 @@ inline bool pipeline::execute_act() {
 			if (main_shell) {
 				if (!pgid)
 					pgid = pid;	
-				setpgid(pid, pgid);
+				if (setpgid(pid, pgid) < 0)
+					perror("setpgid (pipeline)");
+				f.send_msg('1'); // did setpgid
 			}
 			if (input != STDIN_FILENO)
 				close(input);
@@ -551,14 +607,14 @@ inline bool pipeline::execute_act() {
 		if (ok == IS_UNKNOWN && this->pmode == ppl_proc_mode::FG)
 			vars::status = functions.at("unknown")(argc, argv);
 		else {
-			pid = fork();
-			if (pid == 0) {
-				if (main_shell) {
-					if (!pgid)
-						pgid = getpid();
-					setpgid(0, pgid);
-				}
+			comm_fork f;
+			if ((pid = f.pid()) == 0) {
 				reset_sigs();
+				if (main_shell) {
+					f.recv_msg('1'); // wait for setpgid
+					if (this->pmode == ppl_proc_mode::FG)
+						f.recv_msg('2'); // wait for tcsetpgrp
+				}
 				close(old_input);
 				switch (ok) {
 					case IS_FUNCTION: _exit(uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
@@ -572,15 +628,18 @@ inline bool pipeline::execute_act() {
 			} else if (main_shell) {
 				if (!pgid)
 					pgid = pid;
-				setpgid(pid, pgid);
+				if (setpgid(pid, pgid) < 0)
+					perror("setpgid (final)");
+				f.send_msg('1'); // did setpgid
 				auto jid = add_job(*this, pmode, pgid);	
 				if (this->pmode == ppl_proc_mode::FG) {
 					// Foreground jobs transfer the terminal control to the child
 					if (tcsetpgrp(tty_fd, pgid) < 0)
-						perror("tcsetpgrp #1 (parent)");
-					reaper(-pgid, WUNTRACED, true);
+						perror("tcsetpgrp #1");
+					f.send_msg('2'); // did tcsetpgrp
+					reaper(-pgid, WUNTRACED);
 					if (tcsetpgrp(tty_fd, getpgrp()) < 0)
-						perror("tcsetpgrp #2 (parent)");
+						perror("tcsetpgrp #2");
 				} else {
 					std::cerr << "[" << jid << "] " << jobs[jid].ppl << std::endl;
 				}
