@@ -95,8 +95,8 @@ struct token_list {
 std::vector<std::string> glob(const char *s, int flags) {
 	std::vector<std::string> ret;
 	glob_t gvl;
-	memset(&gvl, 0, sizeof(glob_t));
-	if (!glob(s, flags, NULL, &gvl))
+	memset(&gvl, 0, sizeof gvl);
+	if (!glob(s, flags, nullptr, &gvl))
 		for (size_t i = 0; i < gvl.gl_pathc; ++i)
 			ret.push_back(list(gvl.gl_pathv[i]));
 	if (ret.empty())
@@ -140,7 +140,7 @@ token_list lex(const char *p, lexer_flags flags) {
 	// Balanced quoting (e.g. [...], {...})
 	auto append_bquoted_str = [&](TT type, char c1, char c2) {
 		long cmpnd = 1, brac = (*p && *p == '{');
-		add_remaining_txt("", 0);
+		add_remaining_txt(std::string(), 0);
 
 		for (++p; *p; ++p) {
 			if (*p == '\\') {
@@ -171,7 +171,7 @@ token_list lex(const char *p, lexer_flags flags) {
 				if (!quoted_double) {
 					if (text.empty())
 						curr.add_part(std::move(text), TT::PLAIN_TEXT);
-					else add_remaining_txt("", 0);
+					else add_remaining_txt(std::string(), 0);
 				}
 				break;
 			case '\'':
@@ -180,7 +180,7 @@ token_list lex(const char *p, lexer_flags flags) {
 				if (!quoted_single) {
 					if (text.empty())
 						curr.add_part(std::move(text), TT::PLAIN_TEXT);
-					else add_remaining_txt("", 0);
+					else add_remaining_txt(std::string(), 0);
 				}
 				break;
 
@@ -224,7 +224,7 @@ token_list lex(const char *p, lexer_flags flags) {
 				if (*++p == '{')
 					append_bquoted_str(TT::VARIABLEB, '{', '}');
 				else {
-					add_remaining_txt("", 0);
+					add_remaining_txt(std::string(), 0);
 					text.clear();
 					for (; *p && strchr(allowed_var_chars, *p); ++p)
 						text += *p;
@@ -239,9 +239,9 @@ token_list lex(const char *p, lexer_flags flags) {
 			case '\n': /* FALLTHROUGH */
 			case  ';':
 				if ((flags & SPLIT_WORDS) && !(flags & SEMICOLON) && !quoted_single && !quoted_double) {
-					add_remaining_txt("", 1);
+					add_remaining_txt(std::string(), 1);
 				} else if (!quoted_single && !quoted_double && (flags & SEMICOLON)) {
-					add_remaining_txt("" , 1);
+					add_remaining_txt(std::string() , 1);
 					add_remaining_txt(";", 1);
 				} else
 					text += *p;
@@ -255,7 +255,7 @@ token_list lex(const char *p, lexer_flags flags) {
 					curr.bareword = false;
 					curr.brac = true;
 
-					add_remaining_txt("", 1);
+					add_remaining_txt(std::string(), 1);
 					append_bquoted_str(TT::PLAIN_TEXT, '{', '}');
 					wlst.add_word(std::move(curr));
 				} else
@@ -292,7 +292,7 @@ token_list lex(const char *p, lexer_flags flags) {
 				if (quoted_single || quoted_double || !(flags & SPLIT_WORDS))
 					text += *p;
 				else
-					add_remaining_txt("", 1);
+					add_remaining_txt(std::string(), 1);
 				break;
 
 			/************
@@ -303,7 +303,7 @@ token_list lex(const char *p, lexer_flags flags) {
 					text += *p;
 				else {
 					if (!text.empty())
-						add_remaining_txt("", 0);
+						add_remaining_txt(std::string(), 0);
 					for (; *p && *p != '\n'; ++p) {} --p;
 				}
 				break;
@@ -312,7 +312,7 @@ token_list lex(const char *p, lexer_flags flags) {
 				text += *p;
 		}
 	}
-	add_remaining_txt("", 1);
+	add_remaining_txt(std::string(), 1);
 	return wlst;
 }
 

@@ -21,7 +21,7 @@ char    LAM_STR[] =      "<lambda>";        /* ${argv 0} in a lambda, mutable fo
 
 #define RESERVE_STR      256                /* How many bytes to reserve for string values by default */
 #define ZRC_BIND_TIMEOUT 400000             /* Line editor timeout (be careful, some values yield unexpected results */
-#define CYG_HACK_TIMEOUT 400000             /* Empirical and racey, because Cygwin sucks. */
+#define CYG_HACK_TIMEOUT 550000             /* Empirical and racey, because Cygwin sucks. */
 
 /* If you have an atypical terminal */
 #define BACKSPACE 127

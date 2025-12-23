@@ -1,15 +1,14 @@
 /*
  * Global structs, macros, classes and subroutines.
  */
-#include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 
 #include <functional>
-#include <map>
 #include <stack>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
@@ -26,13 +25,6 @@
 #ifndef CTRL
 	#define CTRL(X) ((X) & 037)
 #endif
-
-// Custom types
-#define zrc_arr std::unordered_map<std::string, zrc_obj>
-#define CMD_TBL std::unordered_map<std::string, std::function<zrc_obj(int, char**)> >
-#define FUN_TBL std::unordered_map<std::string, zrc_fun>
-typedef std::string zrc_obj;
-typedef long double zrc_num;
 
 // Bit flags
 #define ARG(...) __VA_ARGS__
@@ -58,13 +50,7 @@ FLAG_TYPE(redir, ARG(
 	OPTFD_N      = 1 << 6, // 01000000
 ))
 
-std::string basename(std::string const& str) {
-	auto fnd = str.rfind('/');
-	if (fnd == std::string::npos)
-		return str;
-	return str.substr(fnd + 1);
-}
-
+// Custom types
 class command;
 class pipeline;
 class return_handler;
@@ -80,8 +66,12 @@ struct token;
 struct token_list;
 struct job;
 struct zrc_fun;
-template<typename T>
-struct scope_exit;
+
+using zrc_obj = std::string;
+using zrc_num = long double;
+using zrc_arr = std::unordered_map<std::string, zrc_obj>;
+using CMD_TBL = std::unordered_map<std::string, std::function<zrc_obj(int, char**)>>;
+using FUN_TBL = std::unordered_map<std::string, zrc_fun>;
 
 // Command dispatch tables
 extern CMD_TBL builtins;
@@ -92,6 +82,13 @@ std::unordered_map<std::string, zrc_fun> functions;
 
 // Alias table
 std::unordered_map<std::string, std::string> kv_alias;
+
+std::string basename(std::string const& str) {
+	auto fnd = str.rfind('/');
+	if (fnd == std::string::npos)
+		return str;
+	return str.substr(fnd + 1);
+}
 
 int tty_fd, tty_pid;
 bool interactive_sesh, login_sesh, killed_sigexit;
@@ -106,21 +103,63 @@ struct new_fd {
 		if (index < 0)
 			throw std::runtime_error("could not create new fd");
 	}
-	~new_fd() { close(index); }
-
+	~new_fd() noexcept {
+		if (index >= 0)
+			close(index);
+	}
 	inline operator int() const { return index; }
+	new_fd(new_fd const&) = delete;
+	new_fd& operator=(new_fd const&) = delete;
+	new_fd(new_fd&& rhs) : index(rhs.index) {
+		rhs.index = -1;
+	}
+	new_fd& operator=(new_fd&& rhs) {
+		if (this != &rhs) {
+			if (index >= 0)
+				close(index);
+			index = rhs.index;
+			rhs.index = -1;
+		}
+		return *this;
+	}
 };
 
-// General RAII stuff
+// inspired by alexandrescu SCOPE_EXIT talk
+enum class scope_exit_dummy {};
+
 template<typename Fun>
-struct scope_exit {
+class scope_exit {
+private:
 	Fun f;
-	~scope_exit() { f(); }
+	bool active;
+public:
+	scope_exit(Fun&& fn)
+			: f(std::move(fn)), active(true) {}
+	scope_exit(scope_exit&& rhs)
+			: f(std::move(rhs.f)), active(rhs.active) {
+		rhs.active = false;
+	}
+	scope_exit(scope_exit const&) = delete;
+	scope_exit& operator=(scope_exit const&) = delete;
+	scope_exit& operator=(scope_exit&&) = delete;
+	~scope_exit() noexcept { if (active) f(); }
 };
+
 template<typename Fun>
-scope_exit<Fun> make_scope_exit(Fun&& f) {
+constexpr scope_exit<typename std::decay<Fun>::type>
+operator+(scope_exit_dummy d, Fun&& f) {
 	return { std::forward<Fun>(f) };
-};
+}
+
+#define CONCAT_IMPL(s1, s2) s1 ## s2
+#define CONCAT(s1, s2) CONCAT_IMPL(s1, s2)
+#ifdef __COUNTER__
+	#define NEW_ID CONCAT(scope_exit_, __COUNTER__)
+#else
+	#define NEW_ID CONCAT(scope_exit_, __LINE__)
+#endif
+#define SCOPE_EXIT auto NEW_ID = scope_exit_dummy() + [&]()
+
 
 // TTY streambuf
 class ttybuf : public std::streambuf {

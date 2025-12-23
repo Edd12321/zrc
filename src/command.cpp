@@ -84,10 +84,10 @@ _syn_error_redir:
 	}
 	new_fd nfd(fd);
 	dup2(ffd, fd);
-	auto cleanup = make_scope_exit([&]() {
+	SCOPE_EXIT {
 		close(ffd);
 		dup2(nfd, fd);
-	});
+	};
 	eoe(argc, argv, 2);
 	return vars::status;
 }
@@ -476,13 +476,13 @@ inline bool pipeline::execute_act() {
 		exit(EXIT_FAILURE);
 	}
 
-	auto cleanup = make_scope_exit([&]() {
+	SCOPE_EXIT {
 		sem_destroy(sem);
 		munmap(sem, sizeof(sem_t));
 		dup2(old_input, STDIN_FILENO);
 		if (input != STDIN_FILENO && input >= 0)
 			close(input);
-	});
+	};
 	for (size_t i = 0; i < cmds.size() - 1; ++i) {
 		int argc = cmds[i].argc();
 		char **argv = cmds[i].argv();
@@ -652,14 +652,14 @@ void pipeline::execute() {
 		reaper();
 	if (cmds.empty())
 		return;
-	auto cleanup = make_scope_exit([&]() {
+	SCOPE_EXIT {
 		cmds.clear();
 		for (auto const& it : fifo_cleanup) {
 			unlink((it + "/" FIFO_FILNAME).c_str());
 			rmdir(it.c_str());
 		}
 		fifo_cleanup.clear();
-	});
+	};
 	switch (rmode) {
 		case ppl_run_mode::AND: !stonum(vars::status) && execute_act(); break;
 		case ppl_run_mode::OR:  !stonum(vars::status) || execute_act(); break;

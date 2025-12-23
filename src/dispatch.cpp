@@ -174,7 +174,7 @@ bool regex_match(std::string const& txt, std::string const& reg, int cflags = RE
 
 	if (regcomp(&regex, reg.c_str(), cflags))
 		throw regex_handler();
-	auto ret = regexec(&regex, txt.c_str(), 0, NULL, 0);
+	auto ret = regexec(&regex, txt.c_str(), 0, nullptr, 0);
 	regfree(&regex);
 	return !ret;
 }
@@ -223,7 +223,7 @@ struct zrc_fun {
 		callstack.push_back({is_fun, fun_name, is_script, script_name});
 		is_fun = true; fun_name = argv[0];
 
-		auto cleanup = make_scope_exit([&]() {
+		SCOPE_EXIT {
 			vars::argc = zargc_old; ::argc = argc_old;
 			vars::argv = zargv_old; ::argv = argv_old;
 			
@@ -231,7 +231,7 @@ struct zrc_fun {
 
 			is_fun = is_fun_old; fun_name = fun_name_old;
 			callstack.pop_back();
-		});
+		};
 		block_handler fh(&in_func);
 		try { eval(body); } catch (return_handler ex) {}
 
@@ -288,7 +288,7 @@ COMMAND(concat, [<w1> <w2>...])  return concat(argc, argv, 1)                END
 // Replace currently running process
 COMMAND(exec,   <w1> [<w2>...])  if (argc > 1) execvp(*(argv+1), argv+1)     END
 // Wait for child processes to finish execution
-COMMAND(wait,                 )  while (wait(NULL) > 0)                      END
+COMMAND(wait,                 )  while (wait(nullptr) > 0)                   END
 // Source a script
 COMMAND(source, [<w1> <w2>...])  source(concat(argc, argv, 1))               END
 // Disable internal hash table
@@ -819,13 +819,13 @@ COMMAND(@, [<eoe>])
 		reset_sigs();
 		close(pd[0]);
 		fcntl(pd[1], F_SETFD, O_CLOEXEC);
-		auto cleanup = make_scope_exit([&]() {
+		SCOPE_EXIT {
 			fflush(stdout);
 			dup2(pd[1], STDOUT_FILENO);
 			close(pd[1]);
 			std::cout << vars::status << std::flush;
 			_exit(0);
-		});
+		};
 		eoe(argc, argv, 1);
 	} else {
 		close(pd[1]);
@@ -1159,7 +1159,7 @@ COMMAND(let, <var-list> <eoe>)
 		else
 			didnt_exist[it] = true;
 	}
-	auto cleanup = make_scope_exit([&]() {
+	SCOPE_EXIT {
 		for (auto const& it : amap)
 			vars::amap[it.first] = it.second;
 		for (auto const& it : vmap) {
@@ -1168,7 +1168,7 @@ COMMAND(let, <var-list> <eoe>)
 		}
 		for (auto const& it : didnt_exist)
 			unsetvar(it.first);
-	});
+	};
 	eoe(argc, argv, 2);
 END
 
@@ -1207,7 +1207,7 @@ COMMAND(pushd, [<dir>])
 			std::cerr << argv[1] << " is not a directory\n";
 			return "3";
 		}
-		char *rp = realpath(argv[1], NULL);
+		char *rp = realpath(argv[1], nullptr);
 		if (!rp) {
 			perror("realpath");
 			return "2";
@@ -1603,11 +1603,11 @@ COMMAND(>&, [<fd1>] <fd2> <eoe>)
 	}
 	new_fd fd(fd1);
 	dup2(fd2, fd1);
-	auto cleanup = make_scope_exit([&]() {
+	SCOPE_EXIT {
 		dup2(fd, fd1);
 		if (!is_valid)
 			close(fd1);
-	});
+	};
 	eoe(argc, argv, 2);
 END
 
@@ -1629,10 +1629,10 @@ COMMAND(>&-, [<fd>] <eoe>)
 
 	new_fd nfd(fd);
 	close(fd);
-	auto cleanup = make_scope_exit([&]() {
+	SCOPE_EXIT {
 		if (is_valid)
 			dup2(nfd, fd);
-	});
+	};
 	eoe(argc, argv, 1);
 END
 

@@ -41,11 +41,11 @@ bool source(std::string const& str, bool err/* = true */) {
 		callstack.push_back({is_fun, fun_name, is_script, script_name});
 		is_fun = false;
 		is_script = true; script_name = str;
-		auto cleanup = make_scope_exit([&]() {
+		SCOPE_EXIT {
 			is_fun = is_fun_old;
 			is_script = is_script_old; script_name = script_name_old;
 			callstack.pop_back();
-		});
+		};
 		eval_stream(f);
 		return true;
 	}
@@ -86,7 +86,7 @@ std::unordered_map<std::string, std::string> pathwalk() {
 		struct dirent *entry;
 		DIR *d = opendir(tmp.c_str());
 		if (d) {
-			auto cleanup = make_scope_exit([&](){closedir(d);});
+			SCOPE_EXIT { closedir(d); };
 			while ((entry = readdir(d))) {
 				std::string short_name = entry->d_name;
 				std::string full_name = tmp + "/" + short_name;

@@ -8,7 +8,7 @@
 
 void display_prompt(bool show_secondary_prompt) {
 	zrc_obj old_status = vars::status;
-	auto cleanup = make_scope_exit([&]() { vars::status = old_status; });
+	SCOPE_EXIT { vars::status = old_status; };
 	tty << subst(show_secondary_prompt ? vars::prompt2 : vars::prompt1);
 }
 
