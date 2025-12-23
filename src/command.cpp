@@ -370,7 +370,8 @@ void reaper(pid_t who, int how) {
 				tty << '[' << jid << "] Stopped" << std::endl;
 			if (who == -job.pgid && !(how & WNOHANG))
 				return;
-			continue; 
+			//continue; 
+			break;
 		}
 		job.pids.erase(pid);
 		bool lproc = pid == job.last_pid;
@@ -639,7 +640,7 @@ inline bool pipeline::execute_act() {
 			} else {
 				tty << '[' << jid << "] " << jobs[jid].ppl << std::endl;
 			}
-		} else {
+		} else if (this->pmode == ppl_proc_mode::FG) {
 			reaper(pid, WUNTRACED);
 		}
 	}
