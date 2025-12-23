@@ -57,16 +57,16 @@ namespace vars {
 		zrc_var(zrc_var const&) = delete;
 		zrc_var(zrc_var&&) = delete;
 		inline friend std::ostream& operator<<(std::ostream&, zrc_var const&);
-	} ifs("ifs"), argc("argc"), status("status"),
-	  IFS("IFS"), CDPATH("CDPATH"), PATH("PATH"), EDITOR("EDITOR"),
-	  editor("editor"), optind("optind"), opterr("opterr"), optarg("optarg"),
-	  prompt1("prompt1"), prompt2("prompt2")
+	} 
+#define V(o) o(#o)
+	V(argc), V(CDPATH), V(editor), V(EDITOR), V(ifs), V(IFS),
+	V(status), V(PATH), V(optarg), V(opterr), V(optind), V(prompt1), V(prompt2),
+	V(reply)
 #if WINDOWS
-	, PATHEXT("PATHEXT");
-#else
-	;
+	, V(PATHEXT)
 #endif
-
+	;
+#undef V
 	inline std::ostream& operator<<(std::ostream& out, zrc_var const& var) {
 		return out << (zrc_obj)var;
 	}

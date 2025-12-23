@@ -789,7 +789,7 @@ COMMAND(select, <var> <list> <eoe>)
 			invoke_void(builtins.at("read"), {"read", argv[1]});
 			auto var = getvar(argv[1]);
 			if (ind.find(var) != ind.end())
-				setvar("reply", std::to_string(ind[var]));
+				vars::reply = std::to_string(ind[var]);
 			eoe(argc, argv, 3);
 		} catch (break_handler ex) {
 			break;

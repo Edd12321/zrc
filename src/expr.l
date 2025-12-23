@@ -68,8 +68,7 @@ sgn                         return SGN;
 extern YYSTYPE last_ret;
 extern std::string subst(const char *);
 
-long double expr(const char *buf)
-{
+long double expr(const char *buf) {
 	std::string ret = subst(buf);
 	YY_BUFFER_STATE sbuf = yy_scan_string(ret.c_str());
 	yy_switch_to_buffer(sbuf);

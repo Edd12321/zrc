@@ -6,8 +6,7 @@
 int yylex();
 YYSTYPE last_ret = NAN;
 
-void yyerror(const char *msg)
-{
+void yyerror(const char *msg) {
 	std::cerr << msg << '\n';
 }
 %}
@@ -53,7 +52,7 @@ expr : expr ',' expr           { $$ = $3; }
      | expr SHL expr           { $$ = (long long)$1 << (long long)$3; }
      | expr SHR expr           { $$ = (long long)$1 >> (long long)$3; }
      | expr AND expr           { $$ = $1 && $3; }
-	 | expr XOR expr           { $$ = !!$1 ^ !!$3; }
+     | expr XOR expr           { $$ = !!$1 ^ !!$3; }
      | expr OR expr            { $$ = $1 || $3; }
      | expr POW expr           { $$ = pow($1, $3); }
      | expr EQ expr            { $$ = $1 == $3; }
