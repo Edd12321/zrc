@@ -8,3 +8,4 @@ bin/zrc-debug
 bin/zrc-debug.exe
 pkg/zrc-*.pkg.tar.zst
 pkg/zrc
+img/icon/*.o

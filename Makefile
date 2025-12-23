@@ -11,8 +11,18 @@ CXX ?= g++
 release: bin/zrc
 bin/zrc: $(SRCS) src/y.tab.cpp src/lex.yy.cpp
 	mkdir -p bin
-	$(CXX) $(CXXFLAGS) $(RELFLAGS) src/lex.yy.cpp src/y.tab.cpp src/main.cpp -o bin/zrc
-	strip bin/zrc
+	@set -e; peval() { echo $$1; eval $$1; }; \
+	case "$$(uname -s)" in \
+		CYGWIN*) \
+			peval 'cd img/icon && windres winico.rc winico.o && cd ../..'; \
+			peval '$(CXX) $(CXXFLAGS) $(RELFLAGS) src/lex.yy.cpp src/y.tab.cpp src/main.cpp img/icon/winico.o -o bin/zrc.exe'; \
+			peval 'strip bin/zrc.exe'; \
+			;; \
+		*) \
+			peval '$(CXX) $(CXXFLAGS) $(RELFLAGS) src/lex.yy.cpp src/y.tab.cpp src/main.cpp -o bin/zrc'; \
+			peval 'strip bin/zrc'; \
+			;; \
+	esac
 
 .PHONY: debug
 debug: bin/zrc-debug
