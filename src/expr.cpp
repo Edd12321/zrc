@@ -89,7 +89,7 @@ void init() {
 		for (auto const& jt : it.first)
 			str2optype.emplace_back(jt, it.second);
 	std::sort(str2optype.begin(), str2optype.end(), [](pso const& lhs, pso const& rhs) {
-		return lhs.first.length() >= rhs.first.length();
+		return lhs.first.length() > rhs.first.length();
 	});
 }
 
@@ -128,6 +128,8 @@ bool popper(const char *buf, std::stack<expr_optype>& ops, std::stack<zrc_num>& 
 
 zrc_num eval(const char *buf) {
 	std::string str = subst(buf);
+	if (str.empty())
+		return 0;
 	std::stack<expr_optype> ops;
 	std::stack<zrc_num> vals;
 	bool unary_here = true;
@@ -186,7 +188,7 @@ zrc_num eval(const char *buf) {
 						op = OP_POS;
 					// 2) ?: logical stuff
 					if (op == OP_COLON) {
-						while (ops.empty() && ops.top() != OP_QUESTION)
+						while (!ops.empty() && ops.top() != OP_QUESTION)
 							if (!popper(buf, ops, vals))
 								return NAN;
 						if (ops.empty())
