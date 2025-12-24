@@ -205,13 +205,16 @@ std::vector<zrc_frame> callstack;
 
 struct zrc_fun {
 	std::string body;
+	std::vector<token> lexbody;
 
 	zrc_fun() = default;
-	zrc_fun(std::string const& b) : body(b) {}
+	zrc_fun(std::string const& b)
+		: body(b), lexbody(lex(b.c_str(), SEMICOLON | SPLIT_WORDS).elems) {
+	}
 
 	inline zrc_obj operator()(int argc, char *argv[]) const {
 		zrc_obj zargc_old = vars::argc; int argc_old = ::argc;
-		zrc_arr zargv_old = vars::argv; char **argv_old = ::argv;
+		zrc_arr zargv_old = std::move(vars::argv); char **argv_old = ::argv;
 		vars::argv = copy_argv(argc, argv); ::argv = argv;
 		vars::argc = numtos(argc); ::argc = argc;
 		// Break, continue and fallthrough dont work inside functions
@@ -225,7 +228,7 @@ struct zrc_fun {
 
 		SCOPE_EXIT {
 			vars::argc = zargc_old; ::argc = argc_old;
-			vars::argv = zargv_old; ::argv = argv_old;
+			vars::argv = std::move(zargv_old); ::argv = argv_old;
 			
 			::in_switch = in_switch, ::in_loop = in_loop;
 
@@ -233,10 +236,34 @@ struct zrc_fun {
 			callstack.pop_back();
 		};
 		block_handler fh(&in_func);
-		try { eval(body); } catch (return_handler ex) {}
+		try { eval(lexbody); } catch (return_handler const& ex) {}
 
 		// Don't forget
 		return vars::status;
+	}
+};
+
+struct zrc_alias {
+	bool active;
+	std::string body;
+	std::vector<token> lexbody;
+
+	zrc_alias(std::string const& b)
+		: active(true), body(b)
+		, lexbody(lex(b.c_str(), SEMICOLON | SPLIT_WORDS).elems) {
+	}
+
+	// Aliases are more lightweight than functions
+	inline zrc_obj operator()(int argc, char *argv[]) {
+		active = false;
+		for (int i = 1; i < argc; ++i)
+			lexbody.emplace_back(token(argv[i]));
+		SCOPE_EXIT {
+			for (int i = 1; i < argc; ++i)
+				lexbody.pop_back();
+			active = true;
+		};
+		return eval(lexbody);
 	}
 };
 
@@ -268,11 +295,23 @@ CTRLFLOW_HELPER(func,   return,[<val>],
 )
 
 // Unless and while use a similar command.
-#define WHILE_HELPER(x)               \
-  COMMAND(x, <expr> <eoe>)            \
-    if(argc < 3) SYNTAX_ERROR         \
-    block_handler lh(&in_loop);       \
-		x (expr(argv[1])) try { eoe(argc, argv, 2); } catch (break_handler ex) { break; } catch (continue_handler ex) { continue; } \
+#define WHILE_HELPER(x)                                   \
+  COMMAND(x, <expr> <eoe>)                                \
+    if (argc < 3) SYNTAX_ERROR                            \
+    block_handler lh(&in_loop);                           \
+    std::vector<token> lex2;                              \
+    const bool evl = argc == 3;                           \
+    if (evl)                                              \
+      lex2 = lex(argv[2], SEMICOLON | SPLIT_WORDS).elems; \
+    x (expr(argv[1])) {                                   \
+      try {                                               \
+        evl ? eval(lex2) : exec(argc - 2, argv + 2);      \
+      } catch (break_handler const& ex) {                 \
+        break;                                            \
+      } catch (continue_handler const& ex) {              \
+        continue;                                         \
+      }                                                   \
+    }                                                     \
   END
 WHILE_HELPER(while)
 WHILE_HELPER(until)
@@ -445,7 +484,7 @@ COMMAND(help, [<cmd1> <cmd2>...])
 	for (int i = 1; i < argc; ++i) {
 		if (kv_alias.find(argv[i]) != kv_alias.end()) {
 			std::cout << "# alias\n";
-			std::cout << "alias " << list(argv[i]) << ' ' << list(kv_alias.at(argv[i])) << '\n';
+			std::cout << "alias " << list(argv[i]) << ' ' << list(kv_alias.at(argv[i]).body) << '\n';
 			handled_args = true;
 		}
 		if (functions.find(argv[i]) != functions.end()) {
@@ -608,26 +647,47 @@ END
 COMMAND(for, <eval> <expr> <eval> <eoe>)
 	if (argc < 5) SYNTAX_ERROR
 	block_handler bh(&in_loop);
-	for (eval(argv[1]); expr(argv[2]); eval(argv[3]))
-		try { eoe(argc, argv, 4); } catch (break_handler ex) { break; } catch (continue_handler ex) { continue; }
+	
+	std::vector<token> lex1, lex3, lex4;
+	lex1 = lex(argv[1], SEMICOLON | SPLIT_WORDS).elems;
+	lex3 = lex(argv[3], SEMICOLON | SPLIT_WORDS).elems;
+	const bool evl = argc == 5;
+	if (evl)
+		lex4 = lex(argv[4], SEMICOLON | SPLIT_WORDS).elems;
+	for (eval(lex1); expr(argv[2]); eval(lex3)) {
+		try {
+			evl ? eval(lex4) : exec(argc - 4, argv + 4);
+		} catch (break_handler const& ex) {
+			break;
+		} catch (continue_handler const& ex) {
+			continue;
+		}
+	}
 END
 
 // Do/while and do/until
 COMMAND(do, <eoe> while|until <expr>...)
 	if (argc < 4) SYNTAX_ERROR
-	bool w = !strcmp(argv[argc-2], "while");
-	bool u = !strcmp(argv[argc-2], "until");
+	const bool w = !strcmp(argv[argc-2], "while");
+	const bool u = !strcmp(argv[argc-2], "until");
 	if (!w && !u) SYNTAX_ERROR
-
 	block_handler bh(&in_loop);
+
+	std::vector<token> lex1;
+	const bool evl = argc == 4;
+	if (evl)
+		lex1 = lex(argv[1], SEMICOLON | SPLIT_WORDS).elems;
+	// use loop unswitching
 	if (w) {
 		do {
-			try { eoe(argc-2, argv, 1); } catch (break_handler ex) { break; } catch (continue_handler ex) { continue; }
-		} while (expr(argv[argc-1]));
-	} else {
-		do {
-			try { eoe(argc-2, argv, 1); } catch (break_handler ex) { break; } catch (continue_handler ex) { continue; }
-		} until (expr(argv[argc-1]));
+			try {
+				evl ? eval(lex1) : exec(argc - 3, argv + 1);
+			} catch (break_handler const& ex) {
+				break;
+			} catch (continue_handler const& ex) {
+				continue;
+			}
+		} while (u ? !expr(argv[argc-1]) : expr(argv[argc-1]));
 	}
 END
 
@@ -636,9 +696,15 @@ COMMAND(repeat, <expr> <eoe>)
 
 	zrc_num exp = floor(expr(argv[1]));
 	if (isnan(exp)) SYNTAX_ERROR
+	block_handler bh(&in_loop);
+
+	std::vector<token> lex2;
+	const bool evl = argc == 3;
+	if (evl)
+		lex2 = lex(argv[2], SEMICOLON | SPLIT_WORDS).elems;
 
 	while (exp--)
-		eoe(argc, argv, 2);
+		evl ? eval(lex2) : exec(argc - 2, argv + 2);
 END
 
 // Switch instruction
@@ -693,14 +759,14 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 		switch (it.type) {
 			case SW::CASE:
 				if (fell || txt == it.txt)
-					try { return eval(it.block); } catch (fallthrough_handler ex) { fell = true; continue; }
+					try { return eval(it.block); } catch (fallthrough_handler const& ex) { fell = true; continue; }
 				break;
 
 			case SW::REGEX:
 				try {
 					if (fell || regex_match(txt, it.txt))
-						try { return eval(it.block); } catch (fallthrough_handler ex) { fell = true; continue; }
-				} catch (regex_handler ex) {
+						try { return eval(it.block); } catch (fallthrough_handler const& ex) { fell = true; continue; }
+				} catch (regex_handler const& ex) {
 					std::cerr << "syntax error: Invalid regex " << list(it.txt) << std::endl;
 					return "1";
 				}
@@ -709,7 +775,7 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 			case SW::DEFAULT:
 				if (fell) {
 					def = -1;
-					try { return eval(it.block); } catch (fallthrough_handler ex) { fell = true; continue; }
+					try { return eval(it.block); } catch (fallthrough_handler const& ex) { fell = true; continue; }
 				}
 				break;
 		}
@@ -718,7 +784,7 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 	// We made it this far, so nothing matched
 	if (def != -1)
 		for (i = def; i < vec.size(); ++i)
-			try { return eval(vec[i].block); } catch (fallthrough_handler ex) {}
+			try { return eval(vec[i].block); } catch (fallthrough_handler const& ex) {}
 END
 
 // Exceptions
@@ -760,13 +826,18 @@ COMMAND(foreach, <var> <var-list> <eoe>)
 	if (argc < 4) SYNTAX_ERROR
 	block_handler lh(&in_loop);
 	auto vlst = lex(argv[2], SPLIT_WORDS).elems;
+
+	std::vector<token> lex3;
+	const bool evl = argc == 4;
+	if (evl)
+		lex3 = lex(argv[3], SEMICOLON | SPLIT_WORDS).elems;
 	for (auto const& it : vlst) {
 		try {
 			setvar(argv[1], it);
-			eoe(argc, argv, 3);
-		} catch (break_handler ex) {
+			evl ? eval(lex3) : exec(argc - 3, argv + 3);
+		} catch (break_handler const& ex) {
 			break;
-		} catch (continue_handler ex) {
+		} catch (continue_handler const& ex) {
 			continue;
 		}
 	}
@@ -791,9 +862,9 @@ COMMAND(select, <var> <list> <eoe>)
 			if (ind.find(var) != ind.end())
 				vars::reply = std::to_string(ind[var]);
 			eoe(argc, argv, 3);
-		} catch (break_handler ex) {
+		} catch (break_handler const& ex) {
 			break;
-		} catch (continue_handler ex) {
+		} catch (continue_handler const& ex) {
 			continue;
 		}
 	}
@@ -934,9 +1005,9 @@ END
 COMMAND(alias, [<name> < <w1> <w2>...>])
 	if (argc == 1)
 		for (auto& it : kv_alias)
-			std::cout << "alias " << list(it.first) << ' ' << list(it.second) << '\n';
+			std::cout << "alias " << list(it.first) << ' ' << list(it.second.body) << '\n';
 	else if (argc >= 3)
-		kv_alias[argv[1]] = concat(argc, argv, 2);
+		kv_alias.emplace(argv[1], concat(argc, argv, 2));
 	else SYNTAX_ERROR
 END
 

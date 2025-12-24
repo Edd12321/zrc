@@ -66,22 +66,19 @@ struct token;
 struct token_list;
 struct job;
 struct zrc_fun;
+struct zrc_alias;
 
 using zrc_obj = std::string;
 using zrc_num = long double;
 using zrc_arr = std::unordered_map<std::string, zrc_obj>;
 using CMD_TBL = std::unordered_map<std::string, std::function<zrc_obj(int, char**)>>;
-using FUN_TBL = std::unordered_map<std::string, zrc_fun>;
 
 // Command dispatch tables
 extern CMD_TBL builtins;
-extern FUN_TBL functions;
-
 // User functions
 std::unordered_map<std::string, zrc_fun> functions;
-
 // Alias table
-std::unordered_map<std::string, std::string> kv_alias;
+std::unordered_map<std::string, zrc_alias> kv_alias;
 
 std::string basename(std::string const& str) {
 	auto fnd = str.rfind('/');
@@ -178,7 +175,8 @@ std::ostream tty(&_ttybuf);
 // MAIN.CPP
 std::unordered_map<std::string, std::string> pathwalk();
 bool source(std::string const&, bool err = true);
-static inline std::string eval(std::string const&);
+static inline zrc_obj eval(std::vector<token> const& wlst);
+static inline zrc_obj eval(std::string const&);
 static inline void eval_stream(std::istream&);
 zrc_arr copy_argv(int, char**);
 int main(int, char**);
@@ -198,7 +196,7 @@ std::vector<std::string> glob(const char*, int);
 static inline bool good_fd(int);
 static inline zrc_obj redir(int, char**, int, redir_flags);
 bool run_function(std::string);
-void exec(int, char**);
+zrc_obj exec(int, char**);
 static inline std::string get_output(std::string const&);
 static inline std::string get_fifo(std::string const&);
 int add_job(pipeline const&, pid_t);

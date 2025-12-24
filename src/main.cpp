@@ -124,6 +124,10 @@ std::unordered_map<std::string, std::string> pathwalk() {
  */
 static inline std::string eval(std::string const& str) {
 	auto wlst = lex(str.c_str(), SEMICOLON | SPLIT_WORDS).elems;
+	return eval(wlst);
+}
+
+static inline zrc_obj eval(std::vector<token> const& wlst) {
 	pipeline ppl;
 	command cmd;
 	bool can_alias = true;
@@ -157,15 +161,6 @@ static inline std::string eval(std::string const& str) {
 				cmd.add_arg(std::string(t).c_str());
 			continue;
 		}
-
-		// Aliases
-		if (can_alias == true && !cmd.argc() && kv_alias.find(conv) != kv_alias.end()) {
-			can_alias = false;
-			auto alst = lex(kv_alias[conv].c_str(), SEMICOLON | SPLIT_WORDS).elems;
-			wlst.insert(wlst.begin()+i+1, alst.begin(), alst.end());
-			continue;
-		}
-
 		cmd.add_arg(conv.c_str());
 	}
 	ppl.add_cmd(cmd);

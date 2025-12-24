@@ -118,7 +118,13 @@ void exec_extern(int argc, char *argv[]) {
  * @param {int}argc,{char**}argv
  * @return none
  */
-void exec(int argc, char *argv[]) {
+zrc_obj exec(int argc, char *argv[]) {
+	// If found builtin, run
+	if (kv_alias.find(*argv) != kv_alias.end()) {
+		auto& at = kv_alias.at(*argv);
+		if (at.active)
+			vars::status = at(argc, argv);
+	}
 	// If found function, run
 	if (functions.find(*argv) != functions.end())
 		vars::status = functions.at(*argv)(argc, argv);
@@ -146,6 +152,7 @@ void exec(int argc, char *argv[]) {
 			vars::status = "127";
 		}
 	}
+	return vars::status;
 }
 
 /** Forks, launches a script and return the output from the process.
@@ -252,8 +259,8 @@ void invoke_void(Fun const& f, std::initializer_list<const char*> list) {
 	f(cmd.argc(), cmd.argv());
 }
 
-static inline void exec(command& cmd) {
-	exec(cmd.argc(), cmd.argv());
+static inline zrc_obj exec(command& cmd) {
+	return exec(cmd.argc(), cmd.argv());
 }
 
 class pipeline {
@@ -454,35 +461,45 @@ inline void disown_job(int n) {
  */
 // !!! Beware of dragons !!!
 inline bool pipeline::execute_act() {
-	int input = STDIN_FILENO;
-	new_fd old_input(input);
+	int input = STDIN_FILENO, old_input = -1;
 	pid_t pid, pgid = 0;
-
 	// for reaper 
 	std::set<pid_t> pids;
-
 	// not a subshell
-	bool main_shell = (getpid() == tty_pid && interactive_sesh);
-
+	bool main_shell;
 	// release children after tcsetpgrp
-	sem_t *sem = (sem_t*)mmap(nullptr, sizeof(sem_t),
-			PROT_READ | PROT_WRITE,
-			MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-	if (sem == MAP_FAILED) {
-		perror("mmap");
-		exit(EXIT_FAILURE);
-	}
-	if (sem_init(sem, 1, 0) < 0) {
-		perror("sem_init");
-		exit(EXIT_FAILURE);
+	sem_t *sem;
+
+	auto init_semaphore = [&]() {
+		sem = (sem_t*)mmap(nullptr, sizeof(sem_t),
+				PROT_READ | PROT_WRITE,
+				MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+		if (sem == MAP_FAILED) {
+			perror("mmap");
+			exit(EXIT_FAILURE);
+		}
+		if (sem_init(sem, 1, 0) < 0) {
+			perror("sem_init");
+			exit(EXIT_FAILURE);
+		}
+	};
+
+	if (cmds.size() > 1) {
+		old_input = fcntl(input, F_DUPFD_CLOEXEC, FD_MAX + 1);
+		init_semaphore();
 	}
 
 	SCOPE_EXIT {
-		sem_destroy(sem);
-		munmap(sem, sizeof(sem_t));
-		dup2(old_input, STDIN_FILENO);
-		if (input != STDIN_FILENO && input >= 0)
-			close(input);
+		if (cmds.size() > 1) {
+			sem_destroy(sem);
+			munmap(sem, sizeof(sem_t));
+			if (old_input >= 0) {
+				dup2(old_input, STDIN_FILENO);
+				close(old_input);
+			}
+			if (input != STDIN_FILENO && input >= 0)
+				close(input);
+		}
 	};
 	for (size_t i = 0; i < cmds.size() - 1; ++i) {
 		int argc = cmds[i].argc();
@@ -490,6 +507,7 @@ inline bool pipeline::execute_act() {
 		int pd[2];
 		pipe(pd);
 
+		main_shell = (interactive_sesh && getpid() == tty_fd);
 		if ((pid = fork()) == 0) {
 			reset_sigs();
 			if (main_shell) {
@@ -506,8 +524,17 @@ inline bool pipeline::execute_act() {
 			dup2(pd[1], STDOUT_FILENO);
 			close(pd[1]);
 			close(pd[0]);
-			close(old_input);
+			if (old_input >= 0) {
+				close(old_input);
+				old_input = -1;
+			}
 
+			// If found alias, run
+			if (kv_alias.find(*argv) != kv_alias.end()) {
+				auto& at = kv_alias.at(*argv);
+				if (at.active)
+					_exit(uint8_t(atoi(at(argc, argv).c_str())));
+			}
 			// If found function, run (atoi used for no throw)
 			if (functions.find(*argv) != functions.end())
 				_exit(uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
@@ -554,9 +581,15 @@ inline bool pipeline::execute_act() {
 	char **argv = cmds.back().argv();
 	// This is literally the exec function but with extra stuff:
 
+
+	bool is_alias = kv_alias.find(*argv) != kv_alias.end() && kv_alias.at(*argv).active;
 	bool is_fun = functions.find(*argv) != functions.end();
 	bool is_builtin = builtins.find(*argv) != builtins.end();
 
+	if (this->pmode == ppl_proc_mode::FG && is_alias && cmds.size() == 1) {
+		vars::status = kv_alias.at(*argv)(argc, argv);
+		return true;
+	}
 	// If found function and FG, run (for side effects in the shell)
 	if (this->pmode == ppl_proc_mode::FG && is_fun && cmds.size() == 1) {
 		vars::status = functions.at(*argv)(argc, argv);
@@ -572,12 +605,15 @@ inline bool pipeline::execute_act() {
 	enum stuff_known {
 		IS_NOTHING,
 		IS_UNKNOWN,
+		IS_ALIAS,
 		IS_FUNCTION,
 		IS_BUILTIN,
 		IS_COMMAND_PATH,
 		IS_COMMAND_FILE,
 	} ok = IS_NOTHING;
-	if (is_fun)
+	if (is_alias)
+		ok = IS_ALIAS;
+	else if (is_fun)
 		ok = IS_FUNCTION;
 	else if (is_builtin)
 		ok = IS_BUILTIN;
@@ -597,6 +633,9 @@ inline bool pipeline::execute_act() {
 	if (ok == IS_UNKNOWN && this->pmode == ppl_proc_mode::FG)
 		vars::status = functions.at("unknown")(argc, argv);
 	else {
+		main_shell = (interactive_sesh && getpid() == tty_pid);
+		if (cmds.size() == 1)
+			init_semaphore();
 		if ((pid = fork()) == 0) {
 			reset_sigs();
 			if (main_shell) {
@@ -606,8 +645,12 @@ inline bool pipeline::execute_act() {
 				if (this->pmode == ppl_proc_mode::FG)
 					sem_wait(sem);
 			}
-			close(old_input);
+			if (old_input >= 0) {
+				close(old_input);
+				old_input = -1;
+			}
 			switch (ok) {
+				case IS_ALIAS: _exit(uint8_t(atoi(kv_alias.at(*argv)(argc, argv).c_str())));
 				case IS_FUNCTION: _exit(uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
 				case IS_BUILTIN: _exit(uint8_t(atoi(builtins.at(*argv)(argc, argv).c_str())));
 				case IS_COMMAND_FILE: execv(*argv, argv); perror(*argv); _exit(127);
