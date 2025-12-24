@@ -156,10 +156,6 @@ static inline std::string concat(int argc, char *argv[], int i) {
 	return ret;
 }
 
-static inline zrc_num expr(std::string const& str) {
-	return expr(str.c_str());
-}
-
 // Eval-or-exec behaviour on arguments
 static inline void eoe(int argc, char *argv[], int i) {
 	if (argc == i+1) 
@@ -303,7 +299,7 @@ CTRLFLOW_HELPER(func,   return,[<val>],
     const bool evl = argc == 3;                           \
     if (evl)                                              \
       lex2 = lex(argv[2], SEMICOLON | SPLIT_WORDS).elems; \
-    x (expr(argv[1])) {                                   \
+    x (expr::eval(argv[1])) {                             \
       try {                                               \
         evl ? eval(lex2) : exec(argc - 2, argv + 2);      \
       } catch (break_handler const& ex) {                 \
@@ -317,23 +313,23 @@ WHILE_HELPER(while)
 WHILE_HELPER(until)
 
 // Substitute arguments
-COMMAND(subst,  [<w1> <w2>...])  return subst(concat(argc, argv, 1))         END
+COMMAND(subst,  [<w1> <w2>...])  return subst(concat(argc, argv, 1))               END
 // Evaluate arguments
-COMMAND(eval,   [<w1> <w2>...])  return eval(concat(argc, argv, 1))          END
+COMMAND(eval,   [<w1> <w2>...])  return eval(concat(argc, argv, 1))                END
 // Evaluate as an expression
-COMMAND(expr,   [<w1> <w2>...])  return numtos(expr(concat(argc, argv, 1)))  END
+COMMAND(expr,   [<w1> <w2>...])  return numtos(expr::eval(concat(argc, argv, 1)))  END
 // Concatenate arguments
-COMMAND(concat, [<w1> <w2>...])  return concat(argc, argv, 1)                END
+COMMAND(concat, [<w1> <w2>...])  return concat(argc, argv, 1)                      END
 // Replace currently running process
-COMMAND(exec,   <w1> [<w2>...])  if (argc > 1) execvp(*(argv+1), argv+1)     END
+COMMAND(exec,   <w1> [<w2>...])  if (argc > 1) execvp(*(argv+1), argv+1)           END
 // Wait for child processes to finish execution
-COMMAND(wait,                 )  while (wait(nullptr) > 0)                   END
+COMMAND(wait,                 )  while (wait(nullptr) > 0)                         END
 // Source a script
-COMMAND(source, [<w1> <w2>...])  source(concat(argc, argv, 1))               END
+COMMAND(source, [<w1> <w2>...])  source(concat(argc, argv, 1))                     END
 // Disable internal hash table
-COMMAND(unhash,               )  hctable.clear()                             END
+COMMAND(unhash,               )  hctable.clear()                                   END
 // Display internal job table
-COMMAND(jobs,                 )  show_jobs()                                 END
+COMMAND(jobs,                 )  show_jobs()                                       END
 
 // Bash-style getopts
 COMMAND(getopts, <opt> <var>)
@@ -361,7 +357,7 @@ END
 #define FGBG(z, x, y)                            \
   COMMAND(x, <n>)                                \
     if (argc != 2) SYNTAX_ERROR                  \
-    auto n = expr(argv[1]);                      \
+    auto n = expr::eval(argv[1]);                \
     if (isnan(n)) SYNTAX_ERROR                   \
 	if (!interactive_sesh) {                     \
 	  std::cerr << "Can't FG/BG in a script\n";  \
@@ -383,7 +379,7 @@ FGBG(0, bg,)
 // JID to PID
 COMMAND(job, <n>)
 	if (argc != 2) SYNTAX_ERROR
-	auto x = expr(argv[1]);
+	auto x = expr::eval(argv[1]);
 	if (isnan(x)) SYNTAX_ERROR
 	if (!interactive_sesh) {
 		std::cerr << "Can't get JID in a script\n";
@@ -400,7 +396,7 @@ END
 // Remove jobs from table
 COMMAND(disown, <n>)
 	if (argc != 2) SYNTAX_ERROR
-	auto x = expr(argv[1]);
+	auto x = expr::eval(argv[1]);
 	if (isnan(x)) SYNTAX_ERROR
 	if (!interactive_sesh) {
 		std::cerr << "Can't disown a job in a script\n";
@@ -586,7 +582,7 @@ COMMAND(fc, [-e <editor>] [-lnr] [<num>])
 	auto& hist = line_edit::histfile;
 	ssize_t num = lflag ? 15 : 1, i, len = hist.size();
 	if (optind == argc-1) {
-		zrc_num e = expr(argv[optind]);
+		zrc_num e = expr::eval(argv[optind]);
 		if (isnan(e) || e < 0) SYNTAX_ERROR
 		num = std::min(len, (ssize_t)e);
 	}
@@ -628,7 +624,7 @@ END
 // If/else command
 COMMAND(if, <expr> <eval> [else <eoe>])
 	if (argc < 3) SYNTAX_ERROR
-	if (expr(argv[1]))
+	if (expr::eval(argv[1]))
 		eval(argv[2]);
 	else if (argc > 3) {
 		if (argc == 4 || strcmp(argv[3], "else")) SYNTAX_ERROR
@@ -639,7 +635,7 @@ END
 // Unless command
 COMMAND(unless, <expr> <eoe>)
 	if (argc < 3) SYNTAX_ERROR
-		unless (expr(argv[1]))
+		unless (expr::eval(argv[1]))
 			eoe(argc, argv, 2)
 END
 
@@ -654,7 +650,7 @@ COMMAND(for, <eval> <expr> <eval> <eoe>)
 	const bool evl = argc == 5;
 	if (evl)
 		lex4 = lex(argv[4], SEMICOLON | SPLIT_WORDS).elems;
-	for (eval(lex1); expr(argv[2]); eval(lex3)) {
+	for (eval(lex1); expr::eval(argv[2]); eval(lex3)) {
 		try {
 			evl ? eval(lex4) : exec(argc - 4, argv + 4);
 		} catch (break_handler const& ex) {
@@ -687,14 +683,14 @@ COMMAND(do, <eoe> while|until <expr>...)
 			} catch (continue_handler const& ex) {
 				continue;
 			}
-		} while (u ? !expr(argv[argc-1]) : expr(argv[argc-1]));
+		} while (u ? !expr::eval(argv[argc-1]) : expr::eval(argv[argc-1]));
 	}
 END
 
 COMMAND(repeat, <expr> <eoe>)
 	if (argc < 3) SYNTAX_ERROR
 
-	zrc_num exp = floor(expr(argv[1]));
+	zrc_num exp = floor(expr::eval(argv[1]));
 	if (isnan(exp)) SYNTAX_ERROR
 	block_handler bh(&in_loop);
 
@@ -804,7 +800,7 @@ END
 
 // Stack trace
 COMMAND(caller, [<expr>])
-	zrc_num e = expr(concat(argc, argv, 1));
+	zrc_num e = expr::eval(concat(argc, argv, 1));
 	if (isnan(e)) SYNTAX_ERROR
 	if (e >= 0 && e < callstack.size()) {
 		zrc_frame f = callstack[callstack.size()-1-e];
@@ -940,13 +936,13 @@ COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...
 				delim = optarg;
 				break;
 			case 'n':
-				n = expr(optarg);
+				n = expr::eval(optarg);
 				break;
 			case 'p':
 				prompt = optarg;
 				break;
 			case 'f':
-				fd = expr(optarg);
+				fd = expr::eval(optarg);
 				break;
 			case '?':
 				SYNTAX_ERROR
@@ -1111,7 +1107,7 @@ COMMAND(set, < <var> [<expr-binop>|.]= <val> >...)
 			lret = setvar(argv[i-1], getvar(argv[i-1]) + argv[i+1]);
 		} else { // [op]=
 			argv[i][len] = '\0';
-			lret = setvar(argv[i-1], numtos(expr("("+getvar(argv[i-1])+")"+argv[i]+"("+argv[i+1]+")")));
+			lret = setvar(argv[i-1], numtos(expr::eval("("+getvar(argv[i-1])+")"+argv[i]+"("+argv[i+1]+")")));
 		}
 	}
 	return lret
@@ -1195,14 +1191,14 @@ END
 COMMAND(inc, <var> [<amount>])
 	if (argc < 2 || argc > 3) SYNTAX_ERROR
 	std::string val = (argc == 2) ? "1" : argv[2];
-	return numtos(setvar(argv[1], numtos(expr(getvar(argv[1]))+expr(val))))
+	return numtos(setvar(argv[1], numtos(expr::eval(getvar(argv[1]))+expr::eval(val))))
 END
 
 // PHP chr/ord
 COMMAND(chr, <expr1> <expr2>...)
 	if (argc != 2) SYNTAX_ERROR
 	std::string ret;
-	auto e = expr(concat(argc, argv, 1));
+	auto e = expr::eval(concat(argc, argv, 1));
 	if (isnan(e) || e < 0 || e > 255)
 		ret = "error";
 	else
@@ -1246,7 +1242,7 @@ END
 // Close shell
 COMMAND(exit, [<val>])
 	if (argc > 2) SYNTAX_ERROR
-	if (argc < 2) exit(expr(vars::status));
+	if (argc < 2) exit(expr::eval(vars::status));
 	else exit(atoi(argv[1]))
 END
 
@@ -1320,7 +1316,7 @@ COMMAND(rlimit, <n>[BKMGTPEZYg])
 		mul = 1ULL << (10 * (found - prefixes));
 		argv[1][len-1] = '\0';
 	}
-	zrc_num x = expr(argv[1]);
+	zrc_num x = expr::eval(argv[1]);
 	if (isnan(x) || x < 0) SYNTAX_ERROR
 	rlim_t memory = x * mul;
 	struct rlimit rlm;
@@ -1340,7 +1336,7 @@ COMMAND(shift, [<n>])
 	long howmuch, len = vars::argv.size(), i;
 	zrc_num x = 1;
 	if (argc > 2) SYNTAX_ERROR
-	if (argc == 2 && isnan(x = expr(argv[1]))) SYNTAX_ERROR
+	if (argc == 2 && isnan(x = expr::eval(argv[1]))) SYNTAX_ERROR
 	howmuch = x;
 
 	if (howmuch >= len) {
@@ -1426,14 +1422,14 @@ COMMAND(str, <s> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
 	if (argc == 3 && !strcmp(argv[2], "len")) return numtos(strlen(argv[1]));
 	// Return string char at index
 	if (argc == 3) {
-		zrc_num i = expr(argv[2]);
+		zrc_num i = expr::eval(argv[2]);
 		if (!isnan(i) && i >= 0 && i < strlen(argv[1]))
 			return std::string(1, argv[1][size_t(i)]);
 		else SYNTAX_ERROR
 	}
 	// Return string starting from index
 	if (argc == 4 && !strcmp(argv[2], "+")) {
-		zrc_num i = expr(argv[3]);
+		zrc_num i = expr::eval(argv[3]);
 		if (!isnan(i) && i >= 0 && i <= strlen(argv[1]))
 			return std::string(argv[1]+size_t(i));
 		else SYNTAX_ERROR
@@ -1442,7 +1438,7 @@ COMMAND(str, <s> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
 	if (argc >= 4 && !strcmp(argv[2], "-")) {
 		std::string str = argv[1];
 		for (int i = 3, k = 0; i < argc; ++i) {
-			zrc_num j = expr(argv[i]);
+			zrc_num j = expr::eval(argv[i]);
 			if (!isnan(j) && j >= 0 && j < str.length())
 				str.erase(j-k++, 1);
 			else SYNTAX_ERROR
@@ -1451,8 +1447,8 @@ COMMAND(str, <s> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
 	}
 	// Return string range
 	if (argc == 4) {
-		zrc_num i = expr(argv[2]);
-		zrc_num j = expr(argv[3]);
+		zrc_num i = expr::eval(argv[2]);
+		zrc_num j = expr::eval(argv[3]);
 		if (!isnan(i) && i >= 0 && j >= 0 && !isnan(j) && i <= j && j < strlen(argv[1])) {
 			size_t li = i, lj = j+1;
 			char c_old = argv[1][lj];
@@ -1464,7 +1460,7 @@ COMMAND(str, <s> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
 	}
 	// Return string with replaced char
 	if (argc == 5 && !strcmp(argv[3], "=")) {
-		zrc_num i = expr(argv[2]);
+		zrc_num i = expr::eval(argv[2]);
 		if (!isnan(i) && i >= 0 && i < strlen(argv[1])) {
 			argv[1][size_t(i)] = argv[4][0];
 			return argv[1];
@@ -1598,7 +1594,7 @@ COMMAND(list, new <w1> <w2> ... \n
 		zrc_fun f(argv[2]);
 		for (size_t i = 0; i < wlst.size(); ++i) {
 			std::string str = wlst[i];
-			auto e = expr(invoke(f, {LAM_STR, str.c_str()}));
+			auto e = expr::eval(invoke(f, {LAM_STR, str.c_str()}));
 			if (isnan(e) || !e)
 				wlst.erase(wlst.begin() + i--);
 		}
@@ -1620,7 +1616,7 @@ COMMAND(list, new <w1> <w2> ... \n
 		return ret_val;
 	}
 
-	auto i = expr(argv[1]);
+	auto i = expr::eval(argv[1]);
 	if (isnan(i) || i < 0 || i >= wlst.size())
 		SYNTAX_ERROR
 

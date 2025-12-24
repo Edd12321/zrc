@@ -18,6 +18,7 @@ int argc; char **argv;
 #include "config.hpp"
 
 #include "syn.cpp"
+#include "expr.cpp"
 #include "vars.cpp"
 #include "list.cpp"
 #include "dispatch.cpp"
@@ -282,6 +283,8 @@ int main(int argc, char *argv[]) {
 	// Setup prompts
 	vars::prompt1 = DEFAULT_PPROMPT;
 	vars::prompt2 = DEFAULT_SPROMPT;
+	// Setup expr
+	expr::init();
 
 	// Setup getopts stuff
 	setvar("opterr", std::to_string(opterr));
@@ -319,6 +322,7 @@ int main(int argc, char *argv[]) {
 			return EXIT_FAILURE;
 		}
 		close(target_fd);
+		tty << std::unitbuf;
 
 		is_script = false;
 		interactive_sesh = true;

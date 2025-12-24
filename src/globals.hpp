@@ -217,7 +217,6 @@ void invoke_void(Fun const&, std::initializer_list<const char*>);
 
 // DISPATCH.CPP
 static inline std::string concat(int, char**, int);
-static inline zrc_num expr(std::string const&);
 static inline void eoe(int, char**, int);
 static inline void prints(std::stack<std::string>);
 
@@ -226,9 +225,6 @@ zrc_obj list(int, const char**);
 inline zrc_obj list(int, char**);
 inline zrc_obj list(std::vector<token>&);
 inline zrc_obj list(std::string const&);
-
-// EXPR.L
-extern zrc_num expr(const char*);
 
 // ZLINEEDIT.CPP
 namespace line_edit {
