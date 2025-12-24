@@ -1,10 +1,10 @@
-PREFIX = /usr#/local
-SYSCONFDIR = /etc
+PREFIX ?= /usr
+SYSCONFDIR ?= /etc
 SRCS = $(wildcard src/*.cpp src/*.hpp)
 CXXFLAGS = -D_XOPEN_SOURCE=700 -std=c++11 -pedantic -Wno-unused-result
-RELFLAGS = -O3
-DBGFLAGS = -O0 -Wextra -g -fsanitize=address,undefined -fno-strict-aliasing -fwrapv -fno-omit-frame-pointer
-SHELLPATH = $(DESTDIR)$(PREFIX)/bin/zrc
+RELFLAGS ?= $(CXXFLAGS) -O3
+DBGFLAGS ?= $(CXXFLAGS) -O0 -Wextra -g -fsanitize=address,undefined -fno-strict-aliasing -fwrapv -fno-omit-frame-pointer
+SHELLPATH ?= $(DESTDIR)$(PREFIX)/bin/zrc
 CXX ?= g++
 
 .PHONY: release
@@ -15,11 +15,11 @@ bin/zrc: $(SRCS) src/y.tab.cpp src/lex.yy.cpp
 	case "$$(uname -s)" in \
 		CYGWIN*) \
 			peval 'cd img/icon && windres winico.rc winico.o && cd ../..'; \
-			peval '$(CXX) $(CXXFLAGS) $(RELFLAGS) src/lex.yy.cpp src/y.tab.cpp src/main.cpp img/icon/winico.o -o bin/zrc.exe'; \
+			peval '$(CXX) $(RELFLAGS) src/lex.yy.cpp src/y.tab.cpp src/main.cpp img/icon/winico.o -o bin/zrc.exe'; \
 			peval 'strip bin/zrc.exe'; \
 			;; \
 		*) \
-			peval '$(CXX) $(CXXFLAGS) $(RELFLAGS) src/lex.yy.cpp src/y.tab.cpp src/main.cpp -o bin/zrc'; \
+			peval '$(CXX) $(RELFLAGS) src/lex.yy.cpp src/y.tab.cpp src/main.cpp -o bin/zrc'; \
 			peval 'strip bin/zrc'; \
 			;; \
 	esac
@@ -28,7 +28,7 @@ bin/zrc: $(SRCS) src/y.tab.cpp src/lex.yy.cpp
 debug: bin/zrc-debug
 bin/zrc-debug: $(SRCS) src/y.tab.cpp src/lex.yy.cpp
 	mkdir -p bin
-	$(CXX) $(CXXFLAGS) $(DBGFLAGS) src/lex.yy.cpp src/y.tab.cpp src/main.cpp -o bin/zrc-debug
+	$(CXX) $(DBGFLAGS) src/lex.yy.cpp src/y.tab.cpp src/main.cpp -o bin/zrc-debug
 
 .PHONY: all
 all: release debug
@@ -55,8 +55,8 @@ clean:
 
 .PHONY: help
 help:
-	@echo release - Build -O3 stripped binary
-	@echo debug - Build -O0 ASan/UBSan binary
+	@echo release - Build release binary
+	@echo debug - Build debugging binary
 	@echo all - Build both
 	@echo install - Copy release binary to $(SHELLPATH)
 	@echo uninstall - Remove said binary
