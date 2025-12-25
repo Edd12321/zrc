@@ -126,7 +126,7 @@ zrc_obj exec(int argc, char *argv[]) {
 			vars::status = at(argc, argv);
 	}
 	// If found function, run
-	if (functions.find(*argv) != functions.end())
+	else if (functions.find(*argv) != functions.end())
 		vars::status = functions.at(*argv)(argc, argv);
 	// If found builtin, run
 	else if (builtins.find(*argv) != builtins.end())
@@ -293,11 +293,12 @@ public:
 	}
 };
 
-/******************************
- *                            *
- * Job stuff is written below *
- *                            *
- ******************************/
+/***********************************
+ *                                 *
+ *   Job stuff is written below    *
+ * (This should really be a class) *
+ *                                 *
+ ***********************************/
 // Job entry table
 struct job {
 	std::string ppl;
@@ -306,6 +307,7 @@ struct job {
 	std::set<pid_t> pids;
 };
 std::map<int, job> jobs;
+std::map<pid_t, int> pid2jid;
 unsigned long long jc;
 
 /** Add a new entry to the job table
@@ -320,6 +322,8 @@ int add_job(pipeline& ppl, pipeline::ppl_proc_mode status, pid_t pgid, pid_t las
 	jobs[jc].state = status;
 	jobs[jc].pgid = pgid;
 	jobs[jc].last_pid = last_pid;
+	for (auto const& it : pids)
+		pid2jid[it] = jc;
 	jobs[jc].pids = std::move(pids);
 	return jc;
 }
@@ -357,30 +361,24 @@ void reaper(pid_t who, int how) {
 		}
 		if (pid == 0) 
 			break;
-		int jid = -1;
-		for (auto const& it : jobs) {
-			if (it.second.pids.find(pid) != it.second.pids.end()) {
-				jid = it.first;
-				break;
-			}
-		}
-		if (jid < 0) {
+		if (pid2jid.find(pid) == pid2jid.end()) {
 			if (WIFEXITED(status))
 				vars::status = numtos(WEXITSTATUS(status));
 			else if (WIFSIGNALED(status))
 				vars::status = numtos(128 + WTERMSIG(status));
 			continue;
 		}
+		int jid = pid2jid.at(pid);
 		auto& job = jobs[jid];
 		if (WIFSTOPPED(status)) {
 			if (interactive_sesh)
 				tty << '[' << jid << "] Stopped" << std::endl;
-			if (who == -job.pgid && !(how & WNOHANG))
+			if (/*who == -job.pgid && */!(how & WNOHANG))
 				return;
-			//continue; 
-			break;
+			continue; 
 		}
 		job.pids.erase(pid);
+		pid2jid.erase(pid);
 		bool lproc = pid == job.last_pid;
 		if (lproc && job.state == pipeline::ppl_proc_mode::FG) {
 			if (WIFEXITED(status))
@@ -415,22 +413,10 @@ void reset_sigs() {
 	}	
 }
 
-pid_t job2pid(int jid) {
-	if (jobs.find(jid) != jobs.end())
-		return jobs[jid].pgid;
-	return -1;
-}
-
-int pid2job(pid_t pid) {
-	for (auto const& it : jobs)
-		if (it.second.pgid == pid)
-			return it.first;
-	return -1;
-}
-
-void jobstate(int job, int st) {
-	jobs[job].state = static_cast<pipeline::ppl_proc_mode>(st);
-}
+void jobstate(int job, int st) { jobs[job].state = static_cast<pipeline::ppl_proc_mode>(st); }
+// hacks that only exist because we have only one TU:
+pid_t jobpgid(job const& j) { return j.pgid; }
+bool jobexists(int jid) { return jobs.find(jid) != jobs.end(); }
 
 /** Display job table.
  *
@@ -469,6 +455,7 @@ inline bool pipeline::execute_act() {
 	bool main_shell;
 	// release children after tcsetpgrp
 	sem_t *sem;
+	bool sem_inited = false;
 
 	auto init_semaphore = [&]() {
 		sem = (sem_t*)mmap(nullptr, sizeof(sem_t),
@@ -482,6 +469,7 @@ inline bool pipeline::execute_act() {
 			perror("sem_init");
 			exit(EXIT_FAILURE);
 		}
+		sem_inited = true;
 	};
 
 	if (cmds.size() > 1) {
@@ -490,9 +478,11 @@ inline bool pipeline::execute_act() {
 	}
 
 	SCOPE_EXIT {
-		if (cmds.size() > 1) {
+		if (sem_inited) {
 			sem_destroy(sem);
 			munmap(sem, sizeof(sem_t));
+		}
+		if (cmds.size() > 1) {
 			if (old_input >= 0) {
 				dup2(old_input, STDIN_FILENO);
 				close(old_input);
@@ -507,7 +497,7 @@ inline bool pipeline::execute_act() {
 		int pd[2];
 		pipe(pd);
 
-		main_shell = (interactive_sesh && getpid() == tty_fd);
+		main_shell = (interactive_sesh && getpid() == tty_pid);
 		if ((pid = fork()) == 0) {
 			reset_sigs();
 			if (main_shell) {

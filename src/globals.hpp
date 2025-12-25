@@ -6,6 +6,7 @@
 #include <fcntl.h>
 
 #include <functional>
+#include <map>
 #include <stack>
 #include <string>
 #include <type_traits>
@@ -79,6 +80,9 @@ extern CMD_TBL builtins;
 std::unordered_map<std::string, zrc_fun> functions;
 // Alias table
 std::unordered_map<std::string, zrc_alias> kv_alias;
+// Job table
+extern std::map<int, job> jobs;
+extern std::map<pid_t, int> pid2jid;
 
 std::string basename(std::string const& str) {
 	auto fnd = str.rfind('/');
@@ -203,7 +207,8 @@ int add_job(pipeline const&, pid_t);
 inline void show_jobs();
 inline void disown_job(int);
 pid_t job2pid(int);
-int pid2job(pid_t);
+bool jobexists(int);
+pid_t jobpgid(job const&);
 void jobstate(int, int);
 void reaper();
 void reaper(pid_t, int);

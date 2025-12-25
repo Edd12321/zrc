@@ -18,7 +18,7 @@ struct token {
 	std::vector<substit> parts;
 
 	inline void add_part(std::string&& str, substit::type type) {
-		parts.emplace_back(type, std::string(str));
+		parts.emplace_back(type, std::move(str));
 		str.clear();
 	}
 
@@ -28,7 +28,7 @@ struct token {
 		// This is where we do all of the substitutions.
 		std::string ret_str;
 		size_t n = 0;
-		for (auto const& it : parts) n += it.contents.length();
+		for (auto const& it : parts) n += it.contents.length() + RESERVE_STR;
 		ret_str.reserve(n);
 
 		for (auto const& it : parts) {
@@ -112,12 +112,6 @@ std::vector<std::string> glob(const char *s, int flags) {
  *********/
 token_list lex(const char *p, lexer_flags flags) {
 	using TT = substit::type;
-	static const auto allowed_var_chars =
-		"qwertyuiopasdfghjklzxcvbnm"
-		"QWERTYUIOPASDFGHJKLZXCVBNM"
-		"1234567890"
-		"_$";
-
 	token curr;
 	token_list wlst;
 	std::string text; text.reserve(RESERVE_STR);
@@ -158,6 +152,11 @@ token_list lex(const char *p, lexer_flags flags) {
 			text += *p;
 		}
 		curr.add_part(std::move(text), type);
+	};
+
+	// Variable name
+	auto varchar = [](char c) {
+		return isalnum(c) || c == '_' || c == '$';
 	};
 
 	for (; *p; ++p) {
@@ -226,7 +225,7 @@ token_list lex(const char *p, lexer_flags flags) {
 				else {
 					add_remaining_txt(std::string(), 0);
 					text.clear();
-					for (; *p && strchr(allowed_var_chars, *p); ++p)
+					for (; *p && varchar(*p); ++p)
 						text += *p;
 					curr.add_part(std::move(text), TT::VARIABLE);
 					--p;

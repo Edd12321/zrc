@@ -24,7 +24,12 @@ fn sieve {
 		} else if {$p == 42} {
 			set ansi = \e\[0\;32m
 		} else set ansi = \e\[0m
-		printf %b%4d $ansi $p
+		echo -n $ansi
+		if {$p < 10}   { echo -n '   ' } else \
+		if {$p < 100}  { echo -n  '  ' } else \
+		if {$p < 1000} { echo -n   ' ' }
+		echo -n $p
+		# printf %b%4d $ansi $p
 		if {$p % $x == 0} echo
 	}
 }

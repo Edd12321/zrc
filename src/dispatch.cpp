@@ -363,20 +363,19 @@ END
 	  std::cerr << "Can't FG/BG in a script\n";  \
 	  return "2";                                \
 	}                                            \
-    auto p = pid2job(n);                         \
-    if (p < 0) {                                 \
+    if (pid2jid.find(n) == pid2jid.end()) {      \
       std::cerr << "Bad PID\n";                  \
       return "3";                                \
     }                                            \
     kill(-getpgid(n), SIGCONT);                  \
-    jobstate(p, z); y;                           \
+    jobstate(pid2jid.at(n), z); y;               \
     if (getpid() == tty_pid && interactive_sesh) \
        tcsetpgrp(tty_fd, tty_pid)                \
   END
 FGBG(1, fg, tcsetpgrp(tty_fd, getpgid(n)); reaper(n, WUNTRACED))
 FGBG(0, bg,)
 
-// JID to PID
+// JID to PGID
 COMMAND(job, <n>)
 	if (argc != 2) SYNTAX_ERROR
 	auto x = expr::eval(argv[1]);
@@ -385,12 +384,11 @@ COMMAND(job, <n>)
 		std::cerr << "Can't get JID in a script\n";
 		return "-1";
 	}
-	auto pid = job2pid(x);
-	if (pid < 0) {
+	if (!jobexists(x)) {
 		std::cerr << "Expected a valid JID" << std::endl;
 		return "-2";
 	}
-	return numtos(pid)
+	return numtos(jobpgid(jobs.at(x)))
 END
 
 // Remove jobs from table
