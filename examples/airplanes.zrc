@@ -1,0 +1,106 @@
+#!../bin/zrc
+source term.zrc
+alias forever while 1
+set number = {1 2 3 4 5 6 7 8 9 10}
+set letter = {A B C D E F G H I J}
+
+#######################################
+# Draw your and the opponent's boards #
+#######################################
+fn draw_boards {
+	puts " $number      $number"
+	let {i k j ok} {
+		foreach i $letter {
+			foreach k {1 2} {
+				puts -n $i
+				foreach j $number {
+					set ok = [expr {$turn == $k && [str $i == $y_pos] && $j == $x_pos}]
+					if {$ok} {
+						puts -n "\e\[7m"
+					}
+					puts -n ${mat$k $i,$j}
+					if {$ok} {
+						puts -n "\e\[0m"
+					}
+				}
+				puts -n "     "
+			}
+			puts ""
+		}
+	}
+}
+
+#############
+# Airplanes #
+#############
+fn main {
+	stty raw
+	stty -echo
+	clear
+
+	foreach i $letter {
+		foreach j $number {
+			set {mat1 $i,$j} = "  " \
+			    {mat2 $i,$j} = "  "
+		}
+	}
+
+	set turn = 1  phase = 1  y_pos = A  x_pos = 1
+	forever {
+		clear2
+		puts "-------------"
+		puts "ZRC AIRPLANES"
+		puts "-------------"
+		draw_boards
+		puts "Controls: WASD-movement, Q-quit, C-mark cockpit, B-mark body, M-mark miss/hit"
+		puts "          P-enter phase 2 of the game"
+		# Read input
+		read -n 1 c
+		if {[ord $c] >= [ord 'A'] && [ord $c] <= [ord 'Z']} {
+			set c = [chr [ord $c] - ([ord 'A'] - [ord 'a'])]
+		}
+		set A = "mat$turn $y_pos,$x_pos"
+		if {$phase == 2 && $turn == 1 && [str $c =~ b|c]} {
+			set c = 'm'
+		}
+		switch $c {
+			# Begin guess phase
+			case 'p' { set phase = 2  turn = 2 }
+			# Hit cockpit
+			case 'c' {
+				if {[str $$A == "<>"]} {
+					set $A = "  "
+				} else set $A = "<>"
+			}
+			# Hit body 
+			case 'b' {
+				if {[str $$A == "\[\]"]} {
+					set $A = "  "
+				} else set $A = "\[\]"
+			}
+			# Miss/Hit
+			case 'm' {
+				if {$turn == 1 && [str $$A != "  "]} {
+					set $A = "\e\[31m$$A\e\[0m"
+				} else set $A = "XX"
+			}
+
+			# Go up
+			case 'w' {if {[str $y_pos > 'A']} {set y_pos = [chr [ord $y_pos] - 1]}}
+			# Go left
+			case 'a' {if {$x_pos > 1} {inc x_pos -1}}
+			# Go down
+			case 's' {if {[str $y_pos < 'J']} {set y_pos = [chr [ord $y_pos] + 1]}}
+			# Go right
+			case 'd' {if {$x_pos < 10} {inc x_pos}}
+
+			# Exit
+			case 'q' {
+				clear && exit
+			}
+		}
+		if {$phase == 2 && [str $c =~ c|b|m]} {
+			set turn = [expr {$turn == 1 ? 2 : 1}]
+		}
+	}
+}; main

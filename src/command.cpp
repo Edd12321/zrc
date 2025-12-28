@@ -347,9 +347,9 @@ void sighupper() {
  * @return void
  */
 void reaper(pid_t who, int how) {
-    pid_t pid;
-    int status;
-    for (;;) {
+	pid_t pid;
+	int status;
+	for (;;) {
 		pid = waitpid(who, &status, how);
 		if (pid < 0) {
 			if (errno == EINTR)

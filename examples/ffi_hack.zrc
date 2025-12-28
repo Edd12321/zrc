@@ -41,6 +41,6 @@ fn ffi {
 	}
 }
 
-if {[str `{caller} != "repl @ interactive"]} {
+if {![str `{caller} len]} {
 	echo source me
 }

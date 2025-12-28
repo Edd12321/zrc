@@ -1,36 +1,5 @@
 #!../bin/zrc
-
-##################
-# Reset terminal #
-##################
-fn sigexit {
-	stty cooked
-	stty echo
-	echo -n "\e\[?25h"
-}
-
-#########################
-# Move cursor to (0,0). #
-#########################
-fn clear2 {
-	echo -n "\e\[0;0H\e\[?25l"
-}
-
-####################
-# Echo in raw mode #
-####################
-fn puts {
-	let {p i len} {
-		set p = 1
-		if {[str ${argv 1} == "-n"]} {
-			inc p
-		}
-		echo ${argv 1} ${argv 2}
-		if {$p == 1} {
-			echo -n '\r' 
-		}
-	}
-}
+source term.zrc
 
 ##################
 # Display a cell #
@@ -150,6 +119,9 @@ fn main {
 		}
 		# Read input
 		read -n 1 c
+		if {[ord $c] >= [ord 'A'] && [ord $c] <= [ord 'Z']} {
+			set c = [chr [ord $c] - ([ord 'A'] - [ord 'a'])]
+		}
 		switch $c {
 			# Go up
 			case 'w' {if {$y_pos > 0} {inc y_pos -1}}

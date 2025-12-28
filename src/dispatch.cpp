@@ -111,12 +111,12 @@ const std::map<std::string, int> txt2sig = {
 };
 
 // Helps us to see if we can change control flow
-#define EXCEPTION_CLASS(x)                      \
-  class x##_handler : std::exception {          \
-  public:                                       \
-    virtual const char *what() const throw () { \
-      return "Caught " #x;                      \
-    }                                           \
+#define EXCEPTION_CLASS(x)                               \
+  class x##_handler : std::exception {                   \
+  public:                                                \
+    virtual const char *what() const noexcept override { \
+      return "Caught " #x;                               \
+    }                                                     \
   };
 EXCEPTION_CLASS(fallthrough)
 EXCEPTION_CLASS(break)
@@ -1194,7 +1194,7 @@ END
 
 // PHP chr/ord
 COMMAND(chr, <expr1> <expr2>...)
-	if (argc != 2) SYNTAX_ERROR
+	if (argc < 2) SYNTAX_ERROR
 	std::string ret;
 	auto e = expr::eval(concat(argc, argv, 1));
 	if (isnan(e) || e < 0 || e > 255)
