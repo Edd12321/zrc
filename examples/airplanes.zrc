@@ -80,8 +80,10 @@ fn main {
 			}
 			# Miss/Hit
 			case 'm' {
-				if {$turn == 1 && [str $$A != "  "]} {
+				if {$turn == 1 && ([str $$A == "\[\]"] || [str $$A == "<>"])} {
 					set $A = "\e\[31m$$A\e\[0m"
+				} else if {[str $$A == "XX"]} {
+					set $A = "  "
 				} else set $A = "XX"
 			}
 
