@@ -1,17 +1,23 @@
-PREFIX ?= /usr
-SYSCONFDIR ?= /etc
-SRCS = $(wildcard src/*.cpp src/*.hpp)
+.POSIX:
+# Do not override these
+SRCS = src/command.cpp src/config.hpp src/dispatch.cpp src/expr.cpp src/globals.hpp src/list.cpp src/main.cpp src/syn.cpp src/vars.cpp src/zlineedit.cpp
 CXXFLAGS = -D_XOPEN_SOURCE=700 -std=c++11 -pedantic -Wno-unused-result
-RELFLAGS ?= $(CXXFLAGS) -O3
-DBGFLAGS ?= $(CXXFLAGS) -O0 -Wextra -g -fsanitize=address,undefined -fno-strict-aliasing -fwrapv -fno-omit-frame-pointer
-SHELLPATH ?= $(DESTDIR)$(PREFIX)/bin/zrc
-CXX ?= g++
 
-.PHONY: release
+# These you can
+PREFIX = /usr
+SYSCONFDIR = /etc
+RELFLAGS = $(CXXFLAGS) -O3
+DBGFLAGS = $(CXXFLAGS) -O0 -Wextra -g -fsanitize=address,undefined -fno-strict-aliasing -fwrapv -fno-omit-frame-pointer
+SHELLPATH = $(DESTDIR)$(PREFIX)/bin/zrc
+CXX = c++
+
+SETUP_PEVAL = set -e; peval() { echo "$$1"; eval "$$1"; }
+
+# .PHONY: release
 release: bin/zrc
 bin/zrc: $(SRCS)
 	mkdir -p bin
-	@set -e; peval() { echo $$1; eval $$1; }; \
+	@$(SETUP_PEVAL); \
 	case "$$(uname -s)" in \
 		CYGWIN*) \
 			peval 'cd img/icon && windres winico.rc winico.o && cd ../..'; \
@@ -24,30 +30,34 @@ bin/zrc: $(SRCS)
 			;; \
 	esac
 
-.PHONY: debug
+# .PHONY: debug
 debug: bin/zrc-debug
 bin/zrc-debug: $(SRCS)
 	mkdir -p bin
 	$(CXX) $(DBGFLAGS) src/main.cpp -o bin/zrc-debug
 
-.PHONY: all
+# .PHONY: all
 all: release debug
 
-.PHONY: install
+# .PHONY: install
 install:
-	install -Dm755 bin/zrc $(SHELLPATH)
-	@grep -qxF '$(SHELLPATH)' $(SYSCONFDIR)/shells || echo $(SHELLPATH) | tee -a $(SYSCONFDIR)/shells
+	cp -f bin/zrc $(SHELLPATH)
+	chmod 755 $(SHELLPATH)
+	@$(SETUP_PEVAL); \
+	grep -qxF '$(SHELLPATH)' $(SYSCONFDIR)/shells || peval 'echo $(SHELLPATH) >> $(SYSCONFDIR)/shells'
 
-.PHONY: uninstall
+# .PHONY: uninstall
 uninstall:
 	rm -f $(SHELLPATH)
-	sed -i '\#$(SHELLPATH)#d' $(SYSCONFDIR)/shells
+	@$(SETUP_PEVAL); \
+	SHELLPATH_ESC=$$(printf "%s" $(SHELLPATH) | sed 's|/|\\/|g'); \
+	peval "printf 'g/$$SHELLPATH_ESC/d\nw\nq\n' | ed -s $(SYSCONFDIR)/shells"
 
-.PHONY: clean
+# .PHONY: clean
 clean:
 	rm -f bin/zrc*
 
-.PHONY: help
+# .PHONY: help
 help:
 	@echo release - Build release binary
 	@echo debug - Build debugging binary
