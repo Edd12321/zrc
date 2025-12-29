@@ -1,6 +1,11 @@
 #!../bin/zrc
+rm -rf src pkg
+if {[str $2 == "clean"]} {
+	exit 0
+}
 > .SRCINFO makepkg --printsrcinfo
 makepkg -siC --clean
 if {[str $2 != "keep"]} {
 	rm -rf {*}[glob zrc-*.pkg.tar.zst] zrc
+	rm -rf src pkg
 }

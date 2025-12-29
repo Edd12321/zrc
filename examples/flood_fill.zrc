@@ -1,4 +1,4 @@
-#!../bin/zrc
+#!/usr/bin/env zrc
 arr d_lin := { -1  0 1 0 }
 arr d_col := {  0 -1 0 1 }
 

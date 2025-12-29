@@ -1,8 +1,8 @@
-#!../bin/zrc
+#!/usr/bin/env zrc
 alias log >& 1 2 echo
 
 log Please wait... doing sound stuff.
-systemctl restart --user pulseaudio
+systemctl --user restart pulseaudio
 
 set freq = 440 # Hz
 set amp = 127

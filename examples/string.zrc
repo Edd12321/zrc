@@ -1,4 +1,4 @@
-#!../bin/zrc
+#!/usr/bin/env zrc
 set s = "my string"
 
 echo [str $s < "hi mom"] # prints 0

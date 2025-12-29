@@ -1,4 +1,4 @@
-#!../bin/zrc
+#!/usr/bin/env zrc
 
 echo Lexical scoping:
 echo a is [set a = 1]

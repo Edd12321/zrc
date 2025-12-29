@@ -1,4 +1,4 @@
-#!../bin/zrc
+#!/usr/bin/env zrc
 # Code ported from Rc to Zrc from:
 # https://rosettacode.org/wiki/Rc
 

@@ -1,4 +1,4 @@
-#!../bin/zrc
+#!/usr/bin/env zrc
 set L1 = [list new {*}`{seq 1 10}]
 set L2 = [list filter { expr {$1 % 2} } $L1]
 set L3 = [list map { chr [expr {$1 + [ord 'a'] - 1}] } $L2]

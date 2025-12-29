@@ -1,4 +1,4 @@
-#!../bin/zrc
+#!/usr/bin/env zrc
 # Draw CGOL routine
 fn draw {
 	clear

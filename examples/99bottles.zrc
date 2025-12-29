@@ -1,4 +1,4 @@
-#!../bin/zrc
+#!/usr/bin/env zrc
 set bot = 99
 do {
 	echo $bot bottles of beer on the wall,

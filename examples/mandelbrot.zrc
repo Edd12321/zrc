@@ -1,4 +1,4 @@
-#!../bin/zrc
+#!/usr/bin/env zrc
 # Ported from https://rosettacode.org/wiki/Mandelbrot_set
 set XSize = 100 YSize = 35
 set MinIm = -1 MaxIm = 1 MinRe = -2 MaxRe = 1

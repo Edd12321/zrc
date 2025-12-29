@@ -1,4 +1,4 @@
-#!../bin/zrc
+#!/usr/bin/env zrc
 
 fn sieve {
 	set n = ${argv 1}

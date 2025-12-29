@@ -1,4 +1,4 @@
-#!../bin/zrc
+#!/usr/bin/env zrc
 # To be sourced from minesweeper.zrc, airplanes.zrc
 
 ##################
