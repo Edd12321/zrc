@@ -224,6 +224,10 @@ bool get_phrase(std::istream& in, std::string& str) {
 		if (!backslash_newline)
 			str += '\n';
 	}
+	if (brace)
+		std::cerr << "Script has unclosed brace" << std::endl;
+	if (!stk.empty())
+		std::cerr << "Script has unclosed substitution/quote" << std::endl;
 	return false;
 }
 
