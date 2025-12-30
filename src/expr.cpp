@@ -6,122 +6,124 @@
 #include <math.h>
 
 namespace expr {
-// X-macros for convenience
-#define OPLIST_NULLARY(X) \
-	X(QUESTION, {"?"},                                            RIGHT, 2,  NAN)
-#define OPLIST_UNARY(X) \
-	X(POS,      {},                                               RIGHT, 15, +x) \
-	X(NEG,      {},                                               RIGHT, 15, -x) \
-	X(LPAREN,   {"("},                                            LEFT,  16, NAN) \
-	X(RPAREN,   {")"},                                            LEFT,  16, NAN) /* why not */ \
-	X(NOT,      {"!"},                                            RIGHT, 15, !x) \
-	X(BITNOT,   {"~"},                                            RIGHT, 15, ~(long long)x) \
-	X(LOG10,    (vstr{"log10", "log"}),                           RIGHT, 15, log10(x)) \
-	X(LOG2,     {"log2"},                                         RIGHT, 15, log2(x)) \
-	X(LN,       {"ln"},                                           RIGHT, 15, log(x)) \
-	X(SQRT,     {"sqrt"},                                         RIGHT, 15, sqrt(x)) \
-	X(SIN,      {"sin"},                                          RIGHT, 15, sin(x)) \
-	X(COS,      {"cos"},                                          RIGHT, 15, cos(x)) \
-	X(CTG,      (vstr{"ctg", "cot"}),                             RIGHT, 15, cos(x) / sin(x)) \
-	X(TG,       (vstr{"tan", "tg"}),                              RIGHT, 15, sin(x) / cos(x)) \
-	X(SEC,      {"sec"},                                          RIGHT, 15, 1.0 / cos(x)) \
-	X(CSC,      (vstr{ "cosec", "csc" }),                         RIGHT, 15, 1.0 / sin(x)) \
-	X(ARCSIN,   (vstr{ "arcsin", "asin" }),                       RIGHT, 15, asin(x)) \
-	X(ARCCOS,   (vstr{ "arccos", "acos" }),                       RIGHT, 15, acos(x)) \
-	X(ARCCTG,   (vstr{ "arcctg", "arccot", "actg", "acot" }),     RIGHT, 15, atan(1.0 / x)) \
-	X(ARCTG,    (vstr{ "arctg", "arctan", "atg", "atan" }),       RIGHT, 15, atan(x)) \
-	X(ARCSEC,   (vstr{ "arcsec", "asec" }),                       RIGHT, 15, acos(1.0 / x)) \
-	X(ARCCSC,   (vstr{ "arccsc", "arccosec", "acsc", "acosec" }), RIGHT, 15, asin(1.0 / x)) \
-	X(FLOOR,    {"floor"},                                        RIGHT, 15, floor(x)) \
-	X(TRUNC,    {"trunc"},                                        RIGHT, 15, trunc(x)) \
-	X(CEIL,     {"ceil"},                                         RIGHT, 15, ceil(x)) \
-	X(ABS,      {"abs"},                                          RIGHT, 15, abs(x)) \
-	X(ROUND,    {"round"},                                        RIGHT, 15, round(x)) \
-	X(ERF,      {"erf"},                                          RIGHT, 15, erf(x)) \
-	X(ERFC,     {"erfc"},                                         RIGHT, 15, erfc(x)) \
-	X(TGAMMA,   {"tgamma"},                                       RIGHT, 15, tgamma(x)) \
-	X(LGAMMA,   {"lgamma"},                                       RIGHT, 15, lgamma(x)) \
-	X(SGN,      {"sgn"},                                          RIGHT, 15, (0 < x) - (x < 0))
-#define OPLIST_BINARY(X) \
-	X(COMMA,    {","},                                            LEFT,  1,  (x, y)) \
-	X(OR,       {"||"},                                           LEFT,  3,  (long long)x || (long long)y) \
-	X(XOR,      {"^^"},                                           LEFT,  4,  !x ^ !y) \
-	X(AND,      {"&&"},                                           LEFT,  5,  (long long)x && (long long)y) \
-	X(BITOR,    {"|"},                                            LEFT,  6,  (long long)x | (long long)y) \
-	X(BITXOR,   {"^"},                                            LEFT,  7,  (long long)x ^ (long long)y) \
-	X(BITAND,   {"&"},                                            LEFT,  8,  (long long)x & (long long)y) \
-	X(EQ,       {"=="},                                           LEFT,  9,  x == y) \
-	X(NEQ,      {"!="},                                           LEFT,  9,  x != y) \
-	X(LT,       {"<"},                                            LEFT,  10, x < y) \
-	X(LEQ,      {"<="},                                           LEFT,  10, x <= y) \
-	X(GT,       {">"},                                            LEFT,  10, x > y) \
-	X(GEQ,      {">="},                                           LEFT,  10, x >= y) \
-	X(SPC,      {"<=>"},                                          LEFT,  11, x < y ? -1 : (x > y ? 1 : 0)) \
-	X(SHL,      {"<<"},                                           LEFT,  12, (long long)x << (int)y) \
-	X(SHR,      {">>"},                                           LEFT,  12, (long long)x >> (int)y) \
-	X(ADD,      {"+"},                                            LEFT,  13, x + y) \
-	X(SUB,      {"-"},                                            LEFT,  13, x - y) \
-	X(MUL,      {"*"},                                            LEFT,  14, x * y) \
-	X(DIV,      {"/"},                                            LEFT,  14, x / y) \
-	X(MOD,      {"%"},                                            LEFT,  14, fmod(x, y)) \
-	X(POW,      {"**"},                                           RIGHT, 14, pow(x, y)) \
-	X(FDIV,     {"//"},                                           LEFT,  14, trunc(x / y))
-#define OPLIST_TERNARY(X) \
-	X(COLON,    {":"},                                            RIGHT, 2,  x ? y : z)
-// All
+enum expr_assoc { LEFT, RIGHT };
+using vstr = std::vector<std::string>;
+// X-macro for convenience
 #define OPLIST(X) \
-	OPLIST_NULLARY(X) \
-	OPLIST_UNARY(X) \
-	OPLIST_BINARY(X) \
-	OPLIST_TERNARY(X)
+/*    NAME        AR   STRINGS                                                              ASSOC    PREC  EXPR                        */\
+/*-------------------------------------------------------------------------------------------------------------------------------------*/\
+/*                                                         Nullary operators                                                           */\
+    X(QUESTION,   0,   (vstr{"?"}),                                                         RIGHT,   2,    NAN)                          \
+    X(LPAREN,     1,   (vstr{/*(*/}),                                                       LEFT,    17,   NAN)                          \
+    X(RPAREN,     1,   (vstr{/*)*/}),                                                       LEFT,    17,   NAN)            /* why not  */\
+/*------------------------------------------------------------------------------------------------------------------------------------ */\
+/*                                                          Unary operators                                                            */\
+/*    Basic symbols                                                                                                                    */\
+    X(POS,        1,   (vstr{/*+*/}),                                                       RIGHT,   16,   +x)                           \
+    X(NEG,        1,   (vstr{/*-*/}),                                                       RIGHT,   16,   -x)                           \
+    X(NOT,        1,   (vstr{"!"}),                                                         RIGHT,   16,   !x)                           \
+    X(BITNOT,     1,   (vstr{"~"}),                                                         RIGHT,   16,   ~(long long)x)                \
+/*    Basic functions                                                                                                                  */\
+    X(LOG10,      1,   (vstr{"log10", "log"}),                                              RIGHT,   16,   log10(x))                     \
+    X(LOG2,       1,   (vstr{"log2"}),                                                      RIGHT,   16,   log2(x))                      \
+    X(LN,         1,   (vstr{"ln"}),                                                        RIGHT,   16,   log(x))                       \
+    X(SQRT,       1,   (vstr{"sqrt"}),                                                      RIGHT,   16,   sqrt(x))                      \
+    X(FLOOR,      1,   (vstr{"floor"}),                                                     RIGHT,   16,   floor(x))                     \
+    X(CEIL,       1,   (vstr{"ceil"}),                                                      RIGHT,   16,   ceil(x))                      \
+    X(TRUNC,      1,   (vstr{"trunc"}),                                                     RIGHT,   16,   trunc(x))                     \
+    X(ABS,        1,   (vstr{"abs"}),                                                       RIGHT,   16,   abs(x))                       \
+    X(ROUND,      1,   (vstr{"round"}),                                                     RIGHT,   16,   round(x))                     \
+    X(SGN,        1,   (vstr{"sgn"}),                                                       RIGHT,   16,   (0 < x) - (x < 0))            \
+/*    Trigonometry                                                                                                                     */\
+    X(SIN,        1,   (vstr{"sin"}),                                                       RIGHT,   16,   sin(x))                       \
+    X(COS,        1,   (vstr{"cos"}),                                                       RIGHT,   16,   cos(x))                       \
+    X(TG,         1,   (vstr{"tan", "tg"}),                                                 RIGHT,   16,   sin(x) / cos(x))              \
+    X(CTG,        1,   (vstr{"cot", "ctg"}),                                                RIGHT,   16,   cos(x) / sin(x))              \
+    X(SEC,        1,   (vstr{"sec"}),                                                       RIGHT,   16,   1.0 / cos(x))                 \
+    X(CSC,        1,   (vstr{"cosec", "csc"}),                                              RIGHT,   16,   1.0 / sin(x))                 \
+    X(ARCSIN,     1,   (vstr{"arcsin", "asin"}),                                            RIGHT,   16,   asin(x))                      \
+    X(ARCCOS,     1,   (vstr{"arccos", "acos"}),                                            RIGHT,   16,   acos(x))                      \
+    X(ARCCOT,     1,   (vstr{"arcctg", "arccot", "actg", "acot"}),                          RIGHT,   16,   atan(1.0 / x))                \
+    X(ARCTAN,     1,   (vstr{"arctg", "arctan", "atg", "atan"}),                            RIGHT,   16,   atan(x))                      \
+    X(ARCSEC,     1,   (vstr{"arcsec", "asec"}),                                            RIGHT,   16,   acos(1.0 / x))                \
+    X(ARCCSC,     1,   (vstr{"arccsc", "arccosec", "acsc", "acosec"}),                      RIGHT,   16,   asin(1.0 / x))                \
+/*    Hyperbolic functions                                                                                                             */\
+    X(SINH,       1,   (vstr{"sinh", "sh"}),                                                RIGHT,   16,   sinh(x))                      \
+    X(COSH,       1,   (vstr{"cosh", "ch"}),                                                RIGHT,   16,   cosh(x))                      \
+    X(TANH,       1,   (vstr{"tanh", "th"}),                                                RIGHT,   16,   tanh(x))                      \
+    X(CTH,        1,   (vstr{"coth", "cth"}),                                               RIGHT,   16,   cosh(x) / sinh(x))            \
+    X(SECH,       1,   (vstr{"sech"}),                                                      RIGHT,   16,   1.0 / cosh(x))                \
+    X(CSCH,       1,   (vstr{"cosech", "csch"}),                                            RIGHT,   16,   1.0 / sinh(x))                \
+    X(ARCSINH,    1,   (vstr{"arcsinh", "arsinh", "asinh", "arcsh", "argsinh", "argsh"}),   RIGHT,   16,   asinh(x))                     \
+    X(ARCCOSH,    1,   (vstr{"arccosh", "arcosh", "acosh", "arcch", "argcosh", "argch"}),   RIGHT,   16,   acosh(x))                     \
+    X(ARCCOTH,    1,   (vstr{"arccoth", "arcoth", "acoth", "argcth"}),                      RIGHT,   16,   atanh(1.0 / x))               \
+    X(ARCTANH,    1,   (vstr{"arctanh", "artanh", "atanh", "argth"}),                       RIGHT,   16,   atanh(x))                     \
+    X(ARCSECH,    1,   (vstr{"arcsech", "arsech", "asech"}),                                RIGHT,   16,   acosh(1.0 / x))               \
+    X(ARCCSCH,    1,   (vstr{"arccsch", "arccosech", "acsch", "acosech", "arcsch"}),        RIGHT,   16,   asinh(1.0 / x))               \
+/*    Advanced                                                                                                                         */\
+    X(ERF,        1,   (vstr{"erf"}),                                                       RIGHT,   16,   erf(x))                       \
+    X(ERFC,       1,   (vstr{"erfc"}),                                                      RIGHT,   16,   erfc(x))                      \
+    X(TGAMMA,     1,   (vstr{"tgamma", "gamma"}),                                           RIGHT,   16,   tgamma(x))                    \
+    X(LGAMMA,     1,   (vstr{"lgamma"}),                                                    RIGHT,   16,   lgamma(x))                    \
+/*-------------------------------------------------------------------------------------------------------------------------------------*/\
+/*                                                          Binary operators                                                           */\
+    X(COMMA,      2,   (vstr{","}),                                                         LEFT,    1,    (x, y))                       \
+    X(OR,         2,   (vstr{"||"}),                                                        LEFT,    3,    (long long)x || (long long)y) \
+    X(XOR,        2,   (vstr{"^^"}),                                                        LEFT,    4,    !x ^ !y)                      \
+    X(AND,        2,   (vstr{"&&"}),                                                        LEFT,    5,    (long long)x && (long long)y) \
+    X(BITOR,      2,   (vstr{"|"}),                                                         LEFT,    6,    (long long)x | (long long)y)  \
+    X(BITXOR,     2,   (vstr{"^"}),                                                         LEFT,    7,    (long long)x ^ (long long)y)  \
+    X(BITAND,     2,   (vstr{"&"}),                                                         LEFT,    8,    (long long)x & (long long)y)  \
+    X(EQ,         2,   (vstr{"=="}),                                                        LEFT,    9,    x == y)                       \
+    X(NEQ,        2,   (vstr{"!="}),                                                        LEFT,    9,    x != y)                       \
+    X(LT,         2,   (vstr{"<"}),                                                         LEFT,    10,   x < y)                        \
+    X(LEQ,        2,   (vstr{"<="}),                                                        LEFT,    10,   x <= y)                       \
+    X(GT,         2,   (vstr{">"}),                                                         LEFT,    10,   x > y)                        \
+    X(GEQ,        2,   (vstr{">="}),                                                        LEFT,    10,   x >= y)                       \
+    X(SPC,        2,   (vstr{"<=>"}),                                                       LEFT,    11,   x < y ? -1 : (x > y ? 1 : 0)) \
+    X(SHL,        2,   (vstr{"<<"}),                                                        LEFT,    12,   (long long)x << (int)y)       \
+    X(SHR,        2,   (vstr{">>"}),                                                        LEFT,    12,   (long long)x >> (int)y)       \
+    X(ADD,        2,   (vstr{"+"}),                                                         LEFT,    13,   x + y)                        \
+    X(SUB,        2,   (vstr{"-"}),                                                         LEFT,    13,   x - y)                        \
+    X(MUL,        2,   (vstr{"*"}),                                                         LEFT,    14,   x * y)                        \
+    X(DIV,        2,   (vstr{"/"}),                                                         LEFT,    14,   x / y)                        \
+    X(MOD,        2,   (vstr{"%"}),                                                         LEFT,    14,   fmod(x, y))                   \
+    X(FDIV,       2,   (vstr{"//"}),                                                        LEFT,    14,   trunc(x / y))                 \
+    X(POW,        2,   (vstr{"**"}),                                                        RIGHT,   15,   pow(x, y))                    \
+/*-------------------------------------------------------------------------------------------------------------------------------------*/\
+/*                                                          Ternary operators                                                          */\
+    X(COLON,      3,   (vstr{":"}),                                                         RIGHT,   2,    x ? y : z)                    \
+/*-------------------------------------------------------------------------------------------------------------------------------------*/\
 
 // Enum (list of identif.)
 enum expr_optype {
-#define X(name, strings, assoc, prec, rule) OP_##name,
+#define X(name, arity, strings, assoc, prec, rule) OP_##name,
 	OPLIST(X)
 #undef X
 };
-enum expr_assoc {
-	LEFT, RIGHT
-};
-
-using vstr = std::vector<std::string>;
-
 // String-2-enum
 std::vector<std::pair<std::string, expr_optype>> str2optype;
-
 // Enum-2-precedence
 std::unordered_map<expr_optype, int> optype2prec = {
-#define X(name, strings, assoc, prec, rule) { OP_##name, prec },
+#define X(name, arity, strings, assoc, prec, rule) { OP_##name, prec },
 	OPLIST(X)
 #undef X
 };
-
 // Enum-2-assoc
 std::unordered_map<expr_optype, int> optype2assoc = {
-#define X(name, strings, assoc, prec, rule) { OP_##name, assoc },
+#define X(name, arity, strings, assoc, prec, rule) { OP_##name, assoc },
 	OPLIST(X)
 #undef X
 };
-
 // Enum-2-arity
 std::unordered_map<expr_optype, int> optype2ar = {
-#define X(name, strings, assoc, prec, rule) { OP_##name, 0 },
-	OPLIST_NULLARY(X)
-#undef X
-#define X(name, strings, assoc, prec, rule) { OP_##name, 1 },
-	OPLIST_UNARY(X)
-#undef X
-#define X(name, strings, assoc, prec, rule) { OP_##name, 2 },
-	OPLIST_BINARY(X)
-#undef X
-#define X(name, strings, assoc, prec, rule) { OP_##name, 3 },
-	OPLIST_TERNARY(X)
+#define X(name, arity, strings, assoc, prec, rule) { OP_##name, arity },
+	OPLIST(X)
 #undef X
 };
 
 void init() {
-#define X(name, strings, assoc, prec, rule) { strings, OP_##name },
+#define X(name, arity, strings, assoc, prec, rule) { strings, OP_##name },
 	std::vector<std::pair<vstr, expr_optype>> vec = { OPLIST(X) };
 #undef X
 	using pso = std::pair<std::string, expr_optype>;
@@ -138,7 +140,7 @@ void init() {
 zrc_num eval_op(expr_optype op, zrc_num x = 0, zrc_num y = 0, zrc_num z = 0) {
 	using namespace std;
 	switch (op) {
-#define X(name, strings, assoc, prec, rule) case OP_##name: return rule;
+#define X(name, arity, strings, assoc, prec, rule) case OP_##name: return rule;
 		OPLIST(X)
 #undef X
 		default: return 0;

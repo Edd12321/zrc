@@ -7,5 +7,4 @@ if {[str $2 == "clean"]} {
 makepkg -siC --clean
 if {[str $2 != "keep"]} {
 	rm -rf {*}[glob zrc-*.pkg.tar.zst] zrc
-	rm -rf src pkg
 }
