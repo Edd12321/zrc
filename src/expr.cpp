@@ -13,12 +13,20 @@ using vstr = std::vector<std::string>;
 /*    NAME        AR   STRINGS                                                              ASSOC    PREC  EXPR                        */\
 /*-------------------------------------------------------------------------------------------------------------------------------------*/\
 /*                                                         Nullary operators                                                           */\
+/*    Why not                                                                                                                          */\
     X(QUESTION,   0,   (vstr{"?"}),                                                         RIGHT,   2,    NAN)                          \
-    X(LPAREN,     1,   (vstr{/*(*/}),                                                       LEFT,    17,   NAN)                          \
-    X(RPAREN,     1,   (vstr{/*)*/}),                                                       LEFT,    17,   NAN)            /* why not  */\
+    X(LPAREN,     0,   (vstr{/*(*/}),                                                       LEFT,    17,   NAN)                          \
+    X(RPAREN,     0,   (vstr{/*)*/}),                                                       LEFT,    17,   NAN)                          \
+/*    Constants                                                                                                                        */\
+    X(PI,         0,   (vstr{"pi", "PI"}),                                                  RIGHT,   16,   M_PI)                         \
+    X(E,          0,   (vstr{"e", "E"}),                                                    RIGHT,   16,   M_E)                          \
+    X(INF,        0,   (vstr{"inf", "INF", "Inf"}),                                         RIGHT,   16,   INFINITY)                     \
+    X(NAN,        0,   (vstr{"nan", "NAN", "NaN"}),                                         RIGHT,   16,   NAN)                          \
+    X(TRUE,       0,   (vstr{"true", "TRUE", "True"}),                                      RIGHT,   16,   true)                         \
+    X(FALSE,      0,   (vstr{"false", "FALSE", "False"}),                                   RIGHT,   16,   false)                        \
 /*------------------------------------------------------------------------------------------------------------------------------------ */\
 /*                                                          Unary operators                                                            */\
-/*    Basic symbols                                                                                                                    */\
+/*    Operators                                                                                                                        */\
     X(POS,        1,   (vstr{/*+*/}),                                                       RIGHT,   16,   +x)                           \
     X(NEG,        1,   (vstr{/*-*/}),                                                       RIGHT,   16,   -x)                           \
     X(NOT,        1,   (vstr{"!"}),                                                         RIGHT,   16,   !x)                           \
@@ -199,10 +207,6 @@ zrc_num eval(const char *buf) {
 		}
 
 		// Numbers/constants
-		else if (str.compare(i, 3, "nan") == 0) vals.push(NAN), i += 2, unary_here = false;
-		else if (str.compare(i, 3, "inf") == 0) vals.push(INFINITY), i += 2, unary_here = false;
-		else if (str.compare(i, 4, "true") == 0) vals.push(true), i += 3, unary_here = false;
-		else if (str.compare(i, 5, "false") == 0) vals.push(false), i += 4, unary_here = false;
 		else if (isdigit(str[i]) || str[i] == '.' && i < str.length()-1 && isdigit(str[i+1])) {
 			zrc_num val;
 			char *end;
@@ -221,14 +225,22 @@ zrc_num eval(const char *buf) {
 			for (auto const& it : str2optype) {
 				if (str.compare(i, it.first.length(), it.first) == 0) {
 					expr_optype op = it.second;
-					
-					// Special cases
-					// 1) unary +/-
 					if (it.first == "-" && unary_here)
 						op = OP_NEG;
 					if (it.first == "+" && unary_here)
 						op = OP_POS;
-					// 2) ?: logical stuff
+					int ar = optype2ar.at(op);
+					int prec = optype2prec.at(op);
+					
+					// constants
+					if (ar == 0 && op != OP_QUESTION && op != OP_LPAREN && op != OP_RPAREN) {
+						vals.push(eval_op(op));
+						i += it.first.length()-1;
+						unary_here = false;
+						found = true;
+						break;
+					}
+					// ?: logical stuff
 					if (op == OP_COLON) {
 						while (!ops.empty() && ops.top() != OP_QUESTION)
 							if (!popper(buf, ops, vals))
@@ -238,11 +250,10 @@ zrc_num eval(const char *buf) {
 						ops.pop();
 						ops.push(OP_COLON);
 						i += it.first.length()-1;
-						unary_here  = found = true;
+						unary_here = found = true;
 						break;
 					}
 
-					int prec = optype2prec.at(op);
 					while (!ops.empty() && ops.top() != OP_LPAREN) {
 						int top_prec = optype2prec.at(ops.top());
 						int top_assoc = optype2assoc.at(ops.top());
@@ -258,7 +269,7 @@ zrc_num eval(const char *buf) {
 					break;
 				}
 			}
-			if (!found) 
+			if (!found)
 				return complain(buf);
 		}
 	}
