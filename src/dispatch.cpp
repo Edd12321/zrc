@@ -109,12 +109,17 @@ const std::map<std::string, int> txt2sig = {
 	{ "sigexit" , SIGEXIT }
 	//Special zrc "pseudo-signal"
 };
-const std::map<int, std::string> sig2txt = []() {
+const std::map<int, std::string> sig2txt = [] {
 	std::map<int, std::string> ret;
 	for (auto const& it : txt2sig)
 		ret.emplace(it.second, it.first);
 	return ret;
 }();
+std::set<int> dflsigs = {SIGINT, SIGQUIT, SIGTSTP, SIGTTOU, SIGTTIN};
+int selfpipe_rd, selfpipe_wrt;
+void sighandler(int sig) {
+	write(selfpipe_wrt, &sig, sizeof sig);
+}
 
 int get_sig(std::string str) {
 	auto num = stonum(str);
@@ -465,12 +470,16 @@ COMMAND(trap, <n>|SIG<name>|<name> [<w1> <w2>...])
 	int sig = get_sig(argv[1]);
 	if (sig < 0) SYNTAX_ERROR
 	sigtraps[sig] = zrc_trap(concat(argc, argv, 2));
+	if (!interactive_sesh && dflsigs.find(sig) != dflsigs.end())
+		signal(sig, sighandler);
 END
 COMMAND(untrap, <n>|SIG<name>|<name>)
 	if (argc < 2) SYNTAX_ERROR
 	for (int i = 1; i < argc; ++i) {
 		int sig = get_sig(argv[1]);
 		if (sig < 0) SYNTAX_ERROR
+		if (!interactive_sesh && dflsigs.find(sig) != dflsigs.end())
+			signal(sig, SIG_DFL);
 		sigtraps.erase(sig);
 	}
 END

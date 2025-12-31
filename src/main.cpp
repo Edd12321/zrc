@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <signal.h>
 
 #include <fstream>
 #include <istream>
@@ -344,11 +345,8 @@ int main(int argc, char *argv[]) {
 	selfpipe_wrt = fcntl(selfpipe[1], F_DUPFD_CLOEXEC, FD_MAX + 1); close(selfpipe[1]);
 	fcntl(selfpipe_wrt, F_SETFL, O_NONBLOCK);
 	fcntl(selfpipe_rd, F_SETFL, O_NONBLOCK);
-	for (auto const& it : sig2txt) {
-		signal(it.first, [](int sig) {
-			write(selfpipe_wrt, &sig, sizeof sig);
-		});
-	}
+	for (auto const& it : sig2txt)
+		signal(it.first, sighandler);
 	atexit([] {
 		if (login_sesh) {
 			auto pw = getpwuid(getuid());
@@ -381,6 +379,8 @@ int main(int argc, char *argv[]) {
 		}
 		eval_stream(std::cin);
 	} else {
+		for (auto const& it : dflsigs)
+			signal(it, SIG_DFL);
 		is_script = true;
 		interactive_sesh = false;
 		if (!strcmp(argv[1], "--version")) version();

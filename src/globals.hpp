@@ -231,6 +231,7 @@ void invoke_void(Fun const&, std::initializer_list<const char*>);
 static inline std::string concat(int, char**, int);
 static inline void eoe(int, char**, int);
 static inline void prints(std::stack<std::string>);
+void sighandler(int);
 
 // LIST.CPP
 zrc_obj list(int, const char**);

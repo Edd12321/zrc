@@ -442,7 +442,7 @@ inline void disown_job(int n) {
 
 
 // Self pipe trick for signal safe trapping
-int selfpipe_rd, selfpipe_wrt;
+// now in dispatch.cpp: int selfpipe_rd, selfpipe_wrt;
 struct pollfd selfpipe_wait;
 
 void selfpipe_trick() {
