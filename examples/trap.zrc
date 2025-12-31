@@ -1,0 +1,10 @@
+#!/usr/bin/env zrc
+trap USR1 echo caught USR1
+trap USR2 echo caught USR2
+
+set pid = [pid]
+kill -s USR1 $pid
+kill -s USR2 $pid
+kill -s USR1 $pid
+kill -s USR2 $pid
+kill -s USR1 $pid

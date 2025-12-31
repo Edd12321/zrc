@@ -128,6 +128,19 @@ static inline std::string eval(std::string const& str) {
 	return eval(wlst);
 }
 
+/** Tcsetpgrp replacement **/
+int tcsetpgrp2(pid_t pgid) {
+	sigset_t mask, old;
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGTTOU);
+	sigaddset(&mask, SIGTTIN);
+	sigaddset(&mask, SIGTSTP);
+	sigprocmask(SIG_BLOCK, &mask, &old);
+	int ret_val = tcsetpgrp(tty_fd, pgid);
+	sigprocmask(SIG_SETMASK, &old, NULL);
+	return ret_val;
+}
+
 static inline zrc_obj eval(std::vector<token> const& wlst) {
 	pipeline ppl;
 	command cmd;
@@ -267,6 +280,8 @@ static inline void version() {
 }
 
 int main(int argc, char *argv[]) {
+	// Heavily commented, because it does so much dang stuff at once
+
 	std::ios_base::sync_with_stdio(false);
 	// It's over 9000! (not really)
 	struct rlimit rlim;
@@ -276,44 +291,18 @@ int main(int argc, char *argv[]) {
 	FD_MAX /= 2;
 	if (setrlimit(RLIMIT_NOFILE, &rlim) < 0)
 		std::cerr << "warning: Could not setrlimit()\n";
-
 	// Shells have no buffering
 	std::cout << std::unitbuf;
 	std::cerr << std::unitbuf;
-
 	// Setup arguments
 	::argc = argc, ::argv = argv;
 	vars::argv = copy_argv(argc, argv);
-	// Setup prompts
-	vars::prompt1 = DEFAULT_PPROMPT;
-	vars::prompt2 = DEFAULT_SPROMPT;
 	// Setup expr
 	expr::init();
 
-	// Setup getopts stuff
-	setvar("opterr", std::to_string(opterr));
-	setvar("optind", std::to_string(optind));
-	
-	// Sighandlers
-	atexit([] {
-		if (login_sesh) {
-			auto pw = getpwuid(getuid());
-			if (pw) {
-				std::string filename = pw->pw_dir;
-				// ~/.zrc_logout (by default)
-				source(filename + "/" ZLOGOUT, false);
-			}
-		}
-		if (interactive_sesh)
-			sighupper();
-		if (!killed_sigexit)
-			run_function("sigexit");
-	});	
-	signal(SIGCHLD, [](int sig) {
-		chld_notif = true;
-		run_function("sigchld");
-	});
+	// Interactive job control stuff
 	if (argc == 1) {
+		// Terminal file descriptor for interactive use
 		int target_fd = open("/dev/tty", O_RDWR);
 		if (target_fd < 0) {
 			perror("open");
@@ -328,15 +317,13 @@ int main(int argc, char *argv[]) {
 		close(target_fd);
 		tty << std::unitbuf;
 
+		// Set flags to mark this is interactive
 		is_script = false;
 		interactive_sesh = true;
-		
+		// Stop self till foreground	
 		pid_t pgid;
 		while (tcgetpgrp(::tty_fd) != (pgid = getpgrp()))
 			kill(-pgid, SIGTTIN);
-		
-		signal(SIGTTOU, SIG_IGN);
-		signal(SIGTTIN, SIG_IGN);
 		if (getsid(0) != tty_pid && setpgid(0, pgid) < 0) {
 			perror("setpgrp");
 			return EXIT_FAILURE;
@@ -344,17 +331,41 @@ int main(int argc, char *argv[]) {
 		if (tcsetpgrp(::tty_fd, pgid) < 0) {
 			perror("tcsetpgrp");
 			return EXIT_FAILURE;
-		}
-		signal(SIGINT, [](int sig) { run_function("sigint"); });
-		signal(SIGTSTP, [](int sig) { run_function("sigtstp"); });
-		signal(SIGHUP, [](int sig) {
-			if (functions.find("sighup") != functions.end())
-				run_function("sighup");
-			else {
-				sighupper();
-				exit(129);
-			}
+		};
+	}
+	// This runs for both argc == 1 and otherwise
+	// Sighandlers
+	int selfpipe[2];
+	if (pipe(selfpipe) < 0) {
+		perror("pipe");
+		return EXIT_FAILURE;
+	}
+	selfpipe_rd = fcntl(selfpipe[0], F_DUPFD_CLOEXEC, FD_MAX + 1); close(selfpipe[0]);
+	selfpipe_wrt = fcntl(selfpipe[1], F_DUPFD_CLOEXEC, FD_MAX + 1); close(selfpipe[1]);
+	fcntl(selfpipe_wrt, F_SETFL, O_NONBLOCK);
+	fcntl(selfpipe_rd, F_SETFL, O_NONBLOCK);
+	for (auto const& it : sig2txt) {
+		signal(it.first, [](int sig) {
+			write(selfpipe_wrt, &sig, sizeof sig);
 		});
+	}
+	atexit([] {
+		if (login_sesh) {
+			auto pw = getpwuid(getuid());
+			if (pw) {
+				std::string filename = pw->pw_dir;
+				// ~/.zrc_logout (by default)
+				source(filename + "/" ZLOGOUT, false);
+			}
+		}
+		if (interactive_sesh)
+			sighupper();
+		if (!killed_sigexit && sigtraps.find(SIGEXIT) != sigtraps.end())
+			sigtraps.at(SIGEXIT)();
+	});
+
+	// Continue interactive logic
+	if (argc == 1) {
 		auto pw = getpwuid(getuid());
 		if (pw) {
 			std::string filename = pw->pw_dir;	

@@ -26,7 +26,7 @@ Zrc is a small scripting language for Linux, BSD, etc. written in C++ (interpret
 - [X] Globbing (via `glob`)
 	- [X] Tilde expansion (on GNU systems)
 	- [X] Wildcards
-- [X] Signal trapping (via `fn`)
+- [X] Signal trapping (via `trap`)
 - [X] Directory stack
 - [X] Pipelines
 - [X] Full redirection

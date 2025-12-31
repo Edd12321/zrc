@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <poll.h>
 
 #include <functional>
 #include <map>
@@ -66,8 +67,10 @@ struct substit;
 struct token;
 struct token_list;
 struct job;
+struct zrc_custom_cmd;
 struct zrc_fun;
 struct zrc_alias;
+struct zrc_trap;
 
 using zrc_obj = std::string;
 using zrc_num = long double;
@@ -80,6 +83,8 @@ extern CMD_TBL builtins;
 std::unordered_map<std::string, zrc_fun> functions;
 // Alias table
 std::unordered_map<std::string, zrc_alias> kv_alias;
+// Trap table
+std::unordered_map<int, zrc_trap> sigtraps;
 // Job table
 extern std::map<int, job> jobs;
 extern std::map<pid_t, int> pid2jid;
@@ -184,6 +189,7 @@ static inline zrc_obj eval(std::string const&);
 static inline void eval_stream(std::istream&);
 zrc_arr copy_argv(int, char**);
 int main(int, char**);
+int tcsetpgrp2(pid_t);
 
 // VARS.CPP
 static inline std::string getvar(std::string const&);
@@ -213,9 +219,10 @@ void jobstate(int, int);
 void reaper();
 void reaper(pid_t, int);
 void reset_sigs();
+void selfpipe_trick();
 
 template<typename Fun>
-zrc_obj invoke(Fun const&, std::initializer_list<const char*>);
+zrc_obj invoke(Fun&, std::initializer_list<const char*>);
 
 template<typename Fun>
 void invoke_void(Fun const&, std::initializer_list<const char*>);

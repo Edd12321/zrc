@@ -5,6 +5,7 @@
 
 #include <fcntl.h>
 #include <math.h>
+#include <poll.h>
 #include <semaphore.h>
 #include <stdbool.h>
 #include <string.h>
@@ -14,9 +15,6 @@
 
 #include <functional>
 #include <vector>
-// volatile sig_atomic_t chld_notif;
-// in dispatch.cpp now
-
 /** Check if a file descriptor is valid
  *
  * @param {int}fd
@@ -152,6 +150,7 @@ zrc_obj exec(int argc, char *argv[]) {
 			vars::status = "127";
 		}
 	}
+	selfpipe_trick();
 	return vars::status;
 }
 
@@ -248,7 +247,7 @@ public:
 };
 
 template<typename Fun>
-zrc_obj invoke(Fun const& f, std::initializer_list<const char*> list) {
+zrc_obj invoke(Fun& f, std::initializer_list<const char*> list) {
 	command cmd(list);
 	return f(cmd.argc(), cmd.argv());
 }
@@ -417,6 +416,7 @@ void jobstate(int job, int st) { jobs[job].state = static_cast<pipeline::ppl_pro
 // hacks that only exist because we have only one TU:
 pid_t jobpgid(job const& j) { return j.pgid; }
 bool jobexists(int jid) { return jobs.find(jid) != jobs.end(); }
+bool nojobs() { return jobs.empty(); }
 
 /** Display job table.
  *
@@ -438,6 +438,35 @@ inline void show_jobs() {
 inline void disown_job(int n) {
 	if (jobs.find(n) != jobs.end())
 		jobs.erase(n);
+}
+
+
+// Self pipe trick for signal safe trapping
+int selfpipe_rd, selfpipe_wrt;
+struct pollfd selfpipe_wait;
+
+void selfpipe_trick() {
+	static struct pollfd selfpipe_wait;
+	selfpipe_wait.fd = selfpipe_rd;
+	selfpipe_wait.events = POLLIN;
+	
+	int sig, ret;
+	while ((ret = poll(&selfpipe_wait, 1, 0)) > 0 && (selfpipe_wait.revents & POLLIN)) {
+		while (read(selfpipe_rd, &sig, sizeof sig) == sizeof sig) {
+			if (sigtraps.find(sig) == sigtraps.end()) {
+				if (sig == SIGHUP) {
+					sighupper();
+					exit(129);
+				}
+				continue;
+			}
+			if (sig == SIGCHLD && interactive_sesh && !jobs.empty())
+				reaper();
+			auto& trap = sigtraps.at(sig);
+			if (trap.active)
+				trap();
+		}
+	}
 }
 
 /** Executes a pipeline.
@@ -659,8 +688,9 @@ inline bool pipeline::execute_act() {
 			auto jid = add_job(*this, pmode, pgid, pid, pids);	
 			if (this->pmode == ppl_proc_mode::FG) {
 				// Foreground jobs transfer the terminal control to the child
-				if (tcsetpgrp(tty_fd, pgid) < 0)
+				if (tcsetpgrp2(pgid) < 0)
 					perror("tcsetpgrp #1");
+				kill(-pgid, SIGCONT);
 				for (int i = 0; i < cmds.size(); ++i)
 					sem_post(sem);
 #if WINDOWS
@@ -668,7 +698,7 @@ inline bool pipeline::execute_act() {
 				nanosleep(&ts, nullptr); // no idea.
 #endif
 				reaper(-pgid, WUNTRACED);
-				if (tcsetpgrp(tty_fd, getpgrp()) < 0)
+				if (tcsetpgrp2(getpgrp()) < 0)
 					perror("tcsetpgrp #2");
 			} else {
 				tty << '[' << jid << "] " << jobs[jid].ppl << std::endl;
@@ -682,10 +712,12 @@ inline bool pipeline::execute_act() {
 
 /* Ditto */
 void pipeline::execute() {
-	if (!jobs.empty())
-		reaper();
-	if (cmds.empty())
+	selfpipe_trick();
+	if (cmds.empty()) {
+		if (!jobs.empty())
+			reaper();
 		return;
+	}
 	SCOPE_EXIT {
 		cmds.clear();
 		for (auto const& it : fifo_cleanup) {
@@ -699,4 +731,7 @@ void pipeline::execute() {
 		case ppl_run_mode::OR:  !stonum(vars::status) || execute_act(); break;
 		case ppl_run_mode::NORMAL:                       execute_act(); break;
 	}
+	selfpipe_trick();
+	if (!jobs.empty())
+		reaper();
 }

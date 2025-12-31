@@ -288,6 +288,7 @@ static inline bool zlineedit(std::string& buf) {
 
 	// Main loop
 	for (;;) {
+		selfpipe_trick();
 		int k_found = 0, k_eq = 0;
 		if (kbhit()) {
 			if (read(STDIN_FILENO, &c, 1) == -1)

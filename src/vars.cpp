@@ -1,4 +1,5 @@
 #include <math.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <iomanip>
@@ -44,6 +45,10 @@ namespace vars {
 	public:
 		explicit zrc_var(std::string k)
 			: key(std::move(k)) {}
+		explicit zrc_var(std::string k, std::string const& how)
+			: key(std::move(k)) {
+			setvar(key, how);
+		}
 		inline operator std::string() const {
 			return getvar(key);
 		}
@@ -59,13 +64,15 @@ namespace vars {
 		inline friend std::ostream& operator<<(std::ostream&, zrc_var const&);
 	} 
 #define V(o) o(#o)
+#define V2(o, u) o(#o, u)
 	V(argc), V(CDPATH), V(editor), V(EDITOR), V(ifs), V(IFS),
-	V(status), V(PATH), V(optarg), V(opterr), V(optind), V(prompt1), V(prompt2),
+	V(status), V(PATH), V(optarg), V2(opterr, std::to_string(::opterr)), V2(optind, std::to_string(::optind)), V2(prompt1, DEFAULT_PPROMPT), V2(prompt2, DEFAULT_SPROMPT),
 	V(reply)
 #if WINDOWS
 	, V(PATHEXT)
 #endif
 	;
+#undef V2
 #undef V
 	inline std::ostream& operator<<(std::ostream& out, zrc_var const& var) {
 		return out << (zrc_obj)var;

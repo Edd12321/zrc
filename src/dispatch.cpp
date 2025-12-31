@@ -109,6 +109,25 @@ const std::map<std::string, int> txt2sig = {
 	{ "sigexit" , SIGEXIT }
 	//Special zrc "pseudo-signal"
 };
+const std::map<int, std::string> sig2txt = []() {
+	std::map<int, std::string> ret;
+	for (auto const& it : txt2sig)
+		ret.emplace(it.second, it.first);
+	return ret;
+}();
+
+int get_sig(std::string str) {
+	auto num = stonum(str);
+	if (!isnan(num) && sig2txt.find(num) != sig2txt.end())
+		return num;
+	for (auto& c : str)
+		c = tolower(c);
+	if (str.substr(0, 3) != "sig")
+		str = "sig" + str;
+	if (txt2sig.find(str) != txt2sig.end())
+		return txt2sig.at(str);
+	return -1;
+}
 
 // Helps us to see if we can change control flow
 #define EXCEPTION_CLASS(x)                               \
@@ -127,8 +146,6 @@ EXCEPTION_CLASS(regex)
 bool in_loop;
 bool in_switch;
 bool in_func;
-
-volatile sig_atomic_t chld_notif;
 
 class block_handler {
 private:
@@ -199,16 +216,20 @@ struct zrc_frame {
 };
 std::vector<zrc_frame> callstack;
 
-struct zrc_fun {
+struct zrc_custom_cmd {
 	std::string body;
 	std::vector<token> lexbody;
-
-	zrc_fun() = default;
-	zrc_fun(std::string const& b)
+	zrc_custom_cmd() = default;
+	zrc_custom_cmd(std::string const& b)
 		: body(b), lexbody(lex(b.c_str(), SEMICOLON | SPLIT_WORDS).elems) {
 	}
+	virtual ~zrc_custom_cmd() = default;
+	virtual inline zrc_obj operator()(int, char**) = 0;
+};
 
-	inline zrc_obj operator()(int argc, char *argv[]) const {
+struct zrc_fun : public zrc_custom_cmd {
+	using zrc_custom_cmd::zrc_custom_cmd;
+	inline zrc_obj operator()(int argc, char *argv[]) override {
 		zrc_obj zargc_old = vars::argc; int argc_old = ::argc;
 		zrc_arr zargv_old = std::move(vars::argv); char **argv_old = ::argv;
 		vars::argv = copy_argv(argc, argv); ::argv = argv;
@@ -225,32 +246,25 @@ struct zrc_fun {
 		SCOPE_EXIT {
 			vars::argc = zargc_old; ::argc = argc_old;
 			vars::argv = std::move(zargv_old); ::argv = argv_old;
-			
 			::in_switch = in_switch, ::in_loop = in_loop;
-
 			is_fun = is_fun_old; fun_name = fun_name_old;
 			callstack.pop_back();
 		};
 		block_handler fh(&in_func);
-		try { eval(lexbody); } catch (return_handler const& ex) {}
-
+		try {
+			eval(lexbody);
+		} catch (return_handler const& ex) {
+		}
 		// Don't forget
 		return vars::status;
 	}
 };
 
-struct zrc_alias {
-	bool active;
-	std::string body;
-	std::vector<token> lexbody;
-
-	zrc_alias(std::string const& b)
-		: active(true), body(b)
-		, lexbody(lex(b.c_str(), SEMICOLON | SPLIT_WORDS).elems) {
-	}
-
-	// Aliases are more lightweight than functions
-	inline zrc_obj operator()(int argc, char *argv[]) {
+struct zrc_alias : public zrc_custom_cmd {
+	using zrc_custom_cmd::zrc_custom_cmd;
+	bool active = true;
+	
+	inline zrc_obj operator()(int argc, char *argv[]) override {
 		active = false;
 		for (int i = 1; i < argc; ++i)
 			lexbody.emplace_back(token(argv[i]));
@@ -259,6 +273,17 @@ struct zrc_alias {
 				lexbody.pop_back();
 			active = true;
 		};
+		return eval(lexbody);
+	}
+};
+
+struct zrc_trap : public zrc_custom_cmd {
+	using zrc_custom_cmd::zrc_custom_cmd;
+	bool active = true;
+
+	inline zrc_obj operator()(int = 0, char** = nullptr) override {
+		active = false;
+		SCOPE_EXIT { active = true; };
 		return eval(lexbody);
 	}
 };
@@ -370,9 +395,9 @@ END
     kill(-getpgid(n), SIGCONT);                  \
     jobstate(pid2jid.at(n), z); y;               \
     if (getpid() == tty_pid && interactive_sesh) \
-       tcsetpgrp(tty_fd, tty_pid)                \
+       tcsetpgrp2(tty_pid)                       \
   END
-FGBG(1, fg, tcsetpgrp(tty_fd, getpgid(n)); reaper(n, WUNTRACED))
+FGBG(1, fg, tcsetpgrp2(getpgid(n)); reaper(n, WUNTRACED))
 FGBG(0, bg,)
 
 // JID to PGID
@@ -422,38 +447,32 @@ COMMAND(builtin, <arg1> <arg2>...)
 		exec(argc, argv)
 END
 
-// Add/remove a new function + do signal trapping
+// Add/remove a new function
 COMMAND(fn, <name> [<w1> <w2>...])
-	if (argc >= 3) {
-		// Function body
-		auto b = concat(argc, argv, 2);
-		functions[argv[1]] = zrc_fun(concat(argc, argv, 2));
-		if (txt2sig.find(argv[1]) != txt2sig.end()) {
-			std::string sig = argv[1]+3;
-			if (sig == "exit" || sig == "chld"
-			|| interactive_sesh && (sig == "int" || sig == "tstp" || sig == "hup"))
-				return vars::status; // this gets set in main()
-			signal(txt2sig.at(argv[1]), [](int sig) {
-				for (auto const& it : txt2sig) // signal(2) can't capture fun name
-					if (it.second == sig)
-						run_function(it.first);
-			});
-		}
-	} else if (argc == 2) {
-		functions.erase(argv[1]);
-		if (txt2sig.find(argv[1]) != txt2sig.end()) {
-			std::string sig = argv[1]+3;
-			if (sig == "exit" || sig == "chld"
-			|| interactive_sesh && (sig == "int" || sig == "tstp" || sig == "hup"))
-				return vars::status; // this gets set in main()
-			else if (sig == "ttou" && interactive_sesh)
-				signal(SIGTTOU, SIG_IGN); // ignore only sometimes
-			else if (sig == "ttin" && interactive_sesh)
-				signal(SIGTTIN, SIG_IGN); // ditto above
-			else signal(txt2sig.at(argv[1]), SIG_DFL);
-			return vars::status;
-		}
-	} else SYNTAX_ERROR	
+	if (argc < 3) SYNTAX_ERROR
+	// Function body
+	functions[argv[1]] = zrc_fun(concat(argc, argv, 2));	
+END
+COMMAND(unfn, <name1> <name2>...)
+	if (argc < 2) SYNTAX_ERROR
+	for (int i = 1; i < argc; ++i)
+		functions.erase(argv[i]);
+END
+
+// Add/remove a signal trap
+COMMAND(trap, <n>|SIG<name>|<name> [<w1> <w2>...])
+	if (argc < 3) SYNTAX_ERROR
+	int sig = get_sig(argv[1]);
+	if (sig < 0) SYNTAX_ERROR
+	sigtraps[sig] = zrc_trap(concat(argc, argv, 2));
+END
+COMMAND(untrap, <n>|SIG<name>|<name>)
+	if (argc < 2) SYNTAX_ERROR
+	for (int i = 1; i < argc; ++i) {
+		int sig = get_sig(argv[1]);
+		if (sig < 0) SYNTAX_ERROR
+		sigtraps.erase(sig);
+	}
 END
 
 // Lambda functions
