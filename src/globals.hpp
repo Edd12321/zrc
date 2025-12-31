@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <signal.h>
 
 #include <functional>
 #include <map>
@@ -76,6 +77,7 @@ using zrc_obj = std::string;
 using zrc_num = long double;
 using zrc_arr = std::unordered_map<std::string, zrc_obj>;
 using CMD_TBL = std::unordered_map<std::string, std::function<zrc_obj(int, char**)>>;
+using sighandler_t = decltype(SIG_DFL);
 
 // Command dispatch tables
 extern CMD_TBL builtins;
@@ -181,6 +183,30 @@ protected:
 } _ttybuf;
 std::ostream tty(&_ttybuf);
 
+/** Tcsetpgrp replacement **/
+int tcsetpgrp2(pid_t pgid) {
+	sigset_t mask, old;
+	sigemptyset(&mask);
+	sigaddset(&mask, SIGTTOU);
+	sigaddset(&mask, SIGTTIN);
+	sigaddset(&mask, SIGTSTP);
+	sigprocmask(SIG_BLOCK, &mask, &old);
+	int ret_val = tcsetpgrp(tty_fd, pgid);
+	sigprocmask(SIG_SETMASK, &old, NULL);
+	return ret_val;
+}
+
+/** Signal replacement **/
+sighandler_t signal2(int sig, sighandler_t f) {
+	struct sigaction sa, old;
+	sa.sa_handler = f;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = SA_RESTART;
+	if (sigaction(sig, &sa, &old) == -1)
+		return SIG_ERR;
+	return old.sa_handler;
+}
+
 // MAIN.CPP
 std::unordered_map<std::string, std::string> pathwalk();
 bool source(std::string const&, bool err = true);
@@ -189,7 +215,6 @@ static inline zrc_obj eval(std::string const&);
 static inline void eval_stream(std::istream&);
 zrc_arr copy_argv(int, char**);
 int main(int, char**);
-int tcsetpgrp2(pid_t);
 
 // VARS.CPP
 static inline std::string getvar(std::string const&);

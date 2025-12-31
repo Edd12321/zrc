@@ -471,7 +471,7 @@ COMMAND(trap, <n>|SIG<name>|<name> [<w1> <w2>...])
 	if (sig < 0) SYNTAX_ERROR
 	sigtraps[sig] = zrc_trap(concat(argc, argv, 2));
 	if (!interactive_sesh && dflsigs.find(sig) != dflsigs.end())
-		signal(sig, sighandler);
+		signal2(sig, sighandler);
 END
 COMMAND(untrap, <n>|SIG<name>|<name>)
 	if (argc < 2) SYNTAX_ERROR
@@ -479,7 +479,7 @@ COMMAND(untrap, <n>|SIG<name>|<name>)
 		int sig = get_sig(argv[1]);
 		if (sig < 0) SYNTAX_ERROR
 		if (!interactive_sesh && dflsigs.find(sig) != dflsigs.end())
-			signal(sig, SIG_DFL);
+			signal2(sig, SIG_DFL);
 		sigtraps.erase(sig);
 	}
 END

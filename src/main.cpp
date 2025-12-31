@@ -129,19 +129,6 @@ static inline std::string eval(std::string const& str) {
 	return eval(wlst);
 }
 
-/** Tcsetpgrp replacement **/
-int tcsetpgrp2(pid_t pgid) {
-	sigset_t mask, old;
-	sigemptyset(&mask);
-	sigaddset(&mask, SIGTTOU);
-	sigaddset(&mask, SIGTTIN);
-	sigaddset(&mask, SIGTSTP);
-	sigprocmask(SIG_BLOCK, &mask, &old);
-	int ret_val = tcsetpgrp(tty_fd, pgid);
-	sigprocmask(SIG_SETMASK, &old, NULL);
-	return ret_val;
-}
-
 static inline zrc_obj eval(std::vector<token> const& wlst) {
 	pipeline ppl;
 	command cmd;
@@ -346,7 +333,7 @@ int main(int argc, char *argv[]) {
 	fcntl(selfpipe_wrt, F_SETFL, O_NONBLOCK);
 	fcntl(selfpipe_rd, F_SETFL, O_NONBLOCK);
 	for (auto const& it : sig2txt)
-		signal(it.first, sighandler);
+		signal2(it.first, sighandler);
 	atexit([] {
 		if (login_sesh) {
 			auto pw = getpwuid(getuid());
@@ -380,7 +367,7 @@ int main(int argc, char *argv[]) {
 		eval_stream(std::cin);
 	} else {
 		for (auto const& it : dflsigs)
-			signal(it, SIG_DFL);
+			signal2(it, SIG_DFL);
 		is_script = true;
 		interactive_sesh = false;
 		if (!strcmp(argv[1], "--version")) version();
