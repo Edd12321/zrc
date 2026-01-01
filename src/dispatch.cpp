@@ -119,7 +119,10 @@ const std::map<int, std::string> sig2txt = [] {
 std::set<int> dflsigs = {SIGINT, SIGQUIT, SIGTSTP, SIGTTOU, SIGTTIN};
 int selfpipe_rd, selfpipe_wrt;
 void sighandler(int sig) {
-	write(selfpipe_wrt, &sig, sizeof sig);
+	int wrt;
+	do
+		wrt = write(selfpipe_wrt, &sig, sizeof sig);
+	while (wrt < 0 && errno != EINTR);
 }
 
 int get_sig(std::string str) {
