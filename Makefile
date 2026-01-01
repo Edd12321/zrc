@@ -6,7 +6,7 @@ SETUP_PEVAL = set -e; peval() { echo "$$1"; eval "$$1"; }
 
 # These you can
 CXX = c++
-RELFLAGS = $(CXXFLAGS) -O3
+RELFLAGS = $(CXXFLAGS) -O3 -funroll-loops
 DBGFLAGS = $(CXXFLAGS) -O0 -Wextra -g -fsanitize=address,undefined -fno-strict-aliasing -fwrapv -fno-omit-frame-pointer
 PREFIX = /usr
 SYSCONFDIR = $(DESTDIR)/etc

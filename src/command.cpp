@@ -314,10 +314,10 @@ unsigned long long jc;
  * @param {pipeline const&}ppl,{pipeline::ppl_proc_mode}status,{pid_t}pgid
  * @return int
  */
-int add_job(pipeline& ppl, pipeline::ppl_proc_mode status, pid_t pgid, pid_t last_pid, std::set<pid_t>& pids) {
+int add_job(std::string const& ppl, pipeline::ppl_proc_mode status, pid_t pgid, pid_t last_pid, std::set<pid_t>& pids) {
 	jc = jobs.empty() ? 1 : ((*jobs.rbegin()).first + 1);
 	
-	jobs[jc].ppl = (std::string)ppl;
+	jobs[jc].ppl = ppl;
 	jobs[jc].state = status;
 	jobs[jc].pgid = pgid;
 	jobs[jc].last_pid = last_pid;
@@ -325,6 +325,11 @@ int add_job(pipeline& ppl, pipeline::ppl_proc_mode status, pid_t pgid, pid_t las
 		pid2jid[it] = jc;
 	jobs[jc].pids = std::move(pids);
 	return jc;
+}
+
+int add_job(std::string const& ppl, pid_t pid) {
+	std::set<pid_t> pids = {pid};
+	return add_job(ppl, pipeline::ppl_proc_mode::FG, pid, pid, pids);
 }
 
 /** Hang up in interactive mode
@@ -529,6 +534,7 @@ inline bool pipeline::execute_act() {
 		main_shell = (interactive_sesh && getpid() == tty_pid);
 		if ((pid = fork()) == 0) {
 			reset_sigs();
+			SCOPE_EXIT { _exit(127); };
 			if (main_shell) {
 				if (!pgid)
 					pgid = getpid();
@@ -573,7 +579,6 @@ inline bool pipeline::execute_act() {
 				_exit(uint8_t(atoi(ret.c_str())));
 			}
 			perror(argv[0]);
-			_exit(127);
 		} else {
 			if (main_shell) {
 				pids.insert(pid);
@@ -657,6 +662,7 @@ inline bool pipeline::execute_act() {
 			init_semaphore();
 		if ((pid = fork()) == 0) {
 			reset_sigs();
+			SCOPE_EXIT { _exit(127); }; // just in case
 			if (main_shell) {
 				if (!pgid)
 					pgid = getpid();
@@ -677,12 +683,11 @@ inline bool pipeline::execute_act() {
 				case IS_UNKNOWN: _exit(uint8_t(atoi(functions.at("unknown")(argc, argv).c_str())));
 				case IS_NOTHING: errno = ENOENT; perror(*argv); _exit(127);
 			}
-			_exit(127); // just in case
 		} else if (main_shell) {
 			pids.insert(pid);
 			if (!pgid)
 				pgid = pid;
-			if (setpgid(pid, pgid) < 0)
+			if (setpgid(pid, pgid) < 0 && errno != EACCES && errno != ESRCH)
 				perror("setpgid (final)");
 			
 			auto jid = add_job(*this, pmode, pgid, pid, pids);	

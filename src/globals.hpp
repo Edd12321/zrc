@@ -1,6 +1,7 @@
 /*
  * Global structs, macros, classes and subroutines.
  */
+#include <sys/types.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -108,8 +109,10 @@ struct new_fd {
 
 	new_fd(int fd) {
 		index = fcntl(fd, F_DUPFD_CLOEXEC, FD_MAX + 1);
-		if (index < 0)
-			throw std::runtime_error("could not create new fd");
+		if (index < 0) {
+			perror("fcntl");
+			exit(EXIT_FAILURE);
+		}
 	}
 	~new_fd() noexcept {
 		if (index >= 0)
@@ -234,7 +237,7 @@ bool run_function(std::string);
 zrc_obj exec(int, char**);
 static inline std::string get_output(std::string const&);
 static inline std::string get_fifo(std::string const&);
-int add_job(pipeline const&, pid_t);
+int add_job(std::string const&, pid_t);
 inline void show_jobs();
 inline void disown_job(int);
 pid_t job2pid(int);

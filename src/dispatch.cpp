@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <stdint.h>
 #include <dirent.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -904,30 +905,27 @@ END
 COMMAND(@, [<eoe>])
 	if (argc == 1) return vars::status;
 
-	std::string ret_str;
-	int pd[2];
-	pipe(pd);
+	bool main_shell = (interactive_sesh && getpid() == tty_pid);
 	pid_t pid = fork();
 	if (pid == 0) {
 		reset_sigs();
-		close(pd[0]);
-		fcntl(pd[1], F_SETFD, O_CLOEXEC);
-		SCOPE_EXIT {
-			fflush(stdout);
-			dup2(pd[1], STDOUT_FILENO);
-			close(pd[1]);
-			std::cout << vars::status << std::flush;
-			_exit(0);
-		};
+		SCOPE_EXIT { _exit((uint8_t)stonum(vars::status)); };
+		if (main_shell)
+			setpgid(getpid(), pid);
 		eoe(argc, argv, 1);
 	} else {
-		close(pd[1]);
-		char c;
-		while (read(pd[0], &c, 1) >= 1)
-			ret_str += c;
-		close(pd[0]);
+		if (main_shell) {
+			if (setpgid(pid, pid) < 0 && errno != EACCES && errno != ESRCH)
+				perror("setpgid (subshell)");
+			add_job(list(argc, argv), pid);
+			if (tcsetpgrp2(pid) < 0)
+				perror("tcsetpgrp (subshell)");
+			kill(-pid, SIGCONT);
+			reaper(-pid, WUNTRACED);
+			if (tcsetpgrp2(getpgrp()) < 0)
+				perror("tcsetpgrp #2");
+		} else reaper(pid, WUNTRACED);
 	}
-	return ret_str
 END
 
 // Fork off a new process, C-style
