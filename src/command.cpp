@@ -374,16 +374,16 @@ void reaper(pid_t who, int how) {
 		}
 		int jid = pid2jid.at(pid);
 		auto& job = jobs[jid];
+		bool lproc = pid == job.last_pid;
 		if (WIFSTOPPED(status)) {
-			if (interactive_sesh)
-				tty << '[' << jid << "] Stopped" << std::endl;
+			if (interactive_sesh && lproc == 1)
+				tty << '[' << jid << "] Stopped\t" << job.ppl << std::endl;
 			if (/*who == -job.pgid && */!(how & WNOHANG))
 				return;
 			continue; 
 		}
 		job.pids.erase(pid);
 		pid2jid.erase(pid);
-		bool lproc = pid == job.last_pid;
 		if (lproc && job.state == pipeline::ppl_proc_mode::FG) {
 			if (WIFEXITED(status))
 				vars::status = numtos(WEXITSTATUS(status));
@@ -391,11 +391,11 @@ void reaper(pid_t who, int how) {
 				vars::status = numtos(128 + WTERMSIG(status));
 		}
 		if (job.pids.empty()) {
-			if (interactive_sesh) {
+			if (interactive_sesh && lproc) {
 				if (job.state == pipeline::ppl_proc_mode::BG && WIFEXITED(status))
-					tty << '[' << jid << "] Done" << std::endl;
+					tty << '[' << jid << "] Done\t" << job.ppl << std::endl;
 				else if (WIFSIGNALED(status))
-					tty << '[' << jid << "] " << strsignal(WTERMSIG(status)) << std::endl;
+					tty << '[' << jid << "] " << strsignal(WTERMSIG(status)) << '\t' << job.ppl << std::endl;
 			}
 			jobs.erase(jid);
 			if (who < -1)
