@@ -1,10 +1,24 @@
 #include <sys/ioctl.h>
 #include <termios.h>
+#include <pwd.h>
 #include <poll.h>
 #include <algorithm>
 #include <fstream>
 #include <string>
+#include <ostream>
+#include <iostream>
 #include <vector>
+#include "custom_cmd.hpp"
+#include "zlineedit.hpp"
+#include "config.hpp"
+#include "global.hpp"
+#include "vars.hpp"
+#include "syn.hpp"
+#include "sig.hpp"
+#include "path.hpp"
+
+ttybuf _ttybuf;
+std::ostream tty(&_ttybuf);
 
 void display_prompt(bool show_secondary_prompt) {
 	zrc_obj old_status = vars::status;
@@ -15,12 +29,11 @@ void display_prompt(bool show_secondary_prompt) {
 namespace line_edit {
 	long cursor_pos, histmax, histpos;
 	bool dp_list, first_word, start_bind;
-	// defined in globals.hpp
-	//std::vector<std::string> histfile;
+	std::vector<std::string> histfile;
 	std::string filename;
 	std::fstream io;
 
-	static inline void init_term(size_t& row, size_t& col) {
+	void init_term(size_t& row, size_t& col) {
 		struct winsize term;
 		ioctl(STDOUT_FILENO, TIOCGWINSZ, &term);
 		row = term.ws_row;
@@ -260,16 +273,16 @@ static inline bool zlineedit(std::string& buf) {
 	auto exec_act = [&]() {
 		if (s.empty())
 			return false;
-		if (kv_bindkey.find(s) == kv_bindkey.end())
+		if (kv_bindkey().find(s) == kv_bindkey().end())
 			s.clear();
-		if (kv_bindkey[s].zrc_cmd) {
+		if (kv_bindkey()[s].zrc_cmd) {
 			raw.toggle();
-			eval(kv_bindkey[s].cmd);
+			eval(kv_bindkey()[s].cmd);
 			raw.toggle();
-		} else if (actions.find(kv_bindkey[s].cmd) != actions.end())
-			return actions[kv_bindkey[s].cmd](buf, c);
+		} else if (actions.find(kv_bindkey()[s].cmd) != actions.end())
+			return actions[kv_bindkey()[s].cmd](buf, c);
 		else
-			std::cerr << "syntax error: Invalid line editor command " << kv_bindkey[s].cmd << std::endl;
+			std::cerr << "syntax error: Invalid line editor command " << kv_bindkey()[s].cmd << std::endl;
 		return false;
 	};
 	
@@ -294,7 +307,7 @@ static inline bool zlineedit(std::string& buf) {
 			if (read(STDIN_FILENO, &c, 1) == -1)
 				return 0;
 			s += c;
-			for (auto const& it : kv_bindkey) {
+			for (auto const& it : kv_bindkey()) {
 				if (it.first.find(s) == 0) {
 					++k_found;
 					if (it.first == s)

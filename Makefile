@@ -1,10 +1,13 @@
 .POSIX:
 # Do not override these
-SRCS = src/command.cpp src/config.hpp src/dispatch.cpp src/expr.cpp src/globals.hpp src/list.cpp src/main.cpp src/syn.cpp src/vars.cpp src/zlineedit.cpp
+SRCS = src/command.cpp src/custom_cmd.cpp src/dispatch.cpp \
+	   src/expr.cpp src/list.cpp src/main.cpp src/path.cpp \
+	   src/sig.cpp src/syn.cpp src/vars.cpp src/zlineedit.cpp
+OBJS = $(SRCS:.cpp=.o)
+DOBJS = $(SRCS:.cpp=.do)
 CXXFLAGS = -D_XOPEN_SOURCE=700 -std=c++11 -pedantic -Wno-unused-result
 SETUP_PEVAL = set -e; peval() { echo "$$1"; eval "$$1"; }
-
-# These you can
+# Override these 
 CXX = c++
 RELFLAGS = $(CXXFLAGS) -O3 -funroll-loops
 DBGFLAGS = $(CXXFLAGS) -O0 -Wextra -g -fsanitize=address,undefined -fno-strict-aliasing -fwrapv -fno-omit-frame-pointer
@@ -12,29 +15,35 @@ PREFIX = /usr
 SYSCONFDIR = $(DESTDIR)/etc
 SHELLPATH = $(DESTDIR)$(PREFIX)/bin/zrc
 
+.SUFFIXES: .cpp .o .do
+.cpp.o:
+	$(CXX) $(RELFLAGS) -c $< -o $@
+.cpp.do:
+	$(CXX) $(DBGFLAGS) -c $< -o $@
+
 # .PHONY: release
 release: bin/zrc
-bin/zrc: $(SRCS)
+bin/zrc: $(OBJS)
 	mkdir -p bin
 	@$(SETUP_PEVAL); \
 	case "$$(uname -s)" in \
 		CYGWIN*) \
 			peval 'cd img/icon && windres winico.rc winico.o && cd ../..'; \
-			peval '$(CXX) $(RELFLAGS) src/main.cpp img/icon/winico.o -o bin/zrc.exe'; \
+			peval '$(CXX) $(RELFLAGS) $(OBJS) img/icon/winico.o -o bin/zrc.exe'; \
 			peval 'strip bin/zrc.exe'; \
 			;; \
 		*) \
-			peval '$(CXX) $(RELFLAGS) src/main.cpp -o bin/zrc'; \
+			peval '$(CXX) $(RELFLAGS) $(OBJS) -o bin/zrc'; \
 			peval 'strip bin/zrc'; \
 			;; \
 	esac
 
 # .PHONY: debug
 debug: bin/zrc-debug
-bin/zrc-debug: $(SRCS)
+bin/zrc-debug: $(DOBJS)
 	@$(SETUP_PEVAL); \
 	test -d bin || peval 'mkdir -p bin'
-	$(CXX) $(DBGFLAGS) src/main.cpp -o bin/zrc-debug
+	$(CXX) $(DBGFLAGS) $(DOBJS) -o bin/zrc-debug
 
 # .PHONY: all
 all: release debug
@@ -57,7 +66,7 @@ uninstall:
 
 # .PHONY: clean
 clean:
-	rm -f bin/zrc*
+	rm -f bin/zrc* src/*.o src/*.do img/icon/*.o
 
 # .PHONY: help
 help:
@@ -67,3 +76,16 @@ help:
 	@echo install - Copy release binary to $(SHELLPATH)
 	@echo uninstall - Remove said binary
 	@echo clean - Clean bin/ folder
+
+# Track headers manually
+src/command.o src/command.do: src/custom_cmd.hpp src/command.hpp src/list.hpp src/vars.hpp src/zlineedit.hpp src/sig.hpp src/path.hpp
+src/custom_cmd.o src/custom_cmd.do: src/custom_cmd.hpp src/global.hpp src/vars.hpp src/syn.hpp
+src/dispatch.o src/dispatch.do: src/custom_cmd.hpp src/command.hpp src/global.hpp src/sig.hpp src/vars.hpp src/expr.hpp src/path.hpp src/list.hpp src/config.hpp src/syn.hpp src/zlineedit.hpp
+src/expr.o src/expr.do: src/global.hpp src/syn.hpp
+src/list.o src/list.do: src/list.hpp src/syn.hpp
+src/main.o src/main.do: src/command.hpp src/config.hpp src/custom_cmd.hpp src/expr.hpp src/global.hpp src/sig.hpp src/syn.hpp src/vars.hpp src/zlineedit.hpp
+src/path.o src/path.do: src/path.hpp src/vars.hpp
+src/sig.o src/sig.do: src/global.hpp src/command.hpp src/custom_cmd.hpp src/sig.hpp src/vars.hpp
+src/syn.o src/syn.do: src/syn.hpp src/list.hpp src/global.hpp src/config.hpp src/vars.hpp src/command.hpp
+src/vars.o src/vars.do: src/global.hpp src/syn.hpp src/vars.hpp
+src/zlineedit.o src/zlineedit.do: src/custom_cmd.hpp src/zlineedit.hpp src/config.hpp src/global.hpp src/vars.hpp src/syn.hpp src/sig.hpp src/path.hpp

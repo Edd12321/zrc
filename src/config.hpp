@@ -1,7 +1,10 @@
+#ifndef CONFIG_HPP
+#define CONFIG_HPP
 #include <string>
 #include <unordered_map>
+#include "global.hpp"
 
-#define ZVERSION         "zrc v2.6h staging"/* Version string */
+#define ZVERSION         "zrc v2.7 staging" /* Version string */
 #define ZCONF            ".zrc"             /* Configuration file */
 #define ZHIST            ".zrc_history"     /* History file */
 #define ZLOGIN1          ".zrc_profile"     /* Login filename #1 */
@@ -17,7 +20,7 @@
 #define FIFO_FILNAME     "fifo"             /* Default filename for FIFOs */
 #define FC_FILNAME       "fc"               /* Default filename for FCs */
 #define FC_EDITOR        "vi"               /* Default fallback editor for fc */
-char    LAM_STR[] =      "<lambda>";        /* ${argv 0} in a lambda, mutable for reasons */
+#define LAM_STR          "<lambda>"         /* ${argv 0} in a lambda, mutable for reasons */
 
 #define RESERVE_STR      256                /* How many bytes to reserve for string values by default */
 #define ZRC_BIND_TIMEOUT 400000             /* Line editor timeout (be careful, some values yield unexpected results */
@@ -38,25 +41,29 @@ struct bind {
 	bool zrc_cmd;
 };
 #define Sc(x) std::string(1, char(x))
-std::unordered_map<std::string, bind> kv_bindkey {
-	{ Sc(CTRL('D')), { "echo; exit"       , 1 } },
-	{ Sc(CTRL('A')), { "cursor-move-begin", 0 } },
-	{ Sc(CTRL('E')), { "cursor-move-end"  , 0 } },
-	{ Sc(BACKSPACE), { "cursor-erase"     , 0 } },
-	{ Sc(ALTBSPACE), { "cursor-erase"     , 0 } },
-	{ Sc(KEY_RET)  , { "key-return"       , 0 } },
-	{          "\t", { "expand-word"      , 0 } },
-	{            "", { "cursor-insert"    , 0 } },
+inline std::unordered_map<std::string, bind>& kv_bindkey() {
+	static std::unordered_map<std::string, bind> ret_val = {
+		{ Sc(CTRL('D')), { "echo; exit"       , 1 } },
+		{ Sc(CTRL('A')), { "cursor-move-begin", 0 } },
+		{ Sc(CTRL('E')), { "cursor-move-end"  , 0 } },
+		{ Sc(BACKSPACE), { "cursor-erase"     , 0 } },
+		{ Sc(ALTBSPACE), { "cursor-erase"     , 0 } },
+		{ Sc(KEY_RET)  , { "key-return"       , 0 } },
+		{          "\t", { "expand-word"      , 0 } },
+		{            "", { "cursor-insert"    , 0 } },
 #if defined(_WIN32)
-	{       "\033H", { "hist-go-up"       , 0 } },
-	{       "\033P", { "hist-go-down"     , 0 } },
-	{       "\033K", { "cursor-move-left" , 0 } },
-	{       "\033M", { "cursor-move-right", 0 } },
+		{       "\033H", { "hist-go-up"       , 0 } },
+		{       "\033P", { "hist-go-down"     , 0 } },
+		{       "\033K", { "cursor-move-left" , 0 } },
+		{       "\033M", { "cursor-move-right", 0 } },
 #else
-	{      "\033[A", { "hist-go-up"       , 0 } },
-	{      "\033[B", { "hist-go-down"     , 0 } },
-	{      "\033[C", { "cursor-move-right", 0 } },
-	{      "\033[D", { "cursor-move-left" , 0 } },
+		{      "\033[A", { "hist-go-up"       , 0 } },
+		{      "\033[B", { "hist-go-down"     , 0 } },
+		{      "\033[C", { "cursor-move-right", 0 } },
+		{      "\033[D", { "cursor-move-left" , 0 } },
+	};
+	return ret_val;
 #endif
 };
 #undef Sc
+#endif

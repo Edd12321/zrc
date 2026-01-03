@@ -16,12 +16,23 @@
 #include <glob.h>
 
 #include <algorithm>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <map>
 #include <stack>
 #include <string>
 #include <unordered_map>
+#include "custom_cmd.hpp"
+#include "command.hpp"
+#include "sig.hpp"
+#include "vars.hpp"
+#include "expr.hpp"
+#include "path.hpp"
+#include "list.hpp"
+#include "config.hpp"
+#include "syn.hpp"
+#include "zlineedit.hpp"
 
 // Complains when messed up syntax is encountered
 #define SYNTAX_ERROR {                                             \
@@ -82,95 +93,9 @@ std::unordered_map<std::string, std::string> help_strs;
 
 #define END ; return vars::status;} },
 
-#define SIGEXIT 0
-const std::map<std::string, int> txt2sig = {
-	{ "sighup"  , SIGHUP   }, { "sigint"   , SIGINT    }, { "sigquit", SIGQUIT },
-	{ "sigill"  , SIGILL   }, { "sigtrap"  , SIGTRAP   }, { "sigabrt", SIGABRT },
-	{ "sigbus"  , SIGBUS   }, { "sigfpe"   , SIGFPE    }, { "sigkill", SIGKILL },
-	{ "sigusr1" , SIGUSR1  }, { "sigsegv"  , SIGSEGV   }, { "sigusr2", SIGUSR2 },
-	{ "sigpipe" , SIGPIPE  }, { "sigalrm"  , SIGALRM   }, { "sigterm", SIGTERM },
-	/* #16: unused         */ { "sigchld"  , SIGCHLD   }, { "sigcont", SIGCONT },
-	{ "sigstop" , SIGSTOP  }, { "sigtstp"  , SIGTSTP   }, { "sigttin", SIGTTIN },
-	{ "sigttou" , SIGTTOU  }, { "sigurg"   , SIGURG    }, { "sigxcpu", SIGXCPU },
-	{ "sigxfsz" , SIGXFSZ  }, { "sigvtalrm", SIGVTALRM }, { "sigprof", SIGPROF },
-	{ "sigwinch", SIGWINCH }, { "sigio"    , SIGPOLL   }, { "sigpoll", SIGPOLL },
-	                          // (both SIGIO and SIGPOLL are the same)
-	{ "sigsys"  , SIGSYS   },
-
-
-#ifdef SIGPWR
-	{ "sigpwr"  , SIGPWR   },
-#endif
-#ifdef SIGRTMIN
-	{ "sigrtmin", SIGRTMIN },
-#endif
-#ifdef SIGRTMAX
-	{ "sigrtmax", SIGRTMAX },
-#endif
-	{ "sigexit" , SIGEXIT }
-	//Special zrc "pseudo-signal"
-};
-const std::map<int, std::string> sig2txt = [] {
-	std::map<int, std::string> ret;
-	for (auto const& it : txt2sig)
-		ret.emplace(it.second, it.first);
-	return ret;
-}();
-std::set<int> dflsigs = {SIGINT, SIGQUIT, SIGTSTP, SIGTTOU, SIGTTIN};
-int selfpipe_rd, selfpipe_wrt;
-void sighandler(int sig) {
-	int wrt;
-	do
-		wrt = write(selfpipe_wrt, &sig, sizeof sig);
-	while (wrt < 0 && errno != EINTR);
-}
-
-int get_sig(std::string str) {
-	auto num = stonum(str);
-	if (!isnan(num) && sig2txt.find(num) != sig2txt.end())
-		return num;
-	for (auto& c : str)
-		c = tolower(c);
-	if (str.substr(0, 3) != "sig")
-		str = "sig" + str;
-	if (txt2sig.find(str) != txt2sig.end())
-		return txt2sig.at(str);
-	return -1;
-}
-
-// Helps us to see if we can change control flow
-#define EXCEPTION_CLASS(x)                               \
-  class x##_handler : std::exception {                   \
-  public:                                                \
-    virtual const char *what() const noexcept override { \
-      return "Caught " #x;                               \
-    }                                                     \
-  };
-EXCEPTION_CLASS(fallthrough)
-EXCEPTION_CLASS(break)
-EXCEPTION_CLASS(continue)
-EXCEPTION_CLASS(return)
-EXCEPTION_CLASS(regex)
-
 bool in_loop;
 bool in_switch;
 bool in_func;
-
-class block_handler {
-private:
-	bool ok = false, *ref = &in_loop;
-public:
-	block_handler(bool *ref) {
-		this->ref = ref;
-		if (!*ref)
-			ok = true;
-		*ref = true;
-	}
-	~block_handler() {
-		if (ok)
-			*ref = false;
-	}
-};
 
 static inline std::string concat(int argc, char *argv[], int i) {
 	std::string ret;
@@ -180,14 +105,6 @@ static inline std::string concat(int argc, char *argv[], int i) {
 			ret += ' ';
 	}
 	return ret;
-}
-
-// Eval-or-exec behaviour on arguments
-static inline void eoe(int argc, char *argv[], int i) {
-	if (argc == i+1) 
-		eval(argv[i]);
-	else
-		exec(argc-i, argv+i);
 }
 
 // Match ERE
@@ -203,8 +120,6 @@ bool regex_match(std::string const& txt, std::string const& reg, int cflags = RE
 
 // Dir stack
 std::stack<std::string> pstack;
-// Path hashing
-std::unordered_map<std::string, std::string> hctable;
 
 static inline void prints(std::stack<std::string> sp) {
 	if (!sp.empty())
@@ -216,93 +131,12 @@ static inline void prints(std::stack<std::string> sp) {
 	std::cout << '\n';
 }
 
-// User functions
-struct zrc_frame {
-	bool is_fun;
-	std::string fun;
-	bool is_script;
-	std::string script;
-};
-std::vector<zrc_frame> callstack;
-
-struct zrc_custom_cmd {
-	std::string body;
-	std::vector<token> lexbody;
-	zrc_custom_cmd() = default;
-	zrc_custom_cmd(std::string const& b)
-		: body(b), lexbody(lex(b.c_str(), SEMICOLON | SPLIT_WORDS).elems) {
-	}
-	virtual ~zrc_custom_cmd() = default;
-	virtual inline zrc_obj operator()(int, char**) = 0;
-};
-
-struct zrc_fun : public zrc_custom_cmd {
-	using zrc_custom_cmd::zrc_custom_cmd;
-	inline zrc_obj operator()(int argc, char *argv[]) override {
-		zrc_obj zargc_old = vars::argc; int argc_old = ::argc;
-		zrc_arr zargv_old = std::move(vars::argv); char **argv_old = ::argv;
-		vars::argv = copy_argv(argc, argv); ::argv = argv;
-		vars::argc = numtos(argc); ::argc = argc;
-		// Break, continue and fallthrough dont work inside functions
-		bool in_switch = ::in_switch, in_loop = ::in_loop;
-		::in_switch = ::in_loop = false;
-		// For the caller command
-		bool is_fun_old = is_fun;
-		std::string fun_name_old = fun_name;
-		callstack.push_back({is_fun, fun_name, is_script, script_name});
-		is_fun = true; fun_name = argv[0];
-
-		SCOPE_EXIT {
-			vars::argc = zargc_old; ::argc = argc_old;
-			vars::argv = std::move(zargv_old); ::argv = argv_old;
-			::in_switch = in_switch, ::in_loop = in_loop;
-			is_fun = is_fun_old; fun_name = fun_name_old;
-			callstack.pop_back();
-		};
-		block_handler fh(&in_func);
-		try {
-			eval(lexbody);
-		} catch (return_handler const& ex) {
-		}
-		// Don't forget
-		return vars::status;
-	}
-};
-
-struct zrc_alias : public zrc_custom_cmd {
-	using zrc_custom_cmd::zrc_custom_cmd;
-	bool active = true;
-	
-	inline zrc_obj operator()(int argc, char *argv[]) override {
-		active = false;
-		for (int i = 1; i < argc; ++i)
-			lexbody.emplace_back(token(argv[i]));
-		SCOPE_EXIT {
-			for (int i = 1; i < argc; ++i)
-				lexbody.pop_back();
-			active = true;
-		};
-		return eval(lexbody);
-	}
-};
-
-struct zrc_trap : public zrc_custom_cmd {
-	using zrc_custom_cmd::zrc_custom_cmd;
-	bool active = true;
-
-	inline zrc_obj operator()(int = 0, char** = nullptr) override {
-		active = false;
-		SCOPE_EXIT { active = true; };
-		return eval(lexbody);
-	}
-};
-
 /*****************
  *               *
  * Command table *
  *               *
  *****************/
-CMD_TBL builtins = {
+std::unordered_map<std::string, std::function<zrc_obj(int, char**)>> builtins = {
 
 // Commands that only work in certain contexts
 #define CTRLFLOW_HELPER(x, y, help_str, z)         \
@@ -363,7 +197,7 @@ COMMAND(source, [<w1> <w2>...])  source(concat(argc, argv, 1))                  
 // Disable internal hash table
 COMMAND(unhash,               )  hctable.clear()                                   END
 // Display internal job table
-COMMAND(jobs,                 )  show_jobs()                                       END
+COMMAND(jobs,                 )  std::cout << jtable;                              END
 
 // Bash-style getopts
 COMMAND(getopts, <opt> <var>)
@@ -388,26 +222,26 @@ COMMAND(getopts, <opt> <var>)
 END
 
 // Foreground/background tasks
-#define FGBG(z, x, y)                            \
-  COMMAND(x, <n>)                                \
-    if (argc != 2) SYNTAX_ERROR                  \
-    auto n = expr::eval(argv[1]);                \
-    if (isnan(n)) SYNTAX_ERROR                   \
-	if (!interactive_sesh) {                     \
-	  std::cerr << "Can't FG/BG in a script\n";  \
-	  return "2";                                \
-	}                                            \
-    if (pid2jid.find(n) == pid2jid.end()) {      \
-      std::cerr << "Bad PID\n";                  \
-      return "3";                                \
-    }                                            \
-    kill(-getpgid(n), SIGCONT);                  \
-    jobstate(pid2jid.at(n), z); y;               \
-    if (getpid() == tty_pid && interactive_sesh) \
-       tcsetpgrp2(tty_pid)                       \
+#define FGBG(z, x, y)                                          \
+  COMMAND(x, <n>)                                              \
+    if (argc != 2) SYNTAX_ERROR                                \
+    auto n = expr::eval(argv[1]);                              \
+    if (isnan(n)) SYNTAX_ERROR                                 \
+	if (!interactive_sesh) {                                   \
+	  std::cerr << "Can't FG/BG in a script\n";                \
+	  return "2";                                              \
+	}                                                          \
+    if (jtable.pid2jid.find(n) == jtable.pid2jid.end()) {      \
+      std::cerr << "Bad PID\n";                                \
+      return "3";                                              \
+    }                                                          \
+    kill(-getpgid(n), SIGCONT);                                \
+    jtable.jid2job.at(jtable.pid2jid.at(n)).ppl.pmode = z; y;  \
+    if (getpid() == tty_pid && interactive_sesh)               \
+       tcsetpgrp2(tty_pid)                                     \
   END
-FGBG(1, fg, tcsetpgrp2(getpgid(n)); reaper(n, WUNTRACED))
-FGBG(0, bg,)
+FGBG(pipeline::proc_mode::FG, fg, tcsetpgrp2(getpgid(n)); jtable.reaper(n, WUNTRACED))
+FGBG(pipeline::proc_mode::BG, bg,)
 
 // JID to PGID
 COMMAND(job, <n>)
@@ -418,11 +252,11 @@ COMMAND(job, <n>)
 		std::cerr << "Can't get JID in a script\n";
 		return "-1";
 	}
-	if (!jobexists(x)) {
+	if (jtable.jid2job.find(x) == jtable.jid2job.end()) {
 		std::cerr << "Expected a valid JID" << std::endl;
 		return "-2";
 	}
-	return numtos(jobpgid(jobs.at(x)))
+	return numtos(jtable.jid2job.at(x).pids[0])
 END
 
 // Remove jobs from table
@@ -434,7 +268,7 @@ COMMAND(disown, <n>)
 		std::cerr << "Can't disown a job in a script\n";
 		return "2";
 	}
-	disown_job(x)
+	jtable.disown(x)
 END
 
 // Refresh internal hash table
@@ -493,7 +327,8 @@ COMMAND(apply, <eval> [<w1> <w2>...])
 	if (argc < 2) SYNTAX_ERROR
 	auto f = zrc_fun(argv[1]);
 	char *old_arg = argv[1];
-	argv[1] = LAM_STR;
+	char S[] = LAM_STR;
+	argv[1] = S;
 	try { f(argc-1, argv+1); } catch (...) { argv[1] = old_arg; throw; }
 	argv[1] = old_arg;
 END
@@ -643,7 +478,7 @@ COMMAND(fc, [-e <editor>] [-lnr] [<num>])
 	}
 	if (!lflag) {
 		fout.close();
-		invoke_void(exec, {editor.c_str(), fc_file.c_str()});
+		invoke_void([](int argc, char *argv[]) { return exec(argc, argv); }, {editor.c_str(), fc_file.c_str()});
 		source(fc_file);
 
 		unlink(fc_file.c_str());
@@ -907,28 +742,12 @@ END
 // Subshell
 COMMAND(@, [<eoe>])
 	if (argc == 1) return vars::status;
-
-	bool main_shell = (interactive_sesh && getpid() == tty_pid);
-	pid_t pid = fork();
-	if (pid == 0) {
-		reset_sigs();
-		SCOPE_EXIT { _exit((uint8_t)stonum(vars::status)); };
-		if (main_shell)
-			setpgid(getpid(), pid);
-		eoe(argc, argv, 1);
-	} else {
-		if (main_shell) {
-			if (setpgid(pid, pid) < 0 && errno != EACCES && errno != ESRCH)
-				perror("setpgid (subshell)");
-			add_job(list(argc, argv), pid);
-			if (tcsetpgrp2(pid) < 0)
-				perror("tcsetpgrp (subshell)");
-			kill(-pid, SIGCONT);
-			reaper(-pid, WUNTRACED);
-			if (tcsetpgrp2(getpgrp()) < 0)
-				perror("tcsetpgrp #2");
-		} else reaper(pid, WUNTRACED);
-	}
+	pipeline ppl;
+	command cmd;
+	for (int i = 1; i < argc; ++i)
+		cmd.add_arg(argv[i]);
+	ppl.add_cmd(std::move(cmd));
+	ppl.execute_act(true);
 END
 
 // Fork off a new process, C-style
@@ -1046,7 +865,7 @@ COMMAND(bindkey, [-c] [<seq> < <w1> <w2>...>])
 	if (argc == 2)
 		SYNTAX_ERROR
 	if (argc == 1) {
-		for (auto const& it : kv_bindkey) {
+		for (auto const& it : kv_bindkey()) {
 			std::cout << "bindkey ";
 			if (it.second.zrc_cmd)
 				std::cout << "-c ";
@@ -1060,13 +879,13 @@ COMMAND(bindkey, [-c] [<seq> < <w1> <w2>...>])
 	} else
 		b.zrc_cmd = false;
 	b.cmd = concat(argc, argv, 2);
-	kv_bindkey[argv[1]] = std::move(b);
+	kv_bindkey()[argv[1]] = std::move(b);
 END
 	
 COMMAND(unbindkey, <b1> <b2>...)
 	if (argc < 2) SYNTAX_ERROR;
 	for (int i = 1; i < argc; ++i)
-		kv_bindkey.erase(argv[i]);
+		kv_bindkey().erase(argv[i]);
 END
 
 // Change directory

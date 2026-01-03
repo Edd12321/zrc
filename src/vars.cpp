@@ -1,29 +1,12 @@
-#include <math.h>
-#include <unistd.h>
-
 #include <algorithm>
-#include <iomanip>
-#include <limits>
-#include <sstream>
+#include <iostream>
 #include <string>
 #include <unordered_map>
-
-template<typename T>
-std::string numtos(const T x) {
-	std::string content;
-	/* EMPTY */ {
-		std::stringstream ss;
-		ss << std::fixed << std::setprecision(std::numeric_limits<long double>::digits10+1) << x;
-		content = ss.str();
-	}
-	if (content.find('.') != std::string::npos) {
-		while (!content.empty() && content.back() == '0')
-			content.pop_back();
-		if (!content.empty() && content.back() == '.')
-			content.pop_back();
-	}
-	return content;
-}
+#include <math.h>
+#include <unistd.h>
+#include "global.hpp"
+#include "syn.hpp"
+#include "vars.hpp"
 
 zrc_num stonum(std::string const& str) {
 	try {
@@ -37,46 +20,14 @@ zrc_num stonum(std::string const& str) {
 namespace vars {
 	std::unordered_map<std::string, zrc_obj> vmap;
 	std::unordered_map<std::string, zrc_arr> amap;
-
 	zrc_arr& argv = amap["argv"];
-	class zrc_var {
-	private:
-		std::string key;
-	public:
-		explicit zrc_var(std::string k)
-			: key(std::move(k)) {}
-		explicit zrc_var(std::string k, std::string const& how)
-			: key(std::move(k)) {
-			setvar(key, how);
-		}
-		inline operator std::string() const {
-			return getvar(key);
-		}
-		inline zrc_obj operator=(zrc_obj const& val) const {
-			return setvar(key, val);
-		}
-		zrc_var() = delete;
-		~zrc_var() = default;
-		zrc_var& operator=(zrc_var const&) = delete;
-		zrc_var& operator=(zrc_var&&) = delete;
-		zrc_var(zrc_var const&) = delete;
-		zrc_var(zrc_var&&) = delete;
-		inline friend std::ostream& operator<<(std::ostream&, zrc_var const&);
-	} 
-#define V(o) o(#o)
-#define V2(o, u) o(#o, u)
-	V(argc), V(CDPATH), V(editor), V(EDITOR), V(ifs), V(IFS),
-	V(status), V(PATH), V(optarg), V2(opterr, std::to_string(::opterr)), V2(optind, std::to_string(::optind)), V2(prompt1, DEFAULT_PPROMPT), V2(prompt2, DEFAULT_SPROMPT),
-	V(reply)
-#if WINDOWS
-	, V(PATHEXT)
-#endif
-	;
-#undef V2
-#undef V
-	inline std::ostream& operator<<(std::ostream& out, zrc_var const& var) {
-		return out << (zrc_obj)var;
-	}
+
+#define X(name) zrc_var name(#name);
+	DECLARE_VAR0(X)
+#undef X
+#define X(name, val) zrc_var name(#name, val);
+	DECLARE_VAR1(X)
+#undef X
 }
 
 /** Get a variable's value
@@ -84,7 +35,7 @@ namespace vars {
  * @param {std::string const&}str
  * @return std::string
  */
-static inline std::string getvar(std::string const& str) {
+zrc_obj getvar(std::string const& str) {
 	using namespace vars;
 
 	auto wlst = lex(str.c_str(), SPLIT_WORDS).elems;
@@ -127,7 +78,7 @@ static inline std::string getvar(std::string const& str) {
  * @param {std::string const&}str
  * @return std::string
  */
-static inline std::string setvar(std::string const& key, zrc_obj const& val) {
+zrc_obj setvar(std::string const& key, zrc_obj const& val) {
 	using namespace vars;
 
 	auto wlst = lex(key.c_str(), SPLIT_WORDS).elems;
@@ -163,7 +114,7 @@ static inline std::string setvar(std::string const& key, zrc_obj const& val) {
  * @param {std::string const&} str
  * @return none
  */
-static inline void unsetvar(std::string const& key) {
+void unsetvar(std::string const& key) {
 	using namespace vars;
 
 	auto wlst = lex(key.c_str(), SPLIT_WORDS).elems;

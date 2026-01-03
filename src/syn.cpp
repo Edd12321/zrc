@@ -1,91 +1,58 @@
 #include <glob.h>
 #include <string.h>
-
 #include <string>
 #include <vector>
+#include "syn.hpp"
+#include "list.hpp"
+#include "global.hpp"
+#include "config.hpp"
+#include "vars.hpp"
+#include "command.hpp"
 
-struct substit {
-	enum type {
-		OUTPUT, OUTPUTQ, PBRANCH, RETURN, VARIABLE, VARIABLEB, PLAIN_TEXT
-	} tok_type;
-	std::string contents;
-	substit(type const& t, std::string&& c)
-		: tok_type(t), contents(std::move(c)) {}
-};
+token::operator std::string() const {
+	using TT = substit::type;
 
-struct token {
-	bool bareword, brac;
-	std::vector<substit> parts;
+	// This is where we do all of the substitutions.
+	std::string ret_str;
+	size_t n = 0;
+	for (auto const& it : parts) n += it.contents.length() + RESERVE_STR;
+	ret_str.reserve(n);
 
-	inline void add_part(std::string&& str, substit::type type) {
-		parts.emplace_back(type, std::move(str));
-		str.clear();
-	}
-
-	operator std::string() const {
-		using TT = substit::type;
-
-		// This is where we do all of the substitutions.
-		std::string ret_str;
-		size_t n = 0;
-		for (auto const& it : parts) n += it.contents.length() + RESERVE_STR;
-		ret_str.reserve(n);
-
-		for (auto const& it : parts) {
-			switch (it.tok_type) {
-				case TT::RETURN:
-					ret_str += eval(it.contents);
-					break;
-				case TT::PLAIN_TEXT:
-					ret_str += it.contents;
-					break;
-				case TT::VARIABLEB:
-					ret_str += getvar(it.contents);
-					break;
-				case TT::VARIABLE:
-					ret_str += getvar(subst(it.contents));
-					break;
-				case TT::OUTPUT:
-					/* empty */ {
-						static const char ws[] = " \t\n\r\f\v";
-						auto tmp = get_output(it.contents);
-						auto b = tmp.find_first_not_of(ws);
-						if (b != std::string::npos) {
-							auto e = tmp.find_last_not_of(ws);
-							ret_str += tmp.substr(b, e - b + 1);
-						}
+	for (auto const& it : parts) {
+		switch (it.tok_type) {
+			case TT::RETURN:
+				ret_str += eval(it.contents);
+				break;
+			case TT::PLAIN_TEXT:
+				ret_str += it.contents;
+				break;
+			case TT::VARIABLEB:
+				ret_str += getvar(it.contents);
+				break;
+			case TT::VARIABLE:
+				ret_str += getvar(subst(it.contents));
+				break;
+			case TT::OUTPUT:
+				/* empty */ {
+					static const char ws[] = " \t\n\r\f\v";
+					auto tmp = get_output(it.contents);
+					auto b = tmp.find_first_not_of(ws);
+					if (b != std::string::npos) {
+						auto e = tmp.find_last_not_of(ws);
+						ret_str += tmp.substr(b, e - b + 1);
 					}
-					break;
-				case TT::OUTPUTQ:
-					ret_str += get_output(it.contents);
-					break;
-				case TT::PBRANCH:
-					ret_str += get_fifo(it.contents);
-					break;
-			}
-		}
-		return ret_str;
-	}
-
-	token() : bareword(true), brac(false) {
-		parts.reserve(4);
-	}
-	
-	template<typename T>
-	token(T const& t) : bareword(true), brac(false) {
-		parts.push_back({ substit::type::PLAIN_TEXT, std::string(t) });
-	}
-};
-
-struct token_list {
-	std::vector<token> elems;
-	inline void add_word(token&& tok) {
-		if (!tok.parts.empty()) {
-			elems.emplace_back(std::move(tok));
-			tok = token();
+				}
+				break;
+			case TT::OUTPUTQ:
+				ret_str += get_output(it.contents);
+				break;
+			case TT::PBRANCH:
+				ret_str += get_fifo(it.contents);
+				break;
 		}
 	}
-};
+	return ret_str;
+}
 
 /** Return a list after performing globbing.
  *
@@ -313,13 +280,4 @@ token_list lex(const char *p, lexer_flags flags) {
 	}
 	add_remaining_txt(std::string(), 1);
 	return wlst;
-}
-
-std::string subst(const char *text) {
-	if (!*text) return std::string();
-	return lex(text, SUBSTITUTE).elems[0];
-}
-
-std::string subst(std::string const& text) {
-	return subst(text.c_str());
 }

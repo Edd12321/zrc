@@ -1,30 +1,34 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <signal.h>
 
 #include <fstream>
 #include <istream>
 #include <iostream>
+#include <stack>
 #include <string>
-#include <set>
 
+#include "config.hpp"
+#include "custom_cmd.hpp"
+#include "expr.hpp"
+#include "global.hpp"
+#include "sig.hpp"
+#include "syn.hpp"
+#include "vars.hpp"
+#include "zlineedit.hpp"
+#include "command.hpp"
+
+decltype(kv_alias) kv_alias;
+decltype(functions) functions;
 std::string script_name; bool is_script;
 std::string fun_name; bool is_fun;
+bool interactive_sesh, login_sesh, killed_sigexit;
+int tty_pid, tty_fd;
 int argc; char **argv;
-#include "globals.hpp"
-#include "config.hpp"
-
-#include "syn.cpp"
-#include "expr.cpp"
-#include "vars.cpp"
-#include "list.cpp"
-#include "dispatch.cpp"
-#include "command.cpp"
-#include "zlineedit.cpp"
 
 /** Load a file and evaluate it.
  *
@@ -53,92 +57,26 @@ bool source(std::string const& str, bool err/* = true */) {
 	}
 }
 
-/** Walk through $PATH and return its contents
- *
- * @param none
- * @return std::vector<std::string>
- */
-std::unordered_map<std::string, std::string> pathwalk() {
-	std::stringstream iss;
-	std::string tmp;
-	std::unordered_map<std::string, std::string> ret_val;
-#if WINDOWS
-	std::vector<std::string> pathext;
-	std::set<std::string> replaceable;
-	iss << vars::PATHEXT;
-	while (getline(iss, tmp, ';'))
-		pathext.push_back(tmp);
-	iss.str(std::string());
-	iss.clear();
-#endif
-	iss << vars::PATH;
-	auto is_ok_file = [&](std::string const& name, std::string const& short_name) {
-		struct stat sb;	
-		return (stat(name.c_str(), &sb) == 0)
-		&&     (S_ISREG(sb.st_mode))
-		&&     (sb.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))
-		&&     (
-#if WINDOWS
-		           replaceable.find(short_name) != replaceable.end() ||
-#endif
-		           ret_val.find(short_name) == ret_val.end()
-	           );
-	};
-	while (getline(iss, tmp, ':')) {
-		struct dirent *entry;
-		DIR *d = opendir(tmp.c_str());
-		if (d) {
-			SCOPE_EXIT { closedir(d); };
-			while ((entry = readdir(d))) {
-				std::string short_name = entry->d_name;
-				std::string full_name = tmp + "/" + short_name;
-				if (is_ok_file(full_name, short_name)) {
-					ret_val[short_name] = full_name;
-#if WINDOWS
-					bool has_ext = false;
-					for (auto const& ext : pathext) {
-						if (short_name.length() > ext.length()) {
-							size_t dif = short_name.length() - ext.length();
-							std::string suff = short_name.substr(dif);
-							if (!strcasecmp(suff.c_str(), ext.c_str())) {
-								has_ext = true;
-								std::string file_no_ext = short_name.substr(0, dif);
-								replaceable.insert(file_no_ext);
-								ret_val[file_no_ext] = full_name;
-							}
-						}
-					}
-					if (!has_ext)
-						replaceable.erase(short_name);
-#endif			
-				}
-			}
-		}
-	}
-	return ret_val;
-}
-
-
 /** Evaluate a script and return the result.
  *
  * @param {std::string const&}str
  * @return std::string
  */
-static inline std::string eval(std::string const& str) {
+zrc_obj eval(std::string const& str) {
 	auto wlst = lex(str.c_str(), SEMICOLON | SPLIT_WORDS).elems;
 	return eval(wlst);
 }
 
-static inline zrc_obj eval(std::vector<token> const& wlst) {
+zrc_obj eval(std::vector<token> const& wlst) {
 	pipeline ppl;
 	command cmd;
 	bool can_alias = true;
-	using pm = pipeline::ppl_proc_mode;
-	using rm = pipeline::ppl_run_mode;
+	using pm = pipeline::proc_mode;
+	using rm = pipeline::run_mode;
 	auto run_pipeline = [&](rm run, pm proc) {
 		ppl.pmode = proc;
 		
-		ppl.add_cmd(cmd); // Just in case
+		ppl.add_cmd(std::move(cmd)); // Just in case
 		ppl.execute();
 
 		ppl.pmode = pm::FG;
@@ -154,7 +92,7 @@ static inline zrc_obj eval(std::vector<token> const& wlst) {
 			if (conv == "||") { can_alias = true; run_pipeline(rm::OR     , pm::FG); continue; }
 			if (conv == ";")  { can_alias = true; run_pipeline(rm::NORMAL , pm::FG); continue; }
 			if (conv == "&")  { can_alias = true; run_pipeline(rm::NORMAL , pm::BG); continue; }
-			if (conv == "|")  { can_alias = true; ppl.add_cmd(cmd);                  continue; }
+			if (conv == "|")  { can_alias = true; ppl.add_cmd(std::move(cmd));       continue; }
 		}
 		
 		// Word expansion {*}
@@ -165,7 +103,7 @@ static inline zrc_obj eval(std::vector<token> const& wlst) {
 		}
 		cmd.add_arg(conv.c_str());
 	}
-	ppl.add_cmd(cmd);
+	ppl.add_cmd(std::move(cmd));
 	ppl.execute();
 	return vars::status;
 }
@@ -175,7 +113,7 @@ static inline zrc_obj eval(std::vector<token> const& wlst) {
  * @param {std::ifstream&}in,{std::string&}str
  * @return bool
  */
-bool get_phrase(std::istream& in, std::string& str) {
+static inline bool get_phrase(std::istream& in, std::string& str) {
 	// State trackers
 	bool single_quote = false;
 	bool double_quote = false;
@@ -237,7 +175,7 @@ bool get_phrase(std::istream& in, std::string& str) {
  * @param {std::istream&}in
  * @return none
  */
-static inline void eval_stream(std::istream& in) {
+void eval_stream(std::istream& in) {
 	std::string str;
 	while (get_phrase(in, str))
 		eval(str);
@@ -344,7 +282,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		if (interactive_sesh)
-			sighupper();
+			jtable.sighupper();
 		if (!killed_sigexit && sigtraps.find(SIGEXIT) != sigtraps.end())
 			sigtraps.at(SIGEXIT)();
 	});

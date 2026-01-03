@@ -1,10 +1,11 @@
-/** Return a list from args.
- *
- * @param {int}argc,{char**}argv
- * @return zrc_obj
- */
-zrc_obj list(int argc, const char *argv[]) {
-	zrc_obj ret;
+#include <string>
+#include <vector>
+#include <ctype.h>
+#include "list.hpp"
+#include "syn.hpp"
+
+std::string list(int argc, const char *argv[]) {
+	std::string ret;
 
 	for (int i = 0; i < argc; ++i) {
 		bool contains_space = false;
@@ -49,23 +50,21 @@ zrc_obj list(int argc, const char *argv[]) {
 	return ret;
 }
 
-inline zrc_obj list(int argc, char *argv[]) {
+std::string list(int argc, char *argv[]) {
 	return list(argc, const_cast<const char**>(argv));
 }
 
-/* Ditto */
-inline zrc_obj list(std::vector<token>& vec) {
-	zrc_obj ret;
+std::string list(std::string const& str) {
+	const char *argv[] = { str.c_str(), nullptr };
+	return list(1, argv);
+}
+
+std::string list(std::vector<token>& vec) {
+	std::string ret;
 	for (size_t i = 0; i < vec.size(); ++i) {
 		ret += list((std::string)vec[i]);
 		if (i < vec.size() - 1)
 			ret += ' ';
 	}
 	return ret;
-}
-
-/* Ditto */
-inline zrc_obj list(std::string const& str) {
-	const char *argv[] = { str.c_str(), nullptr };
-	return list(1, argv);
 }

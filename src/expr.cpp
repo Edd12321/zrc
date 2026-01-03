@@ -1,9 +1,11 @@
 #include <algorithm>
+#include <iostream>
 #include <unordered_map>
 #include <string>
 #include <stack>
-
 #include <math.h>
+#include "global.hpp"
+#include "syn.hpp"
 
 namespace expr {
 enum expr_assoc { LEFT, RIGHT };
@@ -278,7 +280,5 @@ zrc_num eval(const char *buf) {
 			return NAN;
 	return vals.size() == 1 ? vals.top() : complain(buf);
 }
-
-inline zrc_num eval(std::string const& str) { return eval(str.c_str()); }
 
 }
