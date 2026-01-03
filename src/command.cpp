@@ -75,36 +75,12 @@ bool pipeline::execute_act(bool in_subshell = false) {
 	std::vector<pid_t> pids;
 	// not a subshell
 	bool main_shell;
-	// release children after tcsetpgrp
-	sem_t *sem;
-	bool sem_inited = false;
 
-	auto init_semaphore = [&]() {
-		sem = (sem_t*)mmap(nullptr, sizeof(sem_t),
-				PROT_READ | PROT_WRITE,
-				MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-		if (sem == MAP_FAILED) {
-			perror("mmap");
-			exit(EXIT_FAILURE);
-		}
-		if (sem_init(sem, 1, 0) < 0) {
-			perror("sem_init");
-			exit(EXIT_FAILURE);
-		}
-		sem_inited = true;
-	};
-
-	if (cmds.size() > 1) {
+	bool need_restore = cmds.size() > 1;
+	if (need_restore)
 		old_input = fcntl(input, F_DUPFD_CLOEXEC, FD_MAX + 1);
-		init_semaphore();
-	}
-
 	SCOPE_EXIT {
-		if (sem_inited) {
-			sem_destroy(sem);
-			munmap(sem, sizeof(sem_t));
-		}
-		if (cmds.size() > 1) {
+		if (need_restore) {
 			if (old_input >= 0) {
 				dup2(old_input, STDIN_FILENO);
 				close(old_input);
@@ -127,8 +103,6 @@ bool pipeline::execute_act(bool in_subshell = false) {
 				if (!pgid)
 					pgid = getpid();
 				setpgid(0, pgid);
-				if (this->pmode == proc_mode::FG)
-					sem_wait(sem);
 			}
 			if (input != STDIN_FILENO) {
 				dup2(input, STDIN_FILENO);
@@ -245,8 +219,6 @@ bool pipeline::execute_act(bool in_subshell = false) {
 		vars::status = functions.at("unknown")(argc, argv);
 	else {
 		main_shell = (interactive_sesh && getpid() == tty_pid);
-		if (cmds.size() == 1)
-			init_semaphore();
 		if ((pid = fork()) == 0) {
 			reset_sigs();
 			SCOPE_EXIT { _exit(127); }; // just in case
@@ -254,9 +226,6 @@ bool pipeline::execute_act(bool in_subshell = false) {
 				if (!pgid)
 					pgid = getpid();
 				setpgid(0, pgid);
-				if (this->pmode == proc_mode::FG)
-					while (sem_wait(sem) == -1 && errno == EINTR)
-						;
 			}
 			if (old_input >= 0) {
 				close(old_input);
@@ -282,9 +251,7 @@ bool pipeline::execute_act(bool in_subshell = false) {
 				// Foreground jobs transfer the terminal control to the child
 				if (tcsetpgrp2(pgid) < 0)
 					perror("tcsetpgrp #1");
-				// kill(-pgid, SIGCONT);
-				for (int i = 0; i < cmds.size(); ++i)
-					sem_post(sem);
+				kill(-pgid, SIGCONT);
 				jtable.add_job(std::move(*this), std::move(pids));
 #if WINDOWS
 				struct timespec ts = { CYG_HACK_TIMEOUT }; // 4 ms
