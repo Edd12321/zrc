@@ -1,10 +1,4 @@
-#include <map>
-#include <set>
-#include <string>
-#include <math.h>
-#include <poll.h>
-#include <signal.h>
-#include <unistd.h>
+#include "pch.hpp"
 #include "global.hpp"
 #include "command.hpp"
 #include "custom_cmd.hpp"

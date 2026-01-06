@@ -94,7 +94,7 @@ fn main {
 	for {set i = 0} {$i < $m} {inc i} {
 		for {set j = 0} {$j < $m} {inc j} {
 			set {cell $i,$j} = [rand] {exp $i,$j} = 0
-			inc bombs [expr !!${cell $i,$j}]
+			inc bombs !!${cell $i,$j}
 		}
 	}
 	while 1 {

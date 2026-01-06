@@ -1,28 +1,4 @@
-#include <sys/resource.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-
-#include <stdint.h>
-#include <dirent.h>
-#include <fcntl.h>
-#include <limits.h>
-#include <math.h>
-#include <stdlib.h>
-#include <pwd.h>
-#include <string.h>
-#include <unistd.h>
-#include <regex.h>
-#include <glob.h>
-
-#include <algorithm>
-#include <fstream>
-#include <functional>
-#include <iostream>
-#include <map>
-#include <stack>
-#include <string>
-#include <unordered_map>
+#include "pch.hpp"
 #include "custom_cmd.hpp"
 #include "command.hpp"
 #include "sig.hpp"
@@ -849,7 +825,7 @@ COMMAND(alias, [<name> < <w1> <w2>...>])
 		for (auto& it : kv_alias)
 			std::cout << "alias " << list(it.first) << ' ' << list(it.second.body) << '\n';
 	else if (argc >= 3)
-		kv_alias.emplace(argv[1], concat(argc, argv, 2));
+		kv_alias[argv[1]] = concat(argc, argv, 2);
 	else SYNTAX_ERROR
 END
 

@@ -1,13 +1,4 @@
-#include <sys/ioctl.h>
-#include <termios.h>
-#include <pwd.h>
-#include <poll.h>
-#include <algorithm>
-#include <fstream>
-#include <string>
-#include <ostream>
-#include <iostream>
-#include <vector>
+#include "pch.hpp"
 #include "custom_cmd.hpp"
 #include "zlineedit.hpp"
 #include "config.hpp"

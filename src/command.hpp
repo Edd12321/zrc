@@ -1,11 +1,6 @@
 #ifndef COMMAND_HPP
 #define COMMAND_HPP
-#include <sys/types.h>
-#include <map>
-#include <string>
-#include <vector>
-#include <initializer_list>
-#include <fcntl.h>
+#include "pch.hpp"
 #include "global.hpp"
 
 // Command (word list)

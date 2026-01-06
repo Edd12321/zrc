@@ -1,6 +1,6 @@
 #ifndef CUSTOM_CMD_HPP
 #define CUSTOM_CMD_HPP
-#include <string>
+#include "pch.hpp"
 #include "syn.hpp"
 #include "global.hpp"
 

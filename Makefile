@@ -5,8 +5,18 @@ SRCS = src/command.cpp src/custom_cmd.cpp src/dispatch.cpp \
 	   src/sig.cpp src/syn.cpp src/vars.cpp src/zlineedit.cpp
 OBJS = $(SRCS:.cpp=.o)
 DOBJS = $(SRCS:.cpp=.do)
-CXXFLAGS = -D_XOPEN_SOURCE=700 -std=c++11 -pedantic -Wno-unused-result
-SETUP_PEVAL = set -e; peval() { echo "$$1"; eval "$$1"; }
+CXXFLAGS = -D_XOPEN_SOURCE=700 -std=c++11 -pedantic -Wno-unused-result -Winvalid-pch
+SETUP_CUSTOM_SH = \
+	set -e; \
+	peval() { echo "$$1"; eval "$$1"; }; \
+	case "$$($(CXX) --version | head -n 1)" in \
+		*clang*) \
+			PCH_EXT=pch; PCH_FLAGS="-x c++-header -Xclang -emit-pch" \
+			;; \
+		*) \
+			PCH_EXT=gch; PCH_FLAGS="-x c++-header" \
+			;; \
+	esac
 # Override these 
 CXX = c++
 RELFLAGS = $(CXXFLAGS) -O3 -funroll-loops
@@ -21,11 +31,10 @@ SHELLPATH = $(DESTDIR)$(PREFIX)/bin/zrc
 .cpp.do:
 	$(CXX) $(DBGFLAGS) -c $< -o $@
 
-# .PHONY: release
 release: bin/zrc
 bin/zrc: $(OBJS)
 	mkdir -p bin
-	@$(SETUP_PEVAL); \
+	@$(SETUP_CUSTOM_SH); \
 	case "$$(uname -s)" in \
 		CYGWIN*) \
 			peval 'cd img/icon && windres winico.rc winico.o && cd ../..'; \
@@ -38,38 +47,46 @@ bin/zrc: $(OBJS)
 			;; \
 	esac
 
-# .PHONY: debug
 debug: bin/zrc-debug
 bin/zrc-debug: $(DOBJS)
-	@$(SETUP_PEVAL); \
+	@$(SETUP_CUSTOM_SH); \
 	test -d bin || peval 'mkdir -p bin'
 	$(CXX) $(DBGFLAGS) $(DOBJS) -o bin/zrc-debug
 
-# .PHONY: all
 all: release debug
 
-# .PHONY: install
-install:
+src/pch-rel.stamp: src/pch.hpp
+	@$(SETUP_CUSTOM_SH); \
+	peval "$(CXX) $(RELFLAGS) $$PCH_FLAGS src/pch.hpp -o src/pch.hpp.$$PCH_EXT"; \
+	touch src/pch-rel.stamp
+src/pch-dbg.stamp: src/pch.hpp
+	@$(SETUP_CUSTOM_SH); \
+	peval "$(CXX) $(DBGFLAGS) $$PCH_FLAGS src/pch.hpp -o src/pch.hpp.$$PCH_EXT"; \
+	touch src/pch-dbg.stamp
+$(OBJS): src/pch-rel.stamp
+$(DOBJS): src/pch-dbg.stamp
+
+# Like .PHONY but portable
+FORCE: 
+
+install: FORCE
 	mkdir -p $(DESTDIR)$(PREFIX)/bin
 	cp -f bin/zrc $(SHELLPATH)
 	chmod 755 $(SHELLPATH)
-	@$(SETUP_PEVAL); \
+	@$(SETUP_CUSTOM_SH); \
 	test -d $(SYSCONFDIR) || peval 'mkdir -p $(SYSCONFDIR)'; \
 	grep 2>/dev/null -qxF $(SHELLPATH) $(SYSCONFDIR)/shells || peval 'echo $(SHELLPATH) >> $(SYSCONFDIR)/shells'
 
-# .PHONY: uninstall
-uninstall:
+uninstall: FORCE
 	rm -f $(SHELLPATH)
-	@$(SETUP_PEVAL); \
+	@$(SETUP_CUSTOM_SH); \
 	SHELLPATH_ESC=$$(printf "%s" $(SHELLPATH) | sed 's|/|\\/|g'); \
-	peval "printf "%s" 'g/$$SHELLPATH_ESC/d\nw\nq\n' | ed -s $(SYSCONFDIR)/shells"
+	peval "printf '%s' 'g/$$SHELLPATH_ESC/d\nw\nq\n' | ed -s $(SYSCONFDIR)/shells"
 
-# .PHONY: clean
-clean:
-	rm -f bin/zrc* src/*.o src/*.do img/icon/*.o
+clean: FORCE
+	rm -f bin/zrc* src/*.o src/*.do img/icon/*.o src/*.pch src/*.gch src/*.stamp
 
-# .PHONY: help
-help:
+help: FORCE
 	@echo release - Build release binary
 	@echo debug - Build debugging binary
 	@echo all - Build both

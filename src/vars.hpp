@@ -1,10 +1,6 @@
 #ifndef VARS_HPP
 #define VARS_HPP
-#include <string>
-#include <sstream>
-#include <limits>
-#include <iomanip>
-#include <unistd.h>
+#include "pch.hpp"
 #include "global.hpp"
 #include "config.hpp"
 

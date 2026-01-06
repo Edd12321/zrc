@@ -1,17 +1,4 @@
-#include <sys/resource.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <pwd.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-
-#include <fstream>
-#include <istream>
-#include <iostream>
-#include <stack>
-#include <string>
-
+#include "pch.hpp"
 #include "config.hpp"
 #include "custom_cmd.hpp"
 #include "expr.hpp"

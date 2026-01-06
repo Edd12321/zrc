@@ -1,7 +1,4 @@
-#include <glob.h>
-#include <string.h>
-#include <string>
-#include <vector>
+#include "pch.hpp"
 #include "syn.hpp"
 #include "list.hpp"
 #include "global.hpp"

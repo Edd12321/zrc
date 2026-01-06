@@ -1,8 +1,4 @@
-#include <sys/stat.h>
-#include <string>
-#include <unordered_map>
-#include <dirent.h>
-#include <strings.h>
+#include "pch.hpp"
 #include "path.hpp"
 #include "vars.hpp"
 

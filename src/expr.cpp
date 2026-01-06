@@ -1,9 +1,4 @@
-#include <algorithm>
-#include <iostream>
-#include <unordered_map>
-#include <string>
-#include <stack>
-#include <math.h>
+#include "pch.hpp"
 #include "global.hpp"
 #include "syn.hpp"
 
@@ -188,7 +183,7 @@ zrc_num eval(const char *buf) {
 	for (size_t i = 0; i < str.length(); ++i) {
 		if (isspace(str[i]))
 			continue;
-		// Parentheses
+		// Open parenthesis
 		else if (str[i] == '(') {
 			while (isspace(str[++i]))
 				;
@@ -199,6 +194,7 @@ zrc_num eval(const char *buf) {
 			ops.push(OP_LPAREN);
 			unary_here = true;
 		}
+		// Closed parenthesis
 		else if (str[i] == ')') {
 			while (!ops.empty() && ops.top() != OP_LPAREN)
 				if (!popper(buf, ops, vals))

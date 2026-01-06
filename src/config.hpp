@@ -1,7 +1,6 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
-#include <string>
-#include <unordered_map>
+#include "pch.hpp"
 #include "global.hpp"
 
 #define ZVERSION         "zrc v2.7 staging" /* Version string */

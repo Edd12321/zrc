@@ -1,11 +1,6 @@
 #ifndef GLOBAL_HPP
 #define GLOBAL_HPP
-#include <functional>
-#include <istream>
-#include <string>
-#include <unordered_map>
-#include <vector>
-#include <signal.h>
+#include "pch.hpp"
 // Macro stuff
 #ifndef WAIT_ANY
   #define WAIT_ANY -1

@@ -10,7 +10,6 @@
 #include <string>
 #include <fcntl.h>
 #include <math.h>
-#include <semaphore.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>

@@ -7,6 +7,9 @@ bin/zrc-debug
 bin/zrc.exe
 bin/zrc-debug.exe
 img/icon/*.o
+src/*.gch
+src/*.pch
+src/*.stamp
 
 # Packages:
 # 1. Arch

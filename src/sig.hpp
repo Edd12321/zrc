@@ -1,9 +1,6 @@
 #ifndef SIG_HPP
 #define SIG_HPP
-#include <map>
-#include <set>
-#include <string>
-#include <signal.h>
+#include "pch.hpp"
 #include "global.hpp"
 
 #define SIGEXIT 0

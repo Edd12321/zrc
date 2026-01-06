@@ -1,6 +1,4 @@
-#include <string>
-#include <vector>
-#include <ctype.h>
+#include "pch.hpp"
 #include "list.hpp"
 #include "syn.hpp"
 

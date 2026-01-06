@@ -1,7 +1,6 @@
 #ifndef SYN_HPP
 #define SYN_HPP
-#include <string>
-#include <vector>
+#include "pch.hpp"
 #include "global.hpp"
 
 struct substit {

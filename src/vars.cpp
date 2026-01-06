@@ -1,9 +1,4 @@
-#include <algorithm>
-#include <iostream>
-#include <string>
-#include <unordered_map>
-#include <math.h>
-#include <unistd.h>
+#include "pch.hpp"
 #include "global.hpp"
 #include "syn.hpp"
 #include "vars.hpp"

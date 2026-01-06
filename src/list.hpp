@@ -1,7 +1,6 @@
 #ifndef LIST_HPP
 #define LIST_HPP
-#include <string>
-#include <vector>
+#include "pch.hpp"
 #include "syn.hpp"
 
 std::string list(int, const char**);
