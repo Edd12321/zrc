@@ -1,10 +1,14 @@
+# Misc
 src/.*
 src/*.o
 src/*.do
 bin/zrc
-bin/zrc.exe
 bin/zrc-debug
+bin/zrc.exe
 bin/zrc-debug.exe
-pkg/zrc-*.pkg.tar.zst
-pkg/zrc
 img/icon/*.o
+
+# Packages:
+# 1. Arch
+pkg/arch/zrc-*.pkg.tar.zst
+pkg/arch/zrc
