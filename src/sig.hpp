@@ -14,7 +14,7 @@ int tcsetpgrp2(pid_t);
 sighandler_t signal2(int, sighandler_t);
 void selfpipe_trick();
 void reset_sigs();
-void sighandler(int);
+extern "C" void sighandler(int);
 int get_sig(std::string);
 
 #endif

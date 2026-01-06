@@ -103,7 +103,7 @@ void reset_sigs() {
 	}
 }
 
-void sighandler(int sig) {
+extern "C" void sighandler(int sig) {
 	int wrt;
 	do
 		wrt = write(selfpipe_wrt, &sig, sizeof sig);
