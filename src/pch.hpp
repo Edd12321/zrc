@@ -1,5 +1,9 @@
 #ifndef PCH_HPP
 #define PCH_HPP
+#ifndef __OpenBSD__
+#define _POSIX_C_SOURCE 200809L
+#define _XOPEN_SOURCE 700
+#endif
 
 // System headers
 #include <sys/ioctl.h>
@@ -28,6 +32,8 @@
 
 // C++ standard headers
 #include <algorithm>
+#include <cstdint>
+#include <cstdlib>
 #include <fstream>
 #include <functional>
 #include <initializer_list>

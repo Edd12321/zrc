@@ -15,8 +15,11 @@ const std::map<std::string, int> txt2sig = {
 	{ "sigstop" , SIGSTOP  }, { "sigtstp"  , SIGTSTP   }, { "sigttin", SIGTTIN },
 	{ "sigttou" , SIGTTOU  }, { "sigurg"   , SIGURG    }, { "sigxcpu", SIGXCPU },
 	{ "sigxfsz" , SIGXFSZ  }, { "sigvtalrm", SIGVTALRM }, { "sigprof", SIGPROF },
-	{ "sigwinch", SIGWINCH }, { "sigio"    , SIGPOLL   }, { "sigpoll", SIGPOLL },
+	{ "sigwinch", SIGWINCH },
+#ifdef SIGPOLL
+	{ "sigio"   , SIGPOLL  }, { "sigpoll"  , SIGPOLL   },
 	                          // (both SIGIO and SIGPOLL are the same)
+#endif
 	{ "sigsys"  , SIGSYS   },
 
 
