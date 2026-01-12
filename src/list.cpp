@@ -34,7 +34,8 @@ std::string list(int argc, const char *argv[]) {
 				case  '$': /* FALLTHROUGH */
 				case '\'': /* FALLTHROUGH */ 
 				case '\\':
-					ret += '\\';
+					ret += '\\', ret += c;
+					break;
 
 				default:
 					ret += c;

@@ -9,7 +9,7 @@ makedepends=('git' 'posix' 'gcc')
 source=("git+https://github.com/Edd12321/zrc.git")
 sha256sums=('SKIP')
 pkgver=2.6.r0.g2b85f78
-# options=('!debug')
+options=('!debug')
 install="zrc.install"
 
 pkgver() {

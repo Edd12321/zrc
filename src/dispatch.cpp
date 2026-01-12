@@ -562,7 +562,7 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 	std::vector<switch_case> vec;
 	using SW = switch_case::switch_type;
 
-	size_t len = wlst.size();
+	ssize_t len = wlst.size();
 	// Parse
 	for (i = 0; i < len; ++i) {
 		std::string conv = wlst[i];
@@ -619,9 +619,11 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 		fell = false;
 	}
 	// We made it this far, so nothing matched
-	if (def != -1)
-		for (i = def; i < vec.size(); ++i)
+	if (def != -1) {
+		len = vec.size();
+		for (i = def; i < len; ++i)
 			try { return eval(vec[i].block); } catch (fallthrough_handler const& ex) {}
+	}
 END
 
 // Exceptions

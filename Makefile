@@ -9,6 +9,8 @@ CXXFLAGS = -std=c++11 -pedantic -Wno-unused-result -Winvalid-pch
 SETUP_CUSTOM_SH = \
 	set -e; \
 	peval() { echo "$$1"; eval "$$1"; }; \
+	pcomp() { echo "  CXX     $$2"; eval "$$1 $$2"; }; \
+	pcdbg() { echo "  CXX (D) $$2"; eval "$$1 $$2"; }; \
 	case "$$($(CXX) --version | head -n 1)" in \
 		*clang*) \
 			PCH_EXT=pch; PCH_FLAGS="-x c++-header -Xclang -emit-pch" \
@@ -16,7 +18,7 @@ SETUP_CUSTOM_SH = \
 		*) \
 			PCH_EXT=gch; PCH_FLAGS="-x c++-header" \
 			;; \
-	esac
+	esac;
 # Override these 
 CXX = c++
 RELFLAGS = $(CXXFLAGS) -O3 -funroll-loops
@@ -24,44 +26,47 @@ DBGFLAGS = $(CXXFLAGS) -O0 -Wextra -g -fsanitize=address,undefined -fno-strict-a
 PREFIX = /usr
 SYSCONFDIR = $(DESTDIR)/etc
 SHELLPATH = $(DESTDIR)$(PREFIX)/bin/zrc
+STRIP = y
 
 .SUFFIXES: .cpp .o .do
 .cpp.o:
-	$(CXX) $(RELFLAGS) -c $< -o $@
+	@$(SETUP_CUSTOM_SH) \
+	pcomp '$(CXX) $(RELFLAGS) -c -o $@' '$<'
 .cpp.do:
-	$(CXX) $(DBGFLAGS) -c $< -o $@
+	@$(SETUP_CUSTOM_SH) \
+	pcdbg '$(CXX) $(DBGFLAGS) -c -o $@' '$<'
 
 release: bin/zrc
 bin/zrc: $(OBJS)
-	mkdir -p bin
-	@$(SETUP_CUSTOM_SH); \
+	@$(SETUP_CUSTOM_SH) \
+	[ -d bin ] || peval 'mkdir -p bin'; \
 	case "$$(uname -s)" in \
 		CYGWIN*) \
 			peval 'cd img/icon && windres winico.rc winico.o && cd ../..'; \
-			peval '$(CXX) $(RELFLAGS) $(OBJS) img/icon/winico.o -o bin/zrc.exe'; \
-			peval 'strip bin/zrc.exe'; \
+			pcomp '$(CXX) $(RELFLAGS) -o bin/zrc.exe' '$(OBJS) img/icon/winico.o'; \
+			! [ "$(STRIP)" = y ] || peval 'strip bin/zrc.exe'; \
 			;; \
 		*) \
-			peval '$(CXX) $(RELFLAGS) $(OBJS) -o bin/zrc'; \
-			peval 'strip bin/zrc'; \
+			pcomp '$(CXX) $(RELFLAGS) -o bin/zrc' '$(OBJS)'; \
+			! [ "$(STRIP)" = y ] || peval 'strip bin/zrc'; \
 			;; \
 	esac
 
 debug: bin/zrc-debug
 bin/zrc-debug: $(DOBJS)
-	@$(SETUP_CUSTOM_SH); \
-	test -d bin || peval 'mkdir -p bin'
-	$(CXX) $(DBGFLAGS) $(DOBJS) -o bin/zrc-debug
+	@$(SETUP_CUSTOM_SH) \
+	[ -d bin ] || peval 'mkdir -p bin'; \
+	pcdbg '$(CXX) $(DBGFLAGS) -o bin/zrc-debug' '$(DOBJS)'
 
 all: release debug
 
 src/pch-rel.stamp: src/pch.hpp
-	@$(SETUP_CUSTOM_SH); \
-	peval "$(CXX) $(RELFLAGS) $$PCH_FLAGS src/pch.hpp -o src/pch.hpp.$$PCH_EXT"; \
+	@$(SETUP_CUSTOM_SH) \
+	pcomp "$(CXX) $(RELFLAGS) $$PCH_FLAGS -o src/pch.hpp.$$PCH_EXT" "src/pch.hpp"; \
 	touch src/pch-rel.stamp
 src/pch-dbg.stamp: src/pch.hpp
-	@$(SETUP_CUSTOM_SH); \
-	peval "$(CXX) $(DBGFLAGS) $$PCH_FLAGS src/pch.hpp -o src/pch.hpp.$$PCH_EXT"; \
+	@$(SETUP_CUSTOM_SH) \
+	pcdbg "$(CXX) $(DBGFLAGS) $$PCH_FLAGS -o src/pch.hpp.$$PCH_EXT" "src/pch.hpp"; \
 	touch src/pch-dbg.stamp
 $(OBJS): src/pch-rel.stamp
 $(DOBJS): src/pch-dbg.stamp
@@ -70,18 +75,18 @@ $(DOBJS): src/pch-dbg.stamp
 FORCE: 
 
 install: FORCE
-	mkdir -p $(DESTDIR)$(PREFIX)/bin
-	cp -f bin/zrc $(SHELLPATH)
-	chmod 755 $(SHELLPATH)
-	@$(SETUP_CUSTOM_SH); \
-	test -d $(SYSCONFDIR) || peval 'mkdir -p $(SYSCONFDIR)'; \
+	@$(SETUP_CUSTOM_SH) \
+	[ -d $(DESTDIR)$(PREFIX)/bin ] || peval 'mkdir -p $(DESTDIR)$(PREFIX)/bin'; \
+	peval 'cp -f bin/zrc $(SHELLPATH)'; \
+	peval 'chmod 755 $(SHELLPATH)'; \
+	[ -d $(SYSCONFDIR) ] || peval 'mkdir -p $(SYSCONFDIR)'; \
 	grep 2>/dev/null -qxF $(SHELLPATH) $(SYSCONFDIR)/shells || peval 'echo $(SHELLPATH) >> $(SYSCONFDIR)/shells'
 
 uninstall: FORCE
-	rm -f $(SHELLPATH)
-	@$(SETUP_CUSTOM_SH); \
+	@$(SETUP_CUSTOM_SH) \
+	! [ -f $(SHELLPATH) ] || peval 'rm -f $(SHELLPATH)'; \
 	SHELLPATH_ESC=$$(printf "%s" $(SHELLPATH) | sed 's|/|\\/|g'); \
-	peval "printf '%s' 'g/$$SHELLPATH_ESC/d\nw\nq\n' | ed -s $(SYSCONFDIR)/shells"
+	peval "{ echo 'g/$$SHELLPATH_ESC/d'; echo 'w'; echo 'q'; } | ed -s $(SYSCONFDIR)/shells"
 
 clean: FORCE
 	rm -f bin/zrc* src/*.o src/*.do img/icon/*.o src/*.pch src/*.gch src/*.stamp
@@ -95,14 +100,14 @@ help: FORCE
 	@echo clean - Clean bin/ folder
 
 # Track headers manually
-src/command.o src/command.do: src/custom_cmd.hpp src/command.hpp src/list.hpp src/vars.hpp src/zlineedit.hpp src/sig.hpp src/path.hpp
-src/custom_cmd.o src/custom_cmd.do: src/custom_cmd.hpp src/global.hpp src/vars.hpp src/syn.hpp
-src/dispatch.o src/dispatch.do: src/custom_cmd.hpp src/command.hpp src/global.hpp src/sig.hpp src/vars.hpp src/expr.hpp src/path.hpp src/list.hpp src/config.hpp src/syn.hpp src/zlineedit.hpp
-src/expr.o src/expr.do: src/global.hpp src/syn.hpp
-src/list.o src/list.do: src/list.hpp src/syn.hpp
-src/main.o src/main.do: src/command.hpp src/config.hpp src/custom_cmd.hpp src/expr.hpp src/global.hpp src/sig.hpp src/syn.hpp src/vars.hpp src/zlineedit.hpp
-src/path.o src/path.do: src/path.hpp src/vars.hpp
-src/sig.o src/sig.do: src/global.hpp src/command.hpp src/custom_cmd.hpp src/sig.hpp src/vars.hpp
-src/syn.o src/syn.do: src/syn.hpp src/list.hpp src/global.hpp src/config.hpp src/vars.hpp src/command.hpp
-src/vars.o src/vars.do: src/global.hpp src/syn.hpp src/vars.hpp
-src/zlineedit.o src/zlineedit.do: src/custom_cmd.hpp src/zlineedit.hpp src/config.hpp src/global.hpp src/vars.hpp src/syn.hpp src/sig.hpp src/path.hpp
+src/command.o src/command.do: src/pch.hpp src/custom_cmd.hpp src/command.hpp src/list.hpp src/vars.hpp src/zlineedit.hpp src/sig.hpp src/path.hpp
+src/custom_cmd.o src/custom_cmd.do: src/pch.hpp src/custom_cmd.hpp src/global.hpp src/vars.hpp src/syn.hpp
+src/dispatch.o src/dispatch.do: src/pch.hpp src/custom_cmd.hpp src/command.hpp src/global.hpp src/sig.hpp src/vars.hpp src/expr.hpp src/path.hpp src/list.hpp src/config.hpp src/syn.hpp src/zlineedit.hpp
+src/expr.o src/expr.do: src/pch.hpp src/global.hpp src/syn.hpp
+src/list.o src/list.do: src/pch.hpp src/list.hpp src/syn.hpp
+src/main.o src/main.do: src/pch.hpp src/command.hpp src/config.hpp src/custom_cmd.hpp src/expr.hpp src/global.hpp src/sig.hpp src/syn.hpp src/vars.hpp src/zlineedit.hpp
+src/path.o src/path.do: src/pch.hpp src/path.hpp src/vars.hpp
+src/sig.o src/sig.do: src/pch.hpp src/global.hpp src/command.hpp src/custom_cmd.hpp src/sig.hpp src/vars.hpp
+src/syn.o src/syn.do: src/pch.hpp src/syn.hpp src/list.hpp src/global.hpp src/config.hpp src/vars.hpp src/command.hpp
+src/vars.o src/vars.do: src/pch.hpp src/global.hpp src/syn.hpp src/vars.hpp
+src/zlineedit.o src/zlineedit.do: src/pch.hpp src/custom_cmd.hpp src/zlineedit.hpp src/config.hpp src/global.hpp src/vars.hpp src/syn.hpp src/sig.hpp src/path.hpp

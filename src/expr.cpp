@@ -161,7 +161,7 @@ bool popper(const char *buf, std::stack<expr_optype>& ops, std::stack<zrc_num>& 
 	zrc_num x, y, z;
 	auto op = ops.top();
 	int ar = optype2ar.at(op);
-	if (vals.size() < ar) {
+	if (vals.size() < (size_t)ar) {
 		complain(buf);
 		return false;
 	}

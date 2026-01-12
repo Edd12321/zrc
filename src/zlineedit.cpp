@@ -18,7 +18,8 @@ void display_prompt(bool show_secondary_prompt) {
 }
 
 namespace line_edit {
-	long cursor_pos, histmax, histpos;
+	size_t cursor_pos;
+	long histmax, histpos;
 	bool dp_list, first_word, start_bind;
 	std::vector<std::string> histfile;
 	std::string filename;
@@ -26,7 +27,7 @@ namespace line_edit {
 
 	void init_term(size_t& row, size_t& col) {
 		struct winsize term;
-		ioctl(STDOUT_FILENO, TIOCGWINSZ, &term);
+		ioctl(tty_fd, TIOCGWINSZ, &term);
 		row = term.ws_row;
 		col = term.ws_col;
 	}
@@ -146,8 +147,7 @@ namespace line_edit {
     buf = histfile[histpos];      \
   if (cursor_pos)                 \
     CURSOR_BWD(cursor_pos);       \
-  for (long i = 0; i < len; ++i)  \
-    tty << ' ';                   \
+  tty << std::string(len, ' ');   \
   if (len)                        \
     CURSOR_BWD(len);              \
   tty << buf;                     \
