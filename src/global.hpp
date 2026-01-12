@@ -10,9 +10,9 @@
 #endif
 // \c...
 #define KEY_ESC 27
-#ifndef CTRL
-	#define CTRL(X) ((X) & 037)
-#endif
+#undef CTRL
+#define CTRL(X) (((X) == '?') ? 127 : ((X) & 037))
+#define UNDO_CTRL(X) (((X) == 127) ? '?' : ((char)((X) | '@')))
 // Bit flags
 #define ARG(...) __VA_ARGS__
 #define FLAG_TYPE(x, y)                                                       \

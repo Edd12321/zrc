@@ -32,7 +32,7 @@ const std::map<std::string, int> txt2sig = {
 #ifdef SIGRTMAX
 	{ "sigrtmax", SIGRTMAX },
 #endif
-	{ "sigexit" , SIGEXIT }
+	{ "sigexit" , SIGEXIT  }
 	//Special zrc "pseudo-signal"
 };
 const std::map<int, std::string> sig2txt = [] {

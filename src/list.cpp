@@ -37,8 +37,22 @@ std::string list(int argc, const char *argv[]) {
 					ret += '\\', ret += c;
 					break;
 
+				case   '\a': ret += "\\a"; break;
+				case   '\b': ret += "\\b"; break;
+				case '\033': ret += "\\e"; break;
+				case   '\f': ret += "\\f"; break;
+				case   '\n': ret += "\\n"; break;
+				case   '\r': ret += "\\r"; break;
+				case   '\t': ret += "\\t"; break;
+				case   '\v': ret += "\\v"; break;
 				default:
-					ret += c;
+					if (c >= CTRL('A') && c <= CTRL('Z') || c == CTRL('@')
+					||  c == CTRL('[') || c == CTRL(']') || c == CTRL('\\')
+					||  c == CTRL(']') || c == CTRL('^') || c == CTRL('_')
+					||  c == CTRL('?')) {
+						ret += "\\c";
+						ret += UNDO_CTRL(c);
+					} else ret += c;
 			}
 		}
 		if (contains_space)
