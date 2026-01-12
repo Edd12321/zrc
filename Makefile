@@ -8,7 +8,7 @@ SRCS = src/command.cpp src/custom_cmd.cpp src/dispatch.cpp                      
 OBJS = $(SRCS:.cpp=.o)
 DOBJS = $(SRCS:.cpp=.do)
 CXXFLAGS = -std=c++11 -pedantic -Wno-unused-result -Winvalid-pch
-SETUP_CUSTOM_SH =
+SETUP_CUSTOM_SH =                                                                                   \
     set -e;                                                                                         \
     peval() { echo "$$1";           eval "$$1"; };                                                  \
     pcomp() { echo "  CXX     $$2"; eval "$$1 $$2"; };                                              \
