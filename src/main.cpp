@@ -57,7 +57,7 @@ zrc_obj eval(std::string const& str) {
 zrc_obj eval(std::vector<token> const& wlst) {
 	pipeline ppl;
 	command cmd;
-	bool can_alias = true;
+	
 	using pm = pipeline::proc_mode;
 	using rm = pipeline::run_mode;
 	auto run_pipeline = [&](rm run, pm proc) {
@@ -75,11 +75,11 @@ zrc_obj eval(std::vector<token> const& wlst) {
 
 		// Command separators
 		if (wlst[i].bareword) {
-			if (conv == "&&") { can_alias = true; run_pipeline(rm::AND    , pm::FG); continue; }
-			if (conv == "||") { can_alias = true; run_pipeline(rm::OR     , pm::FG); continue; }
-			if (conv == ";")  { can_alias = true; run_pipeline(rm::NORMAL , pm::FG); continue; }
-			if (conv == "&")  { can_alias = true; run_pipeline(rm::NORMAL , pm::BG); continue; }
-			if (conv == "|")  { can_alias = true; ppl.add_cmd(std::move(cmd));       continue; }
+			if (conv == "&&") { run_pipeline(rm::AND    , pm::FG); continue; }
+			if (conv == "||") { run_pipeline(rm::OR     , pm::FG); continue; }
+			if (conv == ";")  { run_pipeline(rm::NORMAL , pm::FG); continue; }
+			if (conv == "&")  { run_pipeline(rm::NORMAL , pm::BG); continue; }
+			if (conv == "|")  { ppl.add_cmd(std::move(cmd));       continue; }
 		}
 		
 		// Word expansion {*}
