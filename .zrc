@@ -67,7 +67,7 @@ set prompt1 = {"`{
 			}
 		}"
 		echo -n "`{
-			if {[str 1 <= $s] && [str $s <= 255]} {
+			if {[str $s =~ {^[1-9][0-9]*$}] && ![str $s =~ {^0+$}]} {
 				if {[str $last_status != $s]} {
 					let {width right pos} {
 						set width = `{tput cols}

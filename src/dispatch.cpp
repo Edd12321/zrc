@@ -722,6 +722,8 @@ COMMAND(@, [<eoe>])
 	if (argc == 1) return vars::status;
 	pipeline ppl;
 	command cmd;
+	if (argc > 1)
+		cmd.add_arg("eval");
 	for (int i = 1; i < argc; ++i)
 		cmd.add_arg(argv[i]);
 	ppl.add_cmd(std::move(cmd));

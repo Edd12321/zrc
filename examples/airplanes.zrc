@@ -65,7 +65,10 @@ fn main {
 		}
 		switch $c {
 			# Begin guess phase
-			case 'p' { set phase = 2  turn = 2 }
+			case 'p' { 
+				if {$phase == 2} continue
+				set phase = 2  turn = 2
+			}
 			# Hit cockpit
 			case 'c' {
 				if {[str $$A == "<>"]} {
@@ -80,7 +83,7 @@ fn main {
 			}
 			# Miss/Hit
 			case 'm' {
-				if {$turn == 1 && ([str $$A == "\[\]"] || [str $$A == "<>"])} {
+				if {$turn == 1 && ([str $$A =~ {\[\]}] || [str $$A =~ {<>}])} {
 					set $A = "\e\[31m$$A\e\[0m"
 				} else if {[str $$A == "XX"]} {
 					set $A = "  "
