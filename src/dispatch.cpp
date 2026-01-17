@@ -1363,7 +1363,7 @@ COMMAND(arr, <a> := <list> \n
 	}
 	// Assign to array as numbered list
 	if (argc == 4 && !strcmp(argv[2], ":=")) {
-		vars::amap.erase(argv[1]);
+		vars::amap[argv[1]].clear();
 		auto wlst = lex(argv[3], SPLIT_WORDS).elems;
 		for (size_t i = 0; i < wlst.size(); ++i)
 			arr[numtos(i)] = wlst[i];
@@ -1371,7 +1371,7 @@ COMMAND(arr, <a> := <list> \n
 	}
 	// Assign to array as key/value pair
 	if (argc == 4 && !strcmp(argv[2], "=")) {
-		vars::amap.erase(argv[1]);
+		vars::amap[argv[1]].clear();
 		auto wlst = lex(argv[3], SPLIT_WORDS).elems;
 		if (wlst.size() % 2 != 0) SYNTAX_ERROR
 		for (size_t i = 0; i < wlst.size()-1; i += 2)

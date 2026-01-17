@@ -39,4 +39,5 @@ fn main {
 		}
 		echo
 	}
+	return 0
 }; main
