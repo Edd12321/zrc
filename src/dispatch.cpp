@@ -722,7 +722,7 @@ COMMAND(@, [<eoe>])
 	if (argc == 1) return vars::status;
 	pipeline ppl;
 	command cmd;
-	if (argc > 1)
+	if (argc > 2)
 		cmd.add_arg("eval");
 	for (int i = 1; i < argc; ++i)
 		cmd.add_arg(argv[i]);
@@ -774,7 +774,7 @@ COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...
 				SYNTAX_ERROR
 		}
 	}
-	auto read_str = [&]() {
+	auto read_str = [&] {
 		status = 2;
 		if (n < 0) {
 			std::string ret_val;
@@ -971,19 +971,19 @@ END
 // Filename globbing
 COMMAND(glob, [-sb?t?] <patterns...>)
 	getopt_guard gg;
-	char flags[4] = "s";
+	std::string flags = "s";
 	int opt, g_flags = GLOB_NOSORT;
 	// If your stdlib doesn't use GNU extensions,
 	// then I guess that means no tilde exp for you.
 #ifdef GLOB_BRACE
-	strcat(flags, "b");
+	flags += "b";
 #endif
 #ifdef GLOB_TILDE
-	strcat(flags, "t");
+	flags += "t";
 #endif
 	/* different help str gets generated here */ {
 	std::string help = "[-"; help += flags; help += "] <patterns...>";
-	while ((opt = getopt(argc, argv, flags)) != -1) {
+	while ((opt = getopt(argc, argv, flags.c_str())) != -1) {
 		switch (opt) {
 			case '?': SYNTAX_ERROR
 			case 's': g_flags &= ~GLOB_NOSORT; break;
@@ -1221,10 +1221,10 @@ END
 COMMAND(str, <s> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
              <s> len \n
              <s> <ind> \n
-             <s> + <ptr> \n
-             <s> <r1> <r2> \n
+             <s> + <ptrdiff> \n
+             <s> <ind> <howmuch> \n
              <s> <ind> = <c> \n
-             <s> - <ind1> <ind2>...)
+             <s> -= <ind> <howmuch>)
 
 #define STROP(x, op) if (argc == 4 && !strcmp(argv[2], #x)) return numtos(strcmp(argv[1], argv[3]) op);
 	// String comparisons
@@ -1260,29 +1260,26 @@ COMMAND(str, <s> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
 			return std::string(argv[1]+size_t(i));
 		else SYNTAX_ERROR
 	}
-	// Return string minus chars from indexes removed
-	if (argc >= 4 && !strcmp(argv[2], "-")) {
+	// Return string minus chars from range
+	if (argc == 5 && !strcmp(argv[2], "-=")) {
+		zrc_num i = expr::eval(argv[3]);
+		if (isnan(i)) SYNTAX_ERROR
+		zrc_num j = expr::eval(argv[4]);
+		if (isnan(j)) SYNTAX_ERROR
 		std::string str = argv[1];
-		for (int i = 3, k = 0; i < argc; ++i) {
-			zrc_num j = expr::eval(argv[i]);
-			if (!isnan(j) && j >= 0 && j < str.length())
-				str.erase(j-k++, 1);
-			else SYNTAX_ERROR
-		}
+		if (i < 0 || j < 0 || i >= str.length())
+			SYNTAX_ERROR
+		str.erase(i, j);
 		return str;
 	}
 	// Return string range
 	if (argc == 4) {
 		zrc_num i = expr::eval(argv[2]);
 		zrc_num j = expr::eval(argv[3]);
-		if (!isnan(i) && i >= 0 && j >= 0 && !isnan(j) && i <= j && j < strlen(argv[1])) {
-			size_t li = i, lj = j+1;
-			char c_old = argv[1][lj];
-			argv[1][lj] = '\0';
-			std::string ret_val = argv[1]+li;
-			argv[1][lj] = c_old;
-			return ret_val;
-		} else SYNTAX_ERROR
+		std::string str(argv[1]);
+		if (isnan(i) || isnan(j) || i < 0 || j < 0 || i >= str.length())
+			SYNTAX_ERROR
+		return str.substr(i, j);
 	}
 	// Return string with replaced char
 	if (argc == 5 && !strcmp(argv[3], "=")) {
@@ -1308,7 +1305,7 @@ COMMAND(arr, <a> := <list> \n
 	if (argc < 2) SYNTAX_ERROR
 	auto& arr = vars::amap[argv[1]];
 
-	auto get_sorted_keys = [&]() {
+	auto get_sorted_keys = [&] {
 		auto sort = [](std::string const& lhs, std::string const& rhs) {
 			zrc_num x, y;
 			bool x_num = true, y_num = true;
@@ -1386,10 +1383,12 @@ END
 // Tcl-style lists
 COMMAND(list, new <w1> <w2> ... \n
               len <l> \n
-              <i> <l> \n
-              <i> = <val> <l> \n
-              <i> += <val> <l> \n
+              <ind> <l> \n
+              -= <ind> <howmuch> <l> \n
+              <ind> = <val> <l> \n
+              <ind> += <val> <l> \n
               += <val> <l> \n
+              <ind> <howmuch> <l> \n
               map <lambda> <l> \n
               filter <lambda> <l> \n
               reduce <lambda> <l>)
@@ -1441,11 +1440,25 @@ COMMAND(list, new <w1> <w2> ... \n
 		}
 		return ret_val;
 	}
-
+	if (argc == 5 && !strcmp(argv[1], "-=")) {
+		auto i = expr::eval(argv[2]);
+		auto j = expr::eval(argv[3]);
+		if (i < 0 || j < 0 || i >= wlst.size())
+			SYNTAX_ERROR
+		wlst.erase(wlst.begin() + i, std::min(wlst.begin() + i + j, wlst.end()));
+		return list(wlst);
+	}
 	auto i = expr::eval(argv[1]);
 	if (isnan(i) || i < 0 || i >= wlst.size())
 		SYNTAX_ERROR
-
+	if (argc == 4) {
+		auto j = expr::eval(argv[2]);
+		if (isnan(j) || j < 0)
+			SYNTAX_ERROR
+		wlst.erase(wlst.begin(), wlst.begin() + i);
+		wlst.erase(wlst.begin() + std::min((std::size_t)j, wlst.size()), wlst.end());
+		return list(wlst);
+	}
 	// Get element at index
 	if (argc == 3) return wlst[i];
 	// Set element at index

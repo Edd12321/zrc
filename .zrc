@@ -42,10 +42,10 @@ set prompt1 = {"`{
 
 		# Fit ~ to pwd and set terminal window title
 		if {$lhome <= $lpwd} {
-			if {[str [str $pwd 0 $lhome-1] == $home]} {
+			if {[str [str $pwd 0 $lhome] == $home]} {
 				set pwd = $pwd/
-				set pwd = ~[str $pwd $lhome $lpwd]
-				set pwd = [str $pwd 0 [str $pwd len]-2]
+				set pwd = ~[str $pwd $lhome $lpwd-$lhome+1]
+				set pwd = [str $pwd 0 [str $pwd len]-1]
 			}
 		}
 		if {$__use_title} {
