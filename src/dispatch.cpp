@@ -840,10 +840,15 @@ COMMAND(unalias, <a1> <a2>...)
 END
 
 // Key bindings
-COMMAND(bindkey, [-c] [<seq> < <w1> <w2>...>])
+COMMAND(bindkey, [-l | [-c] [<seq> < <w1> <w2>...>]])
 	bind b;
-	if (argc == 2)
+	if (argc == 2) {
+		if (!strcmp(argv[1], "-l")) {
+			line_edit::use = !line_edit::use;
+			return vars::status;
+		}
 		SYNTAX_ERROR
+	}
 	if (argc == 1) {
 		for (auto const& it : kv_bindkey()) {
 			std::cout << "bindkey ";

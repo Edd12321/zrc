@@ -20,7 +20,7 @@ void display_prompt(bool show_secondary_prompt) {
 namespace line_edit {
 	size_t cursor_pos;
 	long histmax, histpos;
-	bool dp_list, first_word, start_bind;
+	bool dp_list, first_word, start_bind, use = true;
 	std::vector<std::string> histfile;
 	std::string filename;
 	std::fstream io;
@@ -328,7 +328,7 @@ static inline bool zlineedit(std::string& buf) {
 bool zrc_getline(std::istream& in, std::string& str, bool show_secondary_prompt = false) {
 	if (&in == &std::cin && isatty(fileno(stdin))) {
 		display_prompt(show_secondary_prompt);
-		return zlineedit(str);
+		return line_edit::use ? zlineedit(str) : !std::getline(in, str).fail();
 	}
 	return !std::getline(in, str).fail();
 }
