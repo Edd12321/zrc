@@ -458,40 +458,13 @@ void exec_extern(int argc, char *argv[]) {
  * @return none
  */
 zrc_obj exec(int argc, char *argv[]) {
-	// If found builtin, run
-	if (kv_alias.find(*argv) != kv_alias.end()) {
-		auto& at = kv_alias.at(*argv);
-		if (at.active)
-			vars::status = at(argc, argv);
-	}
-	// If found function, run
-	else if (functions.find(*argv) != functions.end())
-		vars::status = functions.at(*argv)(argc, argv);
-	// If found builtin, run
-	else if (builtins.find(*argv) != builtins.end())
-		vars::status = builtins.at(*argv)(argc, argv);
-	// Try to run as external
-	else {
-		auto const& map = !hctable.empty() ? hctable : pathwalk();
-		if (map.find(*argv) != map.end()) {
-			pid_t pid = fork();
-			if (pid == 0) {
-				reset_sigs();
-				execv(map.at(*argv).c_str(), argv);
-				perror(*argv);
-				_exit(127);
-			} else {
-				jtable.reaper(pid, WUNTRACED);
-			}
-		} else if (functions.find("unknown") != functions.end())
-			vars::status = functions.at("unknown")(argc, argv);
-		else {
-			errno = ENOENT;
-			perror(*argv);
-			vars::status = "127";
-		}
-	}
-	selfpipe_trick();
+	command cmd;
+	for (int i = 0; i < argc; ++i)
+		cmd.add_arg(argv[i]);
+	pipeline ppl;
+	ppl.pmode = pipeline::proc_mode::FG;
+	ppl.add_cmd(std::move(cmd));
+	ppl.execute_act();
 	return vars::status;
 }
 
