@@ -191,6 +191,30 @@ fn up {
 	for {set i = 0} {$i < ${argv 1}} {inc i} ..
 }
 
+# Extract an archive
+# (because it's hard to memorise tar commands)
+fn extract {
+	if {[test -f $1] != 0} {
+		>& 1 2 echo $1: file not found!
+		return 1
+	} else switch $1 {
+		regex {.*\.tar.bz2$} { tar xjf    $1 }
+		regex {.*\.tar.gz$}  { tar xzf    $1 }
+		regex {.*\.bz2$}     { bunzip2    $1 }
+		regex {.*\.rar$}     { unrar e    $1 }
+		regex {.*\.gz$}      { gunzip     $1 }
+		regex {.*\.tar$}     { tar xf     $1 }
+		regex {.*\.tbz2$}    { tar xjf    $1 }
+		regex {.*\.tgz$}     { unzip      $1 }
+		regex {.*\.zip$}     { uncompress $1 }
+		regex {.*\.7z$}      { 7z x       $1 }
+		default {
+			>& 1 2 echo $1 could not be extracted!
+			return 1
+		}
+	}
+}
+
 # Function from Xmodulo
 fn kernelgraph {
 	lsmod | perl -e {
