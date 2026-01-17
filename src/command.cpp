@@ -520,7 +520,8 @@ std::string get_output(std::string const& str) {
 		dup2(pd[1], STDOUT_FILENO);
 		close(pd[0]);
 		close(pd[1]);
-		SCOPE_EXIT { _exit((std::uint8_t)stonum(vars::status)); };
+		auto st = stonum(vars::status);
+		SCOPE_EXIT { _exit(std::uint8_t(!isfinite(st) ? 0 : st)); };
 		eval(str);
 	} else {
 		close(pd[1]);
