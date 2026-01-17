@@ -391,7 +391,7 @@ job_table jtable;
 //
 new_fd::new_fd(int fd) {
 	index = fcntl(fd, F_DUPFD_CLOEXEC, FD_MAX + 1);
-	if (index < 0) {
+	if (index < 0 && errno != EBADF) {
 		perror("fcntl");
 		exit(EXIT_FAILURE);
 	}
@@ -553,7 +553,7 @@ _syn_error_redir:
 
 	if (flags & OPTFD_Y) {
 		auto x = stonum(argv[1]);
-		if (!isnan(x)) {
+		if (isfinite(x)) {
 			if (x < 0 || x > FD_MAX) {
 				std::cerr << "error: Bad file descriptor " << x << '\n';
 				return "2";
@@ -569,12 +569,12 @@ _syn_error_redir:
 		return "3";
 	}
 
-	int fflags;
+	int fflags = 0;
 	if (flags & OVERWR) fflags = (O_TRUNC | O_WRONLY | O_CREAT);
 	if (flags & APPEND) fflags = (O_WRONLY | O_CREAT | O_APPEND);
 	if (flags & READFL) fflags = (O_RDONLY);
 
-	int ffd = open(argv[1], fflags, S_IWUSR | S_IRUSR);
+	int ffd = open(argv[1], fflags | O_CLOEXEC, S_IWUSR | S_IRUSR);
 	if (ffd < 0) {
 		perror(argv[1]);
 		return "4";

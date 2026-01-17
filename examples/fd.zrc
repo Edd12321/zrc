@@ -28,3 +28,4 @@ for {set i = 1} {$i <= 3} {inc i} {
 	echo Cleaning up...
 	rm file$i
 }
+exit 0

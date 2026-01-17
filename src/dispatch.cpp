@@ -202,11 +202,11 @@ END
   COMMAND(x, <n>)                                              \
     if (argc != 2) SYNTAX_ERROR                                \
     auto n = expr::eval(argv[1]);                              \
-    if (isnan(n)) SYNTAX_ERROR                                 \
-	if (!interactive_sesh) {                                   \
-	  std::cerr << "Can't FG/BG in a script\n";                \
-	  return "2";                                              \
-	}                                                          \
+    if (!isfinite(n)) SYNTAX_ERROR                             \
+    if (!interactive_sesh) {                                   \
+      std::cerr << "Can't FG/BG in a script\n";                \
+      return "2";                                              \
+    }                                                          \
     if (jtable.pid2jid.find(n) == jtable.pid2jid.end()) {      \
       std::cerr << "Bad PID\n";                                \
       return "3";                                              \
@@ -223,7 +223,7 @@ FGBG(pipeline::proc_mode::BG, bg,)
 COMMAND(job, <n>)
 	if (argc != 2) SYNTAX_ERROR
 	auto x = expr::eval(argv[1]);
-	if (isnan(x)) SYNTAX_ERROR
+	if (!isfinite(x)) SYNTAX_ERROR
 	if (!interactive_sesh) {
 		std::cerr << "Can't get JID in a script\n";
 		return "-1";
@@ -239,7 +239,7 @@ END
 COMMAND(disown, <n>)
 	if (argc != 2) SYNTAX_ERROR
 	auto x = expr::eval(argv[1]);
-	if (isnan(x)) SYNTAX_ERROR
+	if (!isfinite(x)) SYNTAX_ERROR
 	if (!interactive_sesh) {
 		std::cerr << "Can't disown a job in a script\n";
 		return "2";
@@ -424,7 +424,7 @@ COMMAND(fc, [-e <editor>] [-lnr] [<num>])
 	ssize_t num = lflag ? 15 : 1, i, len = hist.size();
 	if (optind == argc-1) {
 		zrc_num e = expr::eval(argv[optind]);
-		if (isnan(e) || e < 0) SYNTAX_ERROR
+		if (!isfinite(e) || e < 0) SYNTAX_ERROR
 		num = std::min(len, (ssize_t)e);
 	}
 	signed char dir;
@@ -532,7 +532,7 @@ COMMAND(repeat, <expr> <eoe>)
 	if (argc < 3) SYNTAX_ERROR
 
 	zrc_num exp = floor(expr::eval(argv[1]));
-	if (isnan(exp)) SYNTAX_ERROR
+	if (!isfinite(exp)) SYNTAX_ERROR
 	block_handler bh(&in_loop);
 
 	std::vector<token> lex2;
@@ -644,7 +644,7 @@ END
 // Stack trace
 COMMAND(caller, [<expr>])
 	zrc_num e = expr::eval(concat(argc, argv, 1));
-	if (isnan(e)) SYNTAX_ERROR
+	if (!isfinite(e)) SYNTAX_ERROR
 	if (e >= 0 && e < callstack.size()) {
 		zrc_frame f = callstack[callstack.size()-1-e];
 		if (f.is_fun)
@@ -1031,7 +1031,7 @@ COMMAND(chr, <expr1> <expr2>...)
 	if (argc < 2) SYNTAX_ERROR
 	std::string ret;
 	auto e = expr::eval(concat(argc, argv, 1));
-	if (isnan(e) || e < 0 || e > 255)
+	if (!isfinite(e) || e < 0 || e > 255)
 		ret = "error";
 	else
 		ret += static_cast<unsigned char>(e);
@@ -1074,7 +1074,8 @@ END
 // Close shell
 COMMAND(exit, [<val>])
 	if (argc > 2) SYNTAX_ERROR
-	if (argc < 2) exit(expr::eval(vars::status));
+	auto exp = expr::eval(vars::status);
+	if (argc < 2) exit(!isfinite(exp) ? 0 : exp);
 	else exit(atoi(argv[1]))
 END
 
@@ -1149,7 +1150,7 @@ COMMAND(rlimit, <n>[BKMGTPEZYg])
 		argv[1][len-1] = '\0';
 	}
 	zrc_num x = expr::eval(argv[1]);
-	if (isnan(x) || x < 0) SYNTAX_ERROR
+	if (!isfinite(x) || x < 0) SYNTAX_ERROR
 	rlim_t memory = x * mul;
 	struct rlimit rlm;
 
@@ -1168,7 +1169,7 @@ COMMAND(shift, [<n>])
 	long howmuch, len = vars::argv.size(), i;
 	zrc_num x = 1;
 	if (argc > 2) SYNTAX_ERROR
-	if (argc == 2 && isnan(x = expr::eval(argv[1]))) SYNTAX_ERROR
+	if (argc == 2 && (isnan(x = expr::eval(argv[1])) || x < 0)) SYNTAX_ERROR
 	howmuch = x;
 
 	if (howmuch >= len) {
@@ -1255,21 +1256,21 @@ COMMAND(str, <s> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
 	// Return string char at index
 	if (argc == 3) {
 		zrc_num i = expr::eval(argv[2]);
-		if (!isnan(i) && i >= 0 && i < strlen(argv[1]))
+		if (isfinite(i) && i >= 0 && i < strlen(argv[1]))
 			return std::string(1, argv[1][size_t(i)]);
 		else SYNTAX_ERROR
 	}
 	// Return string starting from index
 	if (argc == 4 && !strcmp(argv[2], "+")) {
 		zrc_num i = expr::eval(argv[3]);
-		if (!isnan(i) && i >= 0 && i <= strlen(argv[1]))
+		if (isfinite(i) && i >= 0 && i <= strlen(argv[1]))
 			return std::string(argv[1]+size_t(i));
 		else SYNTAX_ERROR
 	}
 	// Return string minus chars from range
 	if (argc == 5 && !strcmp(argv[2], "-=")) {
 		zrc_num i = expr::eval(argv[3]);
-		if (isnan(i)) SYNTAX_ERROR
+		if (!isfinite(i)) SYNTAX_ERROR
 		zrc_num j = expr::eval(argv[4]);
 		if (isnan(j)) SYNTAX_ERROR
 		std::string str = argv[1];
@@ -1283,14 +1284,14 @@ COMMAND(str, <s> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
 		zrc_num i = expr::eval(argv[2]);
 		zrc_num j = expr::eval(argv[3]);
 		std::string str(argv[1]);
-		if (isnan(i) || isnan(j) || i < 0 || j < 0 || i >= str.length())
+		if (!isfinite(i) || isnan(j) || i < 0 || j < 0 || i >= str.length())
 			SYNTAX_ERROR
 		return str.substr(i, j);
 	}
 	// Return string with replaced char
 	if (argc == 5 && !strcmp(argv[3], "=")) {
 		zrc_num i = expr::eval(argv[2]);
-		if (!isnan(i) && i >= 0 && i < strlen(argv[1])) {
+		if (isfinite(i) && i >= 0 && i < strlen(argv[1])) {
 			argv[1][size_t(i)] = argv[4][0];
 			return argv[1];
 		} else SYNTAX_ERROR
@@ -1428,7 +1429,7 @@ COMMAND(list, new <w1> <w2> ... \n
 		for (size_t i = 0; i < wlst.size(); ++i) {
 			std::string str = wlst[i];
 			auto e = expr::eval(invoke(f, {LAM_STR, str.c_str()}));
-			if (isnan(e) || !e)
+			if (!isfinite(e) || !e)
 				wlst.erase(wlst.begin() + i--);
 		}
 		return list(wlst);
@@ -1457,7 +1458,7 @@ COMMAND(list, new <w1> <w2> ... \n
 		return list(wlst);
 	}
 	auto i = expr::eval(argv[1]);
-	if (isnan(i) || i < 0 || i >= wlst.size())
+	if (!isfinite(i) || i < 0 || i >= wlst.size())
 		SYNTAX_ERROR
 	if (argc == 4) {
 		auto j = expr::eval(argv[2]);
@@ -1502,19 +1503,22 @@ COMMAND(>&, [<fd1>] <fd2> <eoe>)
 	auto fd1 = stonum(argv[1]), fd2 = stonum(argv[2]);
 
 	bool is_valid = good_fd(fd1);
-	if (isnan(fd1) || fd1 < 0 || fd1 > FD_MAX) {
-		std::cerr << "error: Bad file descriptor " << fd1 << '\n';
+	if (!isfinite(fd1) || fd1 < 0 || fd1 > FD_MAX) {
+		std::cerr << ">&: " << fd1 << " out of range\n";
 		return "2";
 	}
-	if (!isnan(fd2)) {
+	if (isfinite(fd2)) {
 		if (argc < 4) SYNTAX_ERROR
 		--argc, ++argv;
 	} else
 		fd2 = fd1, fd1 = STDOUT_FILENO;
-	if (fd2 < 0 || fd2 > FD_MAX || !good_fd(fd2)) {
-		std::cerr << "error: Bad file descriptor " << fd2 << '\n';
+	if (fd2 < 0 || fd2 > FD_MAX) {
+		std::cerr << ">&: " << fd2 << " out of range\n";
 		return "3";
 	}
+	if (!good_fd(fd2))
+		return builtins.at(">&-")(--argc, ++argv);
+	
 	new_fd fd(fd1);
 	dup2(fd2, fd1);
 	SCOPE_EXIT {
@@ -1530,22 +1534,35 @@ COMMAND(>&-, [<fd>] <eoe>)
 	if (argc < 2) SYNTAX_ERROR
 
 	auto fd = stonum(argv[1]);
-	if (!isnan(fd)) {
+	if (isfinite(fd)) {
 		if (argc < 3) SYNTAX_ERROR
 		--argc, ++argv;
 	} else
 		fd = STDOUT_FILENO;
 	bool is_valid = good_fd(fd);
-	if (fd < 0 || fd > FD_MAX || !is_valid) {
-		std::cerr << "error: Bad file descriptor " << fd << '\n';
+	if (fd < 0 || fd > FD_MAX) {
+		std::cerr << ">&-: " << fd << " out of range\n";
+		SYNTAX_ERROR
 		return "2";
 	}
-
-	new_fd nfd(fd);
-	close(fd);
+	int int_fd = fd;
+	std::ostream *os = nullptr;
+	if (int_fd == STDOUT_FILENO) os = &std::cout;
+	if (int_fd == STDERR_FILENO) os = &std::cerr;
+	if (os) os->flush();
+	new_fd nfd(int_fd);
+	close(int_fd);
 	SCOPE_EXIT {
+		if (os) {
+			os->clear();
+			int fd = open("/dev/null", O_WRONLY);
+			dup2(fd, int_fd); close(fd);
+			if (fd >= 0)
+				os->flush();
+			os->clear();
+		}
 		if (is_valid)
-			dup2(nfd, fd);
+			dup2(nfd, int_fd);
 	};
 	eoe(argc, argv, 1);
 END
