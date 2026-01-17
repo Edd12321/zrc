@@ -107,10 +107,12 @@ void reset_sigs() {
 }
 
 extern "C" void sighandler(int sig) {
-	int wrt;
+	ssize_t wrt;
+	int saved_errno = errno;
 	do
 		wrt = write(selfpipe_wrt, &sig, sizeof sig);
-	while (wrt < 0 && errno != EINTR);
+	while (wrt == -1 && errno == EINTR);
+	errno = saved_errno;
 }
 
 int get_sig(std::string str) {

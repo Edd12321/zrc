@@ -1,0 +1,11 @@
+#!/usr/bin/env zrc
+select var {Foo Bar Abc Pizza Exit} {
+	if {![str $var len]} {
+		>& 2 1 echo "Bad choice '$reply'"
+		continue
+	}
+	echo Reply is $reply, string is $var.
+	if {$reply == 5} {
+		exit 69
+	}
+}

@@ -118,7 +118,13 @@ static inline zrc_obj exec(command& cmd) {
 	return exec(cmd.argc(), cmd.argv());
 }
 static inline bool good_fd(int fd) {
-	return fcntl(fd, F_GETFD) != -1 || errno != EBADF;
+	int ret, saved_errno = errno;
+	do
+		ret = fcntl(fd, F_GETFD);
+	while (ret == -1 && errno == EINTR);
+	bool ok = ret != -1;
+	errno = saved_errno;
+	return ok;
 }
 
 #endif

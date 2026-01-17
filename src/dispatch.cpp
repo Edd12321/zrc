@@ -687,19 +687,20 @@ COMMAND(select, <var> <list> <eoe>)
 	if (argc < 4) SYNTAX_ERROR
 	block_handler lh(&in_loop);
 	auto vlst = lex(argv[2], SPLIT_WORDS).elems;
-	std::map<std::string, int> ind;
+	std::map<int, std::string> ind;
 	for (size_t i = 0; i < vlst.size(); ++i) {
-		auto evald = list(vlst[i]);
-		ind[evald] = i + 1;
+		ind[i + 1] = vlst[i];
 		std::cout << i + 1 << ") " << list(vlst[i]) << '\n';
 	}
 	for (;;) {
 		try {
 			std::string str;
-			invoke_void(builtins.at("read"), {"read", argv[1]});
-			auto var = getvar(argv[1]);
-			if (ind.find(var) != ind.end())
-				vars::reply = std::to_string(ind[var]);
+			invoke_void(builtins.at("read"), {"read", "-p", std::string(vars::prompt2).c_str(), "reply"});
+			zrc_obj var = vars::reply;
+			auto num = stonum(var);
+			if (ind.find(num) != ind.end())
+				setvar(argv[1], ind[num]);
+			else setvar(argv[1], "");
 			eoe(argc, argv, 3);
 		} catch (break_handler const& ex) {
 			break;
@@ -765,7 +766,7 @@ COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...
 				n = expr::eval(optarg);
 				break;
 			case 'p':
-				prompt = optarg;
+				prompt = subst(optarg);
 				break;
 			case 'f':
 				fd = expr::eval(optarg);
