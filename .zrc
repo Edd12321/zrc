@@ -59,7 +59,7 @@ set prompt1 = {"`{
 		# Part 2: cwd (git branch) [optional status]>
 		echo -n ${green}${pwd}
 		echo -n ${reset}"`{
-			>&- 2 > 1 /dev/null git tag
+			>&- 2 > /dev/null git tag
 			if {!($status)} {
 				echo -n " ("
 				git branch | grep ^* | colrm 1 2 | tr -d '\n'
@@ -128,6 +128,7 @@ fn enable_lsd {
 fn soundchk { timeout 0.15 aplay /dev/random }
 fn life { ffplay -f lavfi -i life }
 fn xkcd { $BROWSER https://xkcd.com/${argv 1}}
+fn cowfort { fortune | cowsay -f `{ls /usr/share/cowsay/cows | shuf -n1} }
 
 # Aliases
 enable_lsd
@@ -174,6 +175,16 @@ alias forever "while 1"
 
 fn mkcd { mkdir ${argv 1} && cd ${argv 1} }
 fn lcd  { cd ${argv 1} && l }
+fn pzf {
+	let {al} {
+		set al = `{help pacman}
+		unalias pacman
+		pacman -Slq \
+			| fzf --multi --preview 'pacman -Si {1}' \
+			| xargs -ro sudo pacman -S
+		eval $al
+	}
+}
 
 # Rot13 is a very common cipher for some reason
 fn rot13 {
@@ -188,29 +199,55 @@ fn rot13 {
 
 # go up n times
 fn up {
+	if {![str ${argv 1} =~ {^[1-9][0-9]*$}]} {
+		set {argv 1} = 1
+	}
 	for {set i = 0} {$i < ${argv 1}} {inc i} ..
+	return 0
+}
+
+# laptop
+fn battery {
+	let {b} {
+		foreach b [glob /sys/class/power_supply/BAT*] {
+			echo -n `{basename $b}: ''
+			echo `{< $b/capacity read} (`{< $b/capacity_level read})
+		}
+	}
 }
 
 # Extract an archive
 # (because it's hard to memorise tar commands)
 fn extract {
-	if {[test -f $1] != 0} {
-		>& 1 2 echo $1: file not found!
+	if {$argc < 2 || [str $1 =~ {^(--help|-h)$}]} {
+		>& 1 2 echo usage: $0 <file1> <file2>...
 		return 1
-	} else switch $1 {
-		regex {.*\.tar.bz2$} { tar xjf    $1 }
-		regex {.*\.tar.gz$}  { tar xzf    $1 }
-		regex {.*\.bz2$}     { bunzip2    $1 }
-		regex {.*\.rar$}     { unrar e    $1 }
-		regex {.*\.gz$}      { gunzip     $1 }
-		regex {.*\.tar$}     { tar xf     $1 }
-		regex {.*\.tbz2$}    { tar xjf    $1 }
-		regex {.*\.tgz$}     { unzip      $1 }
-		regex {.*\.zip$}     { uncompress $1 }
-		regex {.*\.7z$}      { 7z x       $1 }
-		default {
-			>& 1 2 echo $1 could not be extracted!
-			return 1
+	}
+	let {i} {
+		for {set i = 1} {$i < $argc} {inc i} {
+			if {[test -f $$i] != 0} {
+				>& 1 2 echo $$i: file not found!
+				continue
+			}
+			switch $$i {
+				regex {.*(\.tar\.bz2|\.tbz2|\.tbz)$} { tar xvjf $$i }
+				regex {.*\.tgz$}                     { tar zxvf $$i }
+				regex {.*\.tar\.gz$}                 { tar xvzf $$i }
+				regex {.*\.tar\.xz$}                 { tar xvJf $$i }
+				regex {.*\.tar$}                     { tar xvf $$i }
+				regex {.*\.rar$}                     { fallthrough }
+				regex {.*\.7z$}                      { 7z x $$i }
+				regex {.*\.zip$}                     { unzip $$i }
+				regex {.*\.lzo$}                     { lzop -d $$i }
+				regex {.*\.gz$}                      { gunzip $$i }
+				regex {.*\.bz2$}                     { bunzip2 $$i }
+				regex {.*\.Z$}                       { uncompress $$i }
+				regex {.*(\.xz|\.txz|\.lzma|\.tlz)$} { xz -d $$i }
+				default {
+					>& 1 2 echo $$i could not be extracted!
+					return 1
+				}
+			}
 		}
 	}
 }
