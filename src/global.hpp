@@ -62,6 +62,8 @@ extern std::string script_name; extern bool is_script;
 extern std::string fun_name; extern bool is_fun;
 extern bool in_loop, in_switch, in_func;
 extern std::vector<zrc_frame> callstack;
+extern std::map<int, std::string> eval_defer;
+extern int eval_level;
 
 // Functions in main
 bool source(std::string const&, bool = false);

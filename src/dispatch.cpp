@@ -641,6 +641,16 @@ COMMAND(try, <eval> catch <name> <eoe>)
 	}
 END
 
+// RAII in shell (it is getting too powerful)
+COMMAND(defer, <eoe>)
+	if (argc < 2) SYNTAX_ERROR
+	if (argc == 2)
+		eval_defer[eval_level] = argv[1] + ("\n\n" + eval_defer[eval_level]);
+	else eval_defer[eval_level] = "{*}{"
+		+ list(argc - 1, argv + 1) + "}\n\n"
+		+ eval_defer[eval_level];
+END
+
 // Stack trace
 COMMAND(caller, [<expr>])
 	zrc_num e = expr::eval(concat(argc, argv, 1));

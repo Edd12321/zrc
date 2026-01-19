@@ -49,6 +49,8 @@ bool source(std::string const& str, bool err/* = true */) {
  * @param {std::string const&}str
  * @return std::string
  */
+int eval_level;
+std::map<int, std::string> eval_defer;
 zrc_obj eval(std::string const& str) {
 	auto wlst = lex(str.c_str(), SEMICOLON | SPLIT_WORDS).elems;
 	return eval(wlst);
@@ -68,6 +70,15 @@ zrc_obj eval(std::vector<token> const& wlst) {
 
 		ppl.pmode = pm::FG;
 		ppl.rmode = run;
+	};
+
+	++eval_level;
+	SCOPE_EXIT {
+		if (eval_defer.find(eval_level) != eval_defer.end()) {
+			eval(eval_defer.at(eval_level));
+			eval_defer.erase(eval_level);
+		}
+		--eval_level;
 	};
 
 	for (size_t i = 0; i < wlst.size(); ++i) {
