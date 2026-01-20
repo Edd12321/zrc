@@ -10,7 +10,7 @@ Zrc is a small scripting language for Linux, BSD, etc. written in C++ (interpret
 
 ## Features left to implement:
 
-- [X] Path hashing/caching
+- [X] Path hashing/caching (`unhash`, `rehash`)
 - [X] Cdpath support
 - [X] Home directory config file (`~/.zrc`)
 - [X] Aliases
@@ -67,6 +67,8 @@ Zrc is a small scripting language for Linux, BSD, etc. written in C++ (interpret
 	- [X] Switch
     - [X] Select
     - [X] Try/catch, throw
+    - [X] Defer (non-exit only)
+    - [X] Script exit cleanup (`trap EXIT ...`)
 	- [X] Subshell (`@ {...}`)
 	- [X] Lexial scoping (`let`)
 	- [X] Until
@@ -89,7 +91,7 @@ Zrc is a small scripting language for Linux, BSD, etc. written in C++ (interpret
     - [ ] `regcomp`
 - [ ] Pleasant interactive shell
 	- [X] History file
-        - [X] Command fixing
+        - [X] Command fixing (`fc`)
     - [X] Login shell session
 	- [X] Line editor
 	- [X] Tab completion (need to re-implement)
