@@ -5,7 +5,10 @@
 
 zrc_num stonum(std::string const& str) {
 	try {
-		zrc_num ret = std::stold(str);
+		size_t idx;
+		zrc_num ret = std::stold(str, &idx);
+		if (idx != str.size())
+			return NAN;
 		return ret;
 	} catch (std::exception& ex) {
 		return NAN;

@@ -74,7 +74,7 @@ zrc_obj eval(std::vector<token> const& wlst) {
 
 	++eval_level;
 	SCOPE_EXIT {
-		if (eval_defer.find(eval_level) != eval_defer.end()) {
+		if (eval_level > 1 && eval_defer.find(eval_level) != eval_defer.end()) {
 			eval(eval_defer.at(eval_level));
 			eval_defer.erase(eval_level);
 		}
@@ -175,6 +175,10 @@ static inline bool get_phrase(std::istream& in, std::string& str) {
  */
 void eval_stream(std::istream& in) {
 	std::string str;
+	SCOPE_EXIT {
+		if (!eval_level && eval_defer.find(1) != eval_defer.end())
+			eval(eval_defer.at(1));
+	};
 	while (get_phrase(in, str))
 		eval(str);
 }
@@ -309,9 +313,13 @@ int main(int argc, char *argv[]) {
 		if (!strcmp(argv[1], "--version")) version();
 		if (!strcmp(argv[1], "--help")) usage();
 		if (!strcmp(argv[1], "-c")) {
-			if (argc == 3)
+			if (argc == 3) {
+				SCOPE_EXIT {
+					if (!eval_level && eval_defer.find(1) != eval_defer.end())
+						eval(eval_defer.at(1));
+				};
 				eval(argv[2]);
-			else
+			} else
 				usage();
 		} else {
 			// Don't use source so `caller` is empty
