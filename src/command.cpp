@@ -258,6 +258,7 @@ bool pipeline::execute_act(bool in_subshell = false) {
 				tty << '[' << jid << "] " << std::endl;
 			}
 		} else {
+			pids.push_back(pid);
 			jtable.add_job(std::move(*this), std::move(pids));
 			if (this->pmode == proc_mode::FG)
 				jtable.reaper(pid, WUNTRACED);

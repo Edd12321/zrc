@@ -203,10 +203,6 @@ END
     if (argc != 2) SYNTAX_ERROR                                \
     auto n = expr::eval(argv[1]);                              \
     if (!isfinite(n)) SYNTAX_ERROR                             \
-    if (!interactive_sesh) {                                   \
-      std::cerr << "Can't FG/BG in a script\n";                \
-      return "2";                                              \
-    }                                                          \
     if (jtable.pid2jid.find(n) == jtable.pid2jid.end()) {      \
       std::cerr << "Bad PID\n";                                \
       return "3";                                              \
@@ -224,10 +220,6 @@ COMMAND(job, <n>)
 	if (argc != 2) SYNTAX_ERROR
 	auto x = expr::eval(argv[1]);
 	if (!isfinite(x)) SYNTAX_ERROR
-	if (!interactive_sesh) {
-		std::cerr << "Can't get JID in a script\n";
-		return "-1";
-	}
 	if (jtable.jid2job.find(x) == jtable.jid2job.end()) {
 		std::cerr << "Expected a valid JID" << std::endl;
 		return "-2";
@@ -240,10 +232,6 @@ COMMAND(disown, <n>)
 	if (argc != 2) SYNTAX_ERROR
 	auto x = expr::eval(argv[1]);
 	if (!isfinite(x)) SYNTAX_ERROR
-	if (!interactive_sesh) {
-		std::cerr << "Can't disown a job in a script\n";
-		return "2";
-	}
 	jtable.disown(x)
 END
 
