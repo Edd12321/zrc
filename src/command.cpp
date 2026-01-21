@@ -556,16 +556,60 @@ _syn_error_redir:
 		return "3";
 	}
 
-	int fflags = 0;
+	int fflags = 0, ffd;
 	if (flags & OVERWR) fflags = (O_TRUNC | O_WRONLY | O_CREAT);
 	if (flags & APPEND) fflags = (O_WRONLY | O_CREAT | O_APPEND);
 	if (flags & READFL) fflags = (O_RDONLY);
 	if (flags & RDWRFL) fflags = (O_RDWR | O_CREAT);
 
-	int ffd = open(argv[1], fflags | O_CLOEXEC, S_IWUSR | S_IRUSR);
-	if (ffd < 0) {
-		perror(argv[1]);
-		return "4";
+	//
+	// Networking like in bash (udp/tcp)
+	//
+	char *found;
+	std::string addr, port;
+	bool tcp = !strncmp(argv[1], "/dev/tcp/", 9);
+	bool udp = !strncmp(argv[1], "/dev/udp/", 9);
+	if (tcp || udp) {
+		if ((found = strchr(argv[1] + 9, '/')) && *(found + 1)) {
+			*found = '\0', addr = argv[1] + 9, *found = '/';
+			port = found + 1;
+		} else tcp = udp = false;
+	}
+	if (tcp || udp) {
+		// stolen from getaddrinfo manpage
+		struct addrinfo *result, *rp;
+		struct addrinfo hints{0};
+		hints.ai_family = AF_UNSPEC;
+		hints.ai_flags = AI_ADDRCONFIG;
+		hints.ai_protocol = 0;
+		hints.ai_socktype = tcp ? SOCK_STREAM : SOCK_DGRAM;
+		int s = getaddrinfo(addr.c_str(), port.c_str(), &hints, &result);
+		if (s != 0) {
+			std::cerr << "getaddrinfo: " << gai_strerror(s) << std::endl;
+			return "4";
+		}
+		for (rp = result; rp; rp = rp->ai_next) {
+			ffd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+			if (ffd == -1)
+				continue;
+			if (connect(ffd, rp->ai_addr, rp->ai_addrlen) != -1)
+				break;
+			close(ffd);
+		}
+		freeaddrinfo(result);
+		if (!rp) {
+			std::cerr << argv[0] << ": Could not connect\n";
+			return "4";
+		}
+	//
+	// Normal
+	//
+	} else {
+		ffd = open(argv[1], fflags | O_CLOEXEC, S_IWUSR | S_IRUSR);
+		if (ffd < 0) {
+			perror(argv[1]);
+			return "4";
+		}
 	}
 	new_fd nfd(fd);
 	dup2(ffd, fd);

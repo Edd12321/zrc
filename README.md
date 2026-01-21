@@ -15,6 +15,7 @@ Zrc is a small scripting language for Linux, BSD, etc. written in C++ (interpret
 - [X] Home directory config file (`~/.zrc`)
 - [X] Aliases
 - [X] **Rich return values** (not just 0-255, but any string)
+- [X] Sockets (`/dev/tcp/ADDR/PORT` or `/dev/udp/ADDR/PORT`)
 - [X] Complex I/O handling (control flow, functions, built-ins and commands can be seamlessly piped together)
 - [X] Getopts
 - [X] Login/Logout file sourcing

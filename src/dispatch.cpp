@@ -840,7 +840,7 @@ END
 
 // Key bindings
 COMMAND(bindkey, [-l | [-c] [<seq> < <w1> <w2>...>]])
-	bind b;
+	zrc_bind b;
 	if (argc == 2) {
 		if (!strcmp(argv[1], "-l")) {
 			line_edit::use = !line_edit::use;
@@ -1565,5 +1565,20 @@ COMMAND(>&-, [<fd>] <eoe>)
 	};
 	eoe(argc, argv, 1);
 END
+
+// Some dupliations are just rewrites of others
+#define DUPLICATION(x, y, fd, ...) \
+COMMAND(x, __VA_ARGS__)            \
+	pipeline ppl;                  \
+	command cmd{#y, #fd};          \
+	for (int i = 1; i < argc; ++i) \
+		cmd.add_arg(argv[i]);      \
+	ppl.add_cmd(std::move(cmd));   \
+	ppl.execute_act(false);        \
+END
+DUPLICATION(<&,  >&,  0, <fd> <eoe>)
+DUPLICATION(^&,  >&,  2, <fd> <eoe>)
+DUPLICATION(<&-, >&-, 0, <eoe>)
+DUPLICATION(^&-, >&-, 2, <eoe>)
 
 };

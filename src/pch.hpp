@@ -11,6 +11,10 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/socket.h>
+
+// ARPA header
+#include <arpa/inet.h>
 
 // POSIX C headers
 #include <ctype.h>
@@ -29,6 +33,7 @@
 #include <strings.h>
 #include <termios.h>
 #include <unistd.h>
+#include <netdb.h>
 
 // C++ standard headers
 #include <algorithm>

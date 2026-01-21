@@ -35,13 +35,13 @@
 #endif
 
 /* Default keybindings */
-struct bind { 
+struct zrc_bind { 
 	std::string cmd;
 	bool zrc_cmd;
 };
 #define Sc(x) std::string(1, char(x))
-inline std::unordered_map<std::string, bind>& kv_bindkey() {
-	static std::unordered_map<std::string, bind> ret_val = {
+inline std::unordered_map<std::string, zrc_bind>& kv_bindkey() {
+	static std::unordered_map<std::string, zrc_bind> ret_val = {
 		{ Sc(CTRL('D')), { "echo; exit"       , 1 } },
 		{ Sc(CTRL('A')), { "cursor-move-begin", 0 } },
 		{ Sc(CTRL('E')), { "cursor-move-end"  , 0 } },
