@@ -1,0 +1,27 @@
+#!/usr/bin/env zrc
+> /dev/null rehash
+
+cd `{realpath `{dirname $0}}
+
+fn GET {
+	let {addr port res} {
+		set addr = $1 port = $2 res = $3
+		<> /dev/tcp/$addr/$port {
+			>& 0 echo -n "GET $res HTTP/1.0\r\n\r\nHost: $addr:$port\r\n"
+			set flag = false
+			while {![read line]} {
+				if {$flag} { echo $line }
+				if {[str $line == '\r']} {
+					set flag = true
+				}
+			}
+		}
+	}
+}
+
+rm -f {*}[glob *.html]
+< addr.txt while {![read -d ' \r\n' addr port res]} {
+	echo GET http://$addr:${port}${res}
+	> $addr.html GET $addr $port $res
+}
+read -n 1 -p "Press any key to continue . . . "

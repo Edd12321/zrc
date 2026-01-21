@@ -778,16 +778,20 @@ COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...
 		if (n < 0) {
 			std::string ret_val;
 			char c;
+			bool ok = false;
 			for (;;) {
 				ssize_t r = read(fd, &c, 1);
 				if (r == 1) {
+					if (strchr(delim.c_str(), (unsigned char)c)) {
+						if (ok) break;
+						continue;
+					}
 					status = 0;
-					if (strchr(delim.c_str(), (unsigned char)c))
-						break;
 					ret_val += c;
+					ok = true;
 				} else if (r == 0) {
 					break;
-				} else{ // r == -1
+				} else { // r == -1
 					if (errno == EINTR) continue;
 					perror("read");
 					break;

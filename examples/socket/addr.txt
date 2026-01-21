@@ -1,0 +1,2 @@
+google.com 80 /
+httpforever.com 80 /index.html

@@ -10,6 +10,7 @@ img/icon/*.o
 src/*.gch
 src/*.pch
 src/*.stamp
+examples/socket/*.html
 
 # Packages:
 # 1. Arch
