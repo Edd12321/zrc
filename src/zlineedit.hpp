@@ -23,7 +23,7 @@ extern std::ostream tty;
 
 namespace line_edit {
 	extern std::vector<std::string> histfile;
-	extern bool use;
+	extern bool use, in_prompt;
 	void init_term(size_t&, size_t&);
 }
 

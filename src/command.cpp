@@ -275,7 +275,9 @@ void pipeline::execute() {
 		return;
 	}
 	SCOPE_EXIT {
-		if (cmds.size() == 1 && pmode == proc_mode::FG)
+		if (eval_level == 1 && line_edit::in_prompt
+		&&  cmds.size() == 1 && pmode == proc_mode::FG
+		&&  !fifo_cleanup.empty())
 			do_fifo_cleanup();
 		cmds.clear();
 	};
@@ -558,6 +560,7 @@ _syn_error_redir:
 	if (flags & OVERWR) fflags = (O_TRUNC | O_WRONLY | O_CREAT);
 	if (flags & APPEND) fflags = (O_WRONLY | O_CREAT | O_APPEND);
 	if (flags & READFL) fflags = (O_RDONLY);
+	if (flags & RDWRFL) fflags = (O_RDWR | O_CREAT);
 
 	int ffd = open(argv[1], fflags | O_CLOEXEC, S_IWUSR | S_IRUSR);
 	if (ffd < 0) {

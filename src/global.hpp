@@ -32,8 +32,9 @@ FLAG_TYPE(redir, ARG(
 	OVERWR       = 1 << 2, // 00000100
 	APPEND       = 1 << 3, // 00001000
 	READFL       = 1 << 4, // 00010000
-	OPTFD_Y      = 1 << 5, // 00100000
-	OPTFD_N      = 1 << 6, // 01000000
+	RDWRFL       = 1 << 5, // 00100000
+	OPTFD_Y      = 1 << 5, // 01000000
+	OPTFD_N      = 1 << 6, // 10000000
 ))
 // Types
 using zrc_obj = std::string;
