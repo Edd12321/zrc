@@ -1,7 +1,7 @@
 #!/usr/bin/env zrc
 > /dev/null rehash
 
-cd `{realpath `{dirname $0}}
+cd `{realpath `{dirname $1}}
 
 fn GET {
 	let {addr port res} {
