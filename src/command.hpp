@@ -50,6 +50,7 @@ public:
 	struct job {
 		pipeline ppl;
 		std::vector<pid_t> pids;
+		std::vector<std::string> fifo_cleanup;
 	};
 //private: // encapsulation is too much of a hassle here
 	std::map<int, job> jid2job;
@@ -105,6 +106,8 @@ void invoke_void(Fun const& f, std::initializer_list<const char*> list) {
 	f(cmd.argc(), cmd.argv());
 }
 
+extern std::vector<std::string> fifo_cleanup;
+
 bool run_function(std::string const&);
 void exec_extern(int, char**);
 zrc_obj exec(int, char**);
@@ -112,6 +115,7 @@ void eoe(int, char**, int);
 std::string get_output(std::string const&);
 zrc_obj redir(int, char**, int, redir_flags);
 std::string get_fifo(std::string const&);
+void do_fifo_cleanup(std::vector<std::string>&);
 
 
 static inline zrc_obj exec(command& cmd) {

@@ -8,6 +8,14 @@
 #include "path.hpp"
 #include "global.hpp"
 
+std::vector<std::string> fifo_cleanup;
+void do_fifo_cleanup(std::vector<std::string>& fifo_cleanup = ::fifo_cleanup) {
+	for (auto const& it : fifo_cleanup) {
+		unlink((it + "/" FIFO_FILNAME).c_str());
+		rmdir(it.c_str());
+	}
+	fifo_cleanup.clear();
+}
 //
 // class command
 //
@@ -249,14 +257,14 @@ bool pipeline::execute_act(bool in_subshell = false) {
 				auto jid = jtable.add_job(std::move(*this), std::move(pids));	
 				tty << '[' << jid << "] " << std::endl;
 			}
-		} else if (this->pmode == proc_mode::FG) {
-			jtable.reaper(pid, WUNTRACED);
+		} else {
+			jtable.add_job(std::move(*this), std::move(pids));
+			if (this->pmode == proc_mode::FG)
+				jtable.reaper(pid, WUNTRACED);
 		}
 	}
 	return true;
 }
-
-std::vector<std::string> fifo_cleanup;
 
 void pipeline::execute() {
 	selfpipe_trick();
@@ -266,12 +274,9 @@ void pipeline::execute() {
 		return;
 	}
 	SCOPE_EXIT {
+		if (cmds.size() == 1 && pmode == proc_mode::FG)
+			do_fifo_cleanup();
 		cmds.clear();
-		for (auto const& it : fifo_cleanup) {
-			unlink((it + "/" FIFO_FILNAME).c_str());
-			rmdir(it.c_str());
-		}
-		fifo_cleanup.clear();
 	};
 	switch (rmode) {
 		case run_mode::AND: !stonum(vars::status) && execute_act(); break;
@@ -293,6 +298,8 @@ int job_table::add_job(pipeline&& ppl, std::vector<pid_t>&& pids) {
 	for (auto const& it : pids)
 		pid2jid[it] = jc;
 	jid2job[jc].pids = std::move(pids);
+	jid2job[jc].fifo_cleanup = std::move(fifo_cleanup);
+	fifo_cleanup.clear();
 	return jc;
 }
 
@@ -350,10 +357,14 @@ void job_table::reaper(pid_t who, int how) {
 		}
 		if (job.pids.empty()) {
 			if (interactive_sesh && lproc) {
-				if (job.ppl.pmode == pipeline::proc_mode::BG && WIFEXITED(status))
+				if (job.ppl.pmode == pipeline::proc_mode::BG && WIFEXITED(status)) {
+					do_fifo_cleanup(job.fifo_cleanup);
 					tty << '[' << jid << "] Done\t" << (std::string)job.ppl << std::endl;
-				else if (WIFSIGNALED(status))
+				}
+				else if (WIFSIGNALED(status)) {
+					do_fifo_cleanup(job.fifo_cleanup);
 					tty << '[' << jid << "] " << strsignal(WTERMSIG(status)) << '\t' << (std::string)job.ppl << std::endl;
+				}
 			}
 			jid2job.erase(jid);
 			if (who < -1)
@@ -577,6 +588,10 @@ std::string get_fifo(std::string const& str) {
 	if (pid == 0) {
 		reset_sigs();
 		int fd = open(fifo_file.c_str(), O_WRONLY);
+		if (fd < 0) {
+			perror("open");
+			_exit(1);
+		}
 		dup2(fd, STDOUT_FILENO);
 		eval(str);
 		close(fd);
