@@ -255,7 +255,7 @@ bool pipeline::execute_act(bool in_subshell = false) {
 					perror("tcsetpgrp #2");
 			} else {
 				auto jid = jtable.add_job(std::move(*this), std::move(pids));	
-				tty << '[' << jid << "] " << std::endl;
+				tty << '[' << jid << "]\t" << pgid << std::endl;
 			}
 		} else {
 			pids.push_back(pid);

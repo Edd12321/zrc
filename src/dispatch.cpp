@@ -307,8 +307,8 @@ COMMAND(unfn, <name1> <name2>...)
 END
 
 // Add/remove a signal trap, block and suspend signals
-COMMAND(sig, trap <SIG> [<w1> <w2>...]\n
-             untrap <SIG>\n
+COMMAND(sig, trap <SIG> [<w1> <w2>...] \n
+             untrap <SIG> \n
              mask [-S] -bsu {<SIG1> <SIG2>...})
 	if (argc < 2) SYNTAX_ERROR
 	if (!strcmp(argv[1], "trap")) {
@@ -1699,12 +1699,12 @@ END
 // Some dupliations are just rewrites of others
 #define DUPLICATION(x, y, fd, ...) \
 COMMAND(x, __VA_ARGS__)            \
-	pipeline ppl;                  \
-	command cmd{#y, #fd};          \
-	for (int i = 1; i < argc; ++i) \
-		cmd.add_arg(argv[i]);      \
-	ppl.add_cmd(std::move(cmd));   \
-	ppl.execute_act(false);        \
+    pipeline ppl;                  \
+    command cmd{#y, #fd};          \
+    for (int i = 1; i < argc; ++i) \
+        cmd.add_arg(argv[i]);      \
+    ppl.add_cmd(std::move(cmd));   \
+    ppl.execute_act(false);        \
 END
 DUPLICATION(<&,  >&,  0, <fd> <eoe>)
 DUPLICATION(^&,  >&,  2, <fd> <eoe>)

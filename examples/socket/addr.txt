@@ -1,2 +1,4 @@
 google.com 80 /
 httpforever.com 80 /index.html
+example.com 80 /index.html
+info.cern.ch 80 /
