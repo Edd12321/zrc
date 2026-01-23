@@ -847,7 +847,7 @@ COMMAND(@, [<eoe>])
 	if (argc == 1) return vars::status;
 	pipeline ppl;
 	command cmd;
-	if (argc > 1)
+	if (argc == 2)
 		cmd.add_arg("eval");
 	for (int i = 1; i < argc; ++i)
 		cmd.add_arg(argv[i]);
