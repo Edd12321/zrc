@@ -278,12 +278,86 @@ END
 COMMAND(untrap, <n>|SIG<name>|<name>)
 	if (argc < 2) SYNTAX_ERROR
 	for (int i = 1; i < argc; ++i) {
-		int sig = get_sig(argv[1]);
-		if (sig < 0) SYNTAX_ERROR
+		int sig = get_sig(argv[i]);
+		if (sig < 0) {
+			std::cerr << "Bad signal " << argv[i] << std::endl;
+			continue;
+		}
 		if (!interactive_sesh && dflsigs.find(sig) != dflsigs.end())
 			signal2(sig, SIG_DFL);
 		sigtraps.erase(sig);
 	}
+END
+// Block/unblock signals
+COMMAND(block, [-S] -bu {<SIG1> <SIG2>...})
+	sigset_t s;
+	if (sigprocmask(0, NULL, &s) < 0) {
+		perror("sigprocmask");
+		return "3";
+	}
+	std::string ret;
+	for (auto const& it : txt2sig)
+		if (sigismember(&s, it.second) == 1)
+			ret += it.first + ' ';
+	if (argc == 1)
+		return ret;
+	
+	int opt;
+	bool suspend = false;
+	short unblock = 0, set = 0, block = 0;
+	getopt_guard gg;
+	while ((opt = getopt(argc, argv, "Ssbu")) != -1) {
+		switch (opt) {
+			case 'S':
+				suspend = 1;
+				break;
+			case 'u':
+				unblock = 1;
+				break;
+			case 'b':
+				block = 1;
+				break;
+			case 's':
+				set = 1;
+				break;
+			case '?': SYNTAX_ERROR
+		}
+	}
+	if (set + unblock + block != 1) SYNTAX_ERROR
+	if (argc == optind) {
+		if (unblock) sigemptyset(&s);
+		if (block)   sigfillset(&s);
+		if (set)     SYNTAX_ERROR
+	} else {
+		if (set) sigemptyset(&s);
+		if (argc != optind + 1) SYNTAX_ERROR
+		auto wlst = lex(argv[optind], SPLIT_WORDS).elems;
+		for (auto const& it : wlst) {
+			std::string str = it;
+			int sig = get_sig(str);
+			if (sig == -1) {
+				std::cerr << "syntax error: Bad signal " << str << ".\nKnown signals: ";
+				for (auto const& it : txt2sig)
+					std::cerr << it.first << ' ';
+				std::cerr << std::endl;
+				return "1";
+			}
+			if (unblock) sigdelset(&s, sig);
+			if (block)   sigaddset(&s, sig);
+			if (set)     sigaddset(&s, sig);
+		}
+	}
+	if (suspend) {
+		if (sigsuspend(&s) == -1) {
+			perror("sigsuspend");
+			return "2";
+		}
+		selfpipe_trick();
+	} else if (sigprocmask(SIG_SETMASK, &s, NULL) == -1) {
+		perror("sigprocmask");
+		return "2";
+	}
+	return ret
 END
 
 // Lambda functions
