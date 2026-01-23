@@ -185,12 +185,24 @@ COMMAND(wait, [<pid1> <pid2>...])
 	int last = -1, status;
 	for (auto const& it : pids) {
 		for (;;) {
-			pid_t r = waitpid(it, &status, WNOHANG);
-			if (r == -1 && errno != EINTR) {
+			pid_t pid = waitpid(it, &status, WNOHANG);
+			if (pid == -1 && errno != EINTR) {
 				perror("waitpid");
 				return "2";
 			}
-			if (r > 0) {
+			if (pid > 0) {
+				if (jtable.pid2jid.find(pid) != jtable.pid2jid.end()) {
+					int jid = jtable.pid2jid.at(pid);
+					auto& job = jtable.jid2job.at(jid);
+					for (int i = 0; i < job.pids.size(); ++i) {
+						if (job.pids[i] == pid) {
+							job.pids.erase(job.pids.begin() + i);
+							break;
+						}
+					}
+					if (job.pids.empty())
+						jtable.jid2job.erase(jid);
+				}
 				last = status;
 				break;
 			}
