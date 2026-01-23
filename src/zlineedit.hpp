@@ -13,7 +13,11 @@ protected:
 	virtual int overflow(int ch) override {
 		if (ch != EOF) {
 			char c = ch;
-			if (write(tty_fd, &c, 1) != 1)
+			int n;
+			do
+				n = write(tty_fd, &c, sizeof c);
+			while (n == -1 && errno == EINTR);
+			if (n != 1)
 				return EOF;
 		}
 		return ch;

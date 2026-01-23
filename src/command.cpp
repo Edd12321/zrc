@@ -69,7 +69,7 @@ bool pipeline::execute_act(bool in_subshell = false) {
 	// not a subshell
 	bool main_shell;
 
-	bool need_restore = cmds.size() > 1;
+	bool need_restore = cmds.size() > 1, failed = false;
 	if (need_restore)
 		old_input = fcntl(input, F_DUPFD_CLOEXEC, FD_MAX + 1);
 	SCOPE_EXIT {
@@ -89,7 +89,11 @@ bool pipeline::execute_act(bool in_subshell = false) {
 		pipe(pd);
 
 		main_shell = (interactive_sesh && getpid() == tty_pid);
-		if ((pid = fork()) == 0) {
+		if ((pid = fork()) < 0) {
+			perror("fork");
+			failed = true;
+			break;
+		} else if (pid == 0) {
 			reset_sigs();
 			SCOPE_EXIT { _exit(127); };
 			if (main_shell) {
@@ -154,6 +158,7 @@ bool pipeline::execute_act(bool in_subshell = false) {
 		close(input);
 		input = -1;
 	}
+	if (failed) return true;
 
 	// Last one!
 	int argc = cmds.back().argc();
@@ -212,7 +217,9 @@ bool pipeline::execute_act(bool in_subshell = false) {
 		vars::status = functions.at("unknown")(argc, argv);
 	else {
 		main_shell = (interactive_sesh && getpid() == tty_pid);
-		if ((pid = fork()) == 0) {
+		if ((pid = fork()) < 0) {
+			perror("fork");
+		} else if (pid == 0) {
 			reset_sigs();
 			SCOPE_EXIT { _exit(127); }; // just in case
 			if (main_shell) {

@@ -330,9 +330,15 @@ bool zrc_getline(std::istream& in, std::string& str, bool show_secondary_prompt 
 		display_prompt(show_secondary_prompt);
 		line_edit::in_prompt = eval_level == 0;
 		SCOPE_EXIT { line_edit::in_prompt = false; };
-		return line_edit::use ? zlineedit(str) : !std::getline(in, str).fail();
+		if (line_edit::use)
+			return zlineedit(str);
+		bool fail = std::getline(in, str).fail();
+		line_edit::W_histfile(str);
+		return !fail;
 	}
 	line_edit::in_prompt = eval_level == 0;
 	SCOPE_EXIT { line_edit::in_prompt = false; };
-	return !std::getline(in, str).fail();
+	bool fail = std::getline(in, str).fail();
+	line_edit::W_histfile(str);
+	return !fail;
 }
