@@ -73,14 +73,15 @@ decltype(sigtraps) sigtraps;
 int selfpipe_rd, selfpipe_wrt;
 struct pollfd selfpipe_wait;
 
-void selfpipe_trick() {
+int selfpipe_trick() {
 	static struct pollfd selfpipe_wait;
 	selfpipe_wait.fd = selfpipe_rd;
 	selfpipe_wait.events = POLLIN;
 	
-	int sig, ret;
+	int sig, ret, ran = -1;
 	while ((ret = poll(&selfpipe_wait, 1, 0)) > 0 && (selfpipe_wait.revents & POLLIN)) {
 		while (read(selfpipe_rd, &sig, sizeof sig) == sizeof sig) {
+			if (ran < 0) ran = sig;
 			if (sigtraps.find(sig) == sigtraps.end()) {
 				if (sig == SIGHUP) {
 					jtable.sighupper();
@@ -95,6 +96,7 @@ void selfpipe_trick() {
 				trap();
 		}
 	}
+	return ran;
 }
 
 void reset_sigs() {

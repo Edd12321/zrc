@@ -166,14 +166,42 @@ COMMAND(expr,   [<w1> <w2>...])  return numtos(expr::eval(concat(argc, argv, 1))
 COMMAND(concat, [<w1> <w2>...])  return concat(argc, argv, 1)                      END
 // Replace currently running process
 COMMAND(exec,   <w1> [<w2>...])  if (argc > 1) execvp(*(argv+1), argv+1)           END
-// Wait for child processes to finish execution
-COMMAND(wait,                 )  while (wait(nullptr) > 0)                         END
 // Source a script
 COMMAND(source, [<w1> <w2>...])  source(concat(argc, argv, 1))                     END
 // Disable internal hash table
 COMMAND(unhash,               )  hctable.clear()                                   END
 // Display internal job table
 COMMAND(jobs,                 )  std::cout << jtable;                              END
+
+// Wait for child processes to finish execution
+COMMAND(wait, [<pid1> <pid2>...])
+	std::vector<pid_t> pids;
+	if (argc == 1) pids = {WAIT_ANY};
+	else for (int i = 1; i < argc; ++i) {
+		auto n = stonum(argv[i]);
+		if (!isfinite(n)) SYNTAX_ERROR
+		pids.push_back(n);
+	}
+	int last = -1, status;
+	for (auto const& it : pids) {
+		for (;;) {
+			pid_t r = waitpid(it, &status, WNOHANG);
+			if (r == -1 && errno != EINTR) {
+				perror("waitpid");
+				return "2";
+			}
+			if (r > 0) {
+				last = status;
+				break;
+			}
+			poll(&selfpipe_wait, 1, -1);
+			int ran = selfpipe_trick();
+			if (interactive_sesh && getpid() == tty_pid && ran == SIGINT)
+				return numtos(128 + ran);
+		}
+	}
+	return numtos(last);
+END
 
 // Bash-style getopts
 COMMAND(getopts, <opt> <var>)

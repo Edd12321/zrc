@@ -12,9 +12,10 @@ extern int selfpipe_wrt, selfpipe_rd;
 
 int tcsetpgrp2(pid_t);
 sighandler_t signal2(int, sighandler_t);
-void selfpipe_trick();
+int selfpipe_trick();
 void reset_sigs();
 extern "C" void sighandler(int);
 int get_sig(std::string);
+extern struct pollfd selfpipe_wait;
 
 #endif
