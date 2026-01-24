@@ -39,6 +39,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <ctime>
 #include <fstream>
 #include <functional>
 #include <initializer_list>

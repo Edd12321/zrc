@@ -157,21 +157,42 @@ WHILE_HELPER(while)
 WHILE_HELPER(until)
 
 // Substitute arguments
-COMMAND(subst,  [<w1> <w2>...])  return subst(concat(argc, argv, 1))               END
+COMMAND(subst, [<word1> <word2>...])
+	return subst(concat(argc, argv, 1))
+END
 // Evaluate arguments
-COMMAND(eval,   [<w1> <w2>...])  return eval(concat(argc, argv, 1))                END
+COMMAND(eval, [<word1> <word2>...])
+	return eval(concat(argc, argv, 1))
+END
 // Evaluate as an expression
-COMMAND(expr,   [<w1> <w2>...])  return numtos(expr::eval(concat(argc, argv, 1)))  END
+COMMAND(expr, [<word1> <word2>...])
+	return numtos(expr::eval(concat(argc, argv, 1)))
+END
 // Concatenate arguments
-COMMAND(concat, [<w1> <w2>...])  return concat(argc, argv, 1)                      END
+COMMAND(concat, [<word1> <word2>...])
+	return concat(argc, argv, 1)
+END
 // Replace currently running process
-COMMAND(exec,   <w1> [<w2>...])  if (argc > 1) execvp(*(argv+1), argv+1)           END
-// Source a script
-COMMAND(source, [<w1> <w2>...])  source(concat(argc, argv, 1))                     END
+COMMAND(exec, <cmd> [<arg1> <arg2>...])
+	if (argc > 1)
+		execvp(*(argv+1), argv+1);
+	else SYNTAX_ERROR
+END
 // Disable internal hash table
-COMMAND(unhash,               )  hctable.clear()                                   END
+COMMAND(unhash,) 
+	hctable.clear()
+END
 // Display internal job table
-COMMAND(jobs,                 )  std::cout << jtable;                              END
+COMMAND(jobs,) 
+	std::cout << jtable
+END
+
+// Source a script
+COMMAND(source, <file1> <file2>...)
+	if (argc < 2) SYNTAX_ERROR
+	for (int i = 1; i < argc; ++i)
+		source(argv[i])
+END
 
 // Wait for child processes to finish execution
 COMMAND(wait, [<pid1> <pid2>...])
@@ -216,7 +237,7 @@ COMMAND(wait, [<pid1> <pid2>...])
 END
 
 // Bash-style getopts
-COMMAND(getopts, <opt> <var>)
+COMMAND(getopts, <optstring> <var>)
 	if (argc != 3) SYNTAX_ERROR
 
 	zrc_obj s_opterr = vars::opterr;
@@ -239,7 +260,7 @@ END
 
 // Foreground/background tasks
 #define FGBG(z, x, y)                                          \
-  COMMAND(x, <n>)                                              \
+  COMMAND(x, <pid>)                                            \
     if (argc != 2) SYNTAX_ERROR                                \
     auto n = expr::eval(argv[1]);                              \
     if (!isfinite(n)) SYNTAX_ERROR                             \
@@ -256,7 +277,7 @@ FGBG(pipeline::proc_mode::FG, fg, tcsetpgrp2(getpgid(n)); jtable.reaper(n, WUNTR
 FGBG(pipeline::proc_mode::BG, bg,)
 
 // JID to PGID
-COMMAND(job, <n>)
+COMMAND(job, <jid>)
 	if (argc != 2) SYNTAX_ERROR
 	auto x = expr::eval(argv[1]);
 	if (!isfinite(x)) SYNTAX_ERROR
@@ -268,7 +289,7 @@ COMMAND(job, <n>)
 END
 
 // Remove jobs from table
-COMMAND(disown, <n>)
+COMMAND(disown, <jid>)
 	if (argc != 2) SYNTAX_ERROR
 	auto x = expr::eval(argv[1]);
 	if (!isfinite(x)) SYNTAX_ERROR
@@ -285,7 +306,7 @@ COMMAND(rehash,)
 END
 
 // Prioritise builtins
-COMMAND(builtin, <arg1> <arg2>...)
+COMMAND(builtin, <cmd> [<arg1> <arg2>...])
 	if (argc < 2) SYNTAX_ERROR
 	--argc, ++argv;
 	if (builtins.find(*argv) != builtins.end())
@@ -295,7 +316,7 @@ COMMAND(builtin, <arg1> <arg2>...)
 END
 
 // Add/remove a new function
-COMMAND(fn, <name> [<w1> <w2>...])
+COMMAND(fn, <name> [<word1> <word2>...])
 	if (argc < 3) SYNTAX_ERROR
 	// Function body
 	functions[argv[1]] = zrc_fun(concat(argc, argv, 2));	
@@ -307,7 +328,7 @@ COMMAND(unfn, <name1> <name2>...)
 END
 
 // Add/remove a signal trap, block and suspend signals
-COMMAND(sig, trap <SIG> [<w1> <w2>...] \n
+COMMAND(sig, trap <SIG> [<word1> <word2>...] \n
              untrap <SIG> \n
              mask [-S] -bsu {<SIG1> <SIG2>...})
 	if (argc < 2) SYNTAX_ERROR
@@ -413,7 +434,7 @@ END
 
 
 // Lambda functions
-COMMAND(apply, <eval> [<w1> <w2>...])
+COMMAND(apply, <lambda> [<arg1> <arg2>...])
 	if (argc < 2) SYNTAX_ERROR
 	auto f = zrc_fun(argv[1]);
 	char *old_arg = argv[1];
@@ -424,7 +445,7 @@ COMMAND(apply, <eval> [<w1> <w2>...])
 END
 
 // Close shell with message and exit status 1
-COMMAND(die, [<w1> <w2>...])
+COMMAND(die, [<word1> <word2>...])
 	std::cerr << concat(argc, argv, 1) << std::endl;
 	exit(EXIT_FAILURE)
 END
@@ -433,6 +454,7 @@ END
 COMMAND(help, [<cmd1> <cmd2>...])
 	bool handled_args = false;
 	for (int i = 1; i < argc; ++i) {
+		handled_args = false;
 		if (kv_alias.find(argv[i]) != kv_alias.end()) {
 			std::cout << "# alias\n";
 			std::cout << "alias " << list(argv[i]) << ' ' << list(kv_alias.at(argv[i]).body) << '\n';
@@ -462,13 +484,19 @@ COMMAND(help, [<cmd1> <cmd2>...])
 			std::cout << "# " << hctable[argv[i]] << '\n';
 			handled_args = true;
 		}
-		if (!handled_args) SYNTAX_ERROR
+		if (!handled_args) {
+			std::cout << "# invalid command\n";
+			std::cout << "# " << argv[i] << '\n';
+			handled_args = true;
+		}
+		if (i < argc - 1) std::cout << '\n';
 	}
-
 	if (handled_args)
 		return "0";
 
-	std::cout << ZVERSION << '\n';
+	std::time_t t = std::time(nullptr);
+	std::tm *const lt = std::localtime(&t);
+	std::cout << ZVERSION << " (c) 2023 - " << 1900 + lt->tm_year << " https://github.com/Edd12321/zrc\n";
 	std::vector<std::string> vbuiltins, vfunctions, valiases;
 	for (auto const& it : functions) vfunctions.push_back(it.first);
 	for (auto const& it : builtins) vbuiltins.push_back(it.first);
@@ -477,14 +505,16 @@ COMMAND(help, [<cmd1> <cmd2>...])
 	std::sort(valiases.begin(), valiases.end());
 	std::sort(vbuiltins.begin(), vbuiltins.end());
 
-	std::cout << valiases.size() << " aliases" << (valiases.empty() ? "." : ":\n");
+	std::cout << valiases.size() << " user-defined aliases" << (valiases.empty() ? "." : ":\n");
 	for (auto const& it : valiases) std::cout << it << ' ';
+	if (valiases.empty()) std::cout << '\n';
 	std::cout << "\n\n";
 
-	std::cout << vfunctions.size() << " functions" << (vfunctions.empty() ? "." : ":\n");
+	std::cout << vfunctions.size() << " user-defined functions" << (vfunctions.empty() ? "." : ":\n");
 	for (auto const& it : vfunctions) std::cout << it << ' ';
+	if (vfunctions.empty()) std::cout << '\n';
 	std::cout << "\n\n";
-	
+
 	std::cout << vbuiltins.size() << " builtins:\n";
 	size_t row, col, hc;
 	bool newl = false, tty = isatty(STDOUT_FILENO);
@@ -505,10 +535,14 @@ COMMAND(help, [<cmd1> <cmd2>...])
 		newl = !newl;
 	}
 	if (newl) std::cout << '\n';
+	std::cout << "\nHelpstring glossary:";
+	std::cout << "\n<eoe> -- Eval-or-exec. This means either you can pass a single word/string and it will be evaluated as a script, or you can pass more than one in which case they will be treated as the args to a new command.";
+	std::cout << "\n<eval> -- Eval. This means you can pass only one word and it will be evaluated as a script.";
+	std::cout << "\n<expr> -- Expression. This means you can pass one string and it will be evaluated as an arithmetic expression as if by passing to `expr'.\n";
 END
 
 // Command correction
-COMMAND(fc, [-e <editor>] [-lnr] [<num>])
+COMMAND(fc, [-e <editor>] [-lnr] [<how-much>])
 	int opt;
 	getopt_guard gg;
 	bool lflag = false, nflag = false, rflag = false;
@@ -617,7 +651,7 @@ COMMAND(for, <eval> <expr> <eval> <eoe>)
 END
 
 // Do/while and do/until
-COMMAND(do, <eoe> while|until <expr>...)
+COMMAND(do, <eoe> while|until <expr>)
 	if (argc < 4) SYNTAX_ERROR
 	const bool w = !strcmp(argv[argc-2], "while");
 	const bool u = !strcmp(argv[argc-2], "until");
@@ -659,7 +693,7 @@ COMMAND(repeat, <expr> <eoe>)
 END
 
 // Switch instruction
-COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
+COMMAND(switch, <val> {case|regex|default <eval> ...})
 	if (argc != 3) SYNTAX_ERROR
 	
 	auto wlst = lex(argv[2], SPLIT_WORDS).elems;
@@ -741,7 +775,7 @@ COMMAND(switch, <val> {< <case|regex|default> <eval>...>})
 END
 
 // Exceptions
-COMMAND(throw, [<w1> <w2>...<wn>])
+COMMAND(throw, [<word1> <word2>...])
 	throw zrc_obj(concat(argc, argv, 1));
 END
 
@@ -766,7 +800,7 @@ COMMAND(defer, <eoe>)
 END
 
 // Stack trace
-COMMAND(caller, [<expr>])
+COMMAND(caller, [<how-much>])
 	zrc_num e = expr::eval(concat(argc, argv, 1));
 	if (!isfinite(e)) SYNTAX_ERROR
 	if (e >= 0 && e < callstack.size()) {
@@ -953,7 +987,7 @@ COMMAND(read, [-d <delim>|-n <nchars>] [-p <prompt>] [-f <fd>] [<var1> <var2>...
 END
 
 // Aliases
-COMMAND(alias, [<name> < <w1> <w2>...>])
+COMMAND(alias, [<name> <word1> <word2>...])
 	if (argc == 1)
 		for (auto& it : kv_alias)
 			std::cout << "alias " << list(it.first) << ' ' << list(it.second.body) << '\n';
@@ -962,14 +996,14 @@ COMMAND(alias, [<name> < <w1> <w2>...>])
 	else SYNTAX_ERROR
 END
 
-COMMAND(unalias, <a1> <a2>...)
+COMMAND(unalias, <alias1> <alias2>...)
 	if (argc < 2) SYNTAX_ERROR
 	for (int i = 1; i < argc; ++i)
 		kv_alias.erase(argv[i]);
 END
 
 // Key bindings
-COMMAND(bindkey, [-l | [-c] [<seq> < <w1> <w2>...>]])
+COMMAND(bindkey, [-l | [-c] [<seq> <word1> <word2>...]])
 	zrc_bind b;
 	if (argc == 2) {
 		if (!strcmp(argv[1], "-l")) {
@@ -996,7 +1030,7 @@ COMMAND(bindkey, [-l | [-c] [<seq> < <w1> <w2>...>]])
 	kv_bindkey()[argv[1]] = std::move(b);
 END
 	
-COMMAND(unbindkey, <b1> <b2>...)
+COMMAND(unbindkey, <seq1> <seq2>...)
 	if (argc < 2) SYNTAX_ERROR;
 	for (int i = 1; i < argc; ++i)
 		kv_bindkey().erase(argv[i]);
@@ -1038,7 +1072,7 @@ COMMAND(cd, [<dir>])
 END
 
 // Print to stdout (inspired by suckless.org's implementation)
-COMMAND(echo, [<w1> <w2>...])
+COMMAND(echo, [-n] [<word1> <word2>...])
 	bool nflag = false;
 	--argc, ++argv;
 	if (*argv && !strcmp(*argv, "-n"))
@@ -1054,7 +1088,7 @@ COMMAND(echo, [<w1> <w2>...])
 END
 
 // Assign to a list of variables
-COMMAND(set, < <var> [<expr-binop>|.]= <val> >...)
+COMMAND(set, <var> [<expr-binop>|.]= <val> ...)
 	if ((argc-1) % 3 != 0) SYNTAX_ERROR
 	zrc_obj lret;
 	for (int i = 2; i < argc; i += 3) {
@@ -1081,7 +1115,7 @@ COMMAND(unset, <var1> <var2>...)
 END
 
 // Export one or more variables
-COMMAND(export, [-n] < <var1> <var2>...>)
+COMMAND(export, [-n] <var1> <var2>...)
 	bool nflag = false;
 	int opt;
 	getopt_guard gg;
@@ -1103,7 +1137,7 @@ COMMAND(export, [-n] < <var1> <var2>...>)
 END
 
 // Filename globbing
-COMMAND(glob, [-sb?t?] <patterns...>)
+COMMAND(glob, [-sb?t?] <pattern1> <pattern2>...)
 	getopt_guard gg;
 	std::string flags = "s";
 	int opt, g_flags = GLOB_NOSORT;
@@ -1116,7 +1150,7 @@ COMMAND(glob, [-sb?t?] <patterns...>)
 	flags += "t";
 #endif
 	/* different help str gets generated here */ {
-	std::string help = "[-"; help += flags; help += "] <patterns...>";
+	std::string help = "[-"; help += flags; help += "] <pattern1> <pattern2>...";
 	while ((opt = getopt(argc, argv, flags.c_str())) != -1) {
 		switch (opt) {
 			case '?': SYNTAX_ERROR
@@ -1265,7 +1299,7 @@ COMMAND(popd,)
 END
 
 // Increase memory amount
-COMMAND(rlimit, <n>[BKMGTPEZYg])
+COMMAND(rlimit, <stack-size>[BKMGTPEZYg])
 	if (argc != 2 || !argv[1][0]) SYNTAX_ERROR
 	static const char *prefixes = help + 4;
 
@@ -1293,7 +1327,7 @@ COMMAND(rlimit, <n>[BKMGTPEZYg])
 END
 
 // Shift argv to the left
-COMMAND(shift, [<n>])
+COMMAND(shift, [<how-much>])
 	long howmuch, len = vars::argv.size(), i;
 	zrc_num x = 1;
 	if (argc > 2) SYNTAX_ERROR
@@ -1315,7 +1349,7 @@ COMMAND(shift, [<n>])
 END
 
 // regex
-COMMAND(regexp, <reg> <txt> <var1> <var2...>)
+COMMAND(regexp, <regex> <string> <var1> <var2>...)
 	if (argc < 4) SYNTAX_ERROR
 	regex_t rexp;
 	const char *pattern = argv[1], *txt = argv[2], *it = txt;
@@ -1353,13 +1387,13 @@ END
  ****************************************/
 
 // Strings
-COMMAND(str, <s> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
-             <s> len \n
-             <s> <ind> \n
-             <s> + <ptrdiff> \n
-             <s> <ind> <howmuch> \n
-             <s> <ind> = <c> \n
-             <s> -= <ind> <howmuch>)
+COMMAND(str, <string> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
+             <string> len \n
+             <string> <index> \n
+             <string> + <how-much> \n
+             <string> <index> <how-much> \n
+             <string> <index> = <char> \n
+             <string> -= <index> <how-much>)
 
 #define STROP(x, op) if (argc == 4 && !strcmp(argv[2], #x)) return numtos(strcmp(argv[1], argv[3]) op);
 	// String comparisons
@@ -1428,14 +1462,14 @@ COMMAND(str, <s> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
 END
 
 // Arrays
-COMMAND(arr, <a> := <list> \n
-             <a> = <even-list> \n
-             <a> -= <elem1> <elem2>... \n
-             <a> len \n
-             <a> keys \n
-             <a> vals \n
-             <a> destroy \n
-             <a>)
+COMMAND(arr, <array> := <list> \n
+             <array> = <even-list> \n
+             <array> -= <elem1> <elem2>... \n
+             <array> len \n
+             <array> keys \n
+             <array> vals \n
+             <array> destroy \n
+             <array>)
 
 	if (argc < 2) SYNTAX_ERROR
 	auto& arr = vars::amap[argv[1]];
@@ -1518,17 +1552,17 @@ END
 
 
 // Tcl-style lists
-COMMAND(list, new <w1> <w2> ... \n
-              len <l> \n
-              <ind> <l> \n
-              -= <ind> <howmuch> <l> \n
-              <ind> = <val> <l> \n
-              <ind> += <val> <l> \n
-              += <val> <l> \n
-              <ind> <howmuch> <l> \n
-              map <lambda> <l> \n
-              filter <lambda> <l> \n
-              reduce <lambda> <l>)
+COMMAND(list, new <word1> <word2> ... \n
+              len <list> \n
+              <index> <list> \n
+              -= <index> <how-much> <list> \n
+              <index> = <val> <list> \n
+              <index> += <val> <list> \n
+              += <val> <list> \n
+              <index> <how-much> <list> \n
+              map <lambda> <list> \n
+              filter <lambda> <list> \n
+              reduce <lambda> <list>)
 
 	if (argc < 3) SYNTAX_ERROR
 	
@@ -1610,7 +1644,7 @@ END
  * Shell I/O redirections *
  *                        *
  **************************/
-#define REDIR(x, ...) COMMAND(x, [<fd>?] <file> <eoe>) return redir(argc, argv, __VA_ARGS__) END
+#define REDIR(x, ...) COMMAND(x, [<fd>] <file> <eoe>) return redir(argc, argv, __VA_ARGS__) END
 // Stdout/other descriptors
 REDIR(>   , STDOUT_FILENO, DO_CLOBBER | OVERWR | OPTFD_Y)
 REDIR(>>  , STDOUT_FILENO, DO_CLOBBER | APPEND | OPTFD_Y)
