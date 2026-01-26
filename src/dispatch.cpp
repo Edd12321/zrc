@@ -332,9 +332,12 @@ COMMAND(sig, trap <SIG> [<word1> <word2>...] \n
              untrap <SIG> \n
              mask [-S] -bsu {<SIG1> <SIG2>...})
 	if (argc < 2) SYNTAX_ERROR
+	char *true_arg = argv[0];
 	if (!strcmp(argv[1], "trap")) {
 		--argc, ++argv;
-	
+		char *old_arg = argv[0];
+		argv[0] = true_arg;
+		SCOPE_EXIT { argv[0] = old_arg; };
 		if (argc < 3) SYNTAX_ERROR
 		int sig = get_sig(argv[1]);
 		if (sig < 0) SYNTAX_ERROR
@@ -345,6 +348,9 @@ COMMAND(sig, trap <SIG> [<word1> <word2>...] \n
 	}
 	if (!strcmp(argv[1], "untrap")) {
 		--argc, ++argv;
+		char *old_arg = argv[0];
+		argv[0] = true_arg;
+		SCOPE_EXIT { argv[0] = old_arg; };
 		if (argc < 2) SYNTAX_ERROR
 		for (int i = 1; i < argc; ++i) {
 			int sig = get_sig(argv[i]);
@@ -360,6 +366,9 @@ COMMAND(sig, trap <SIG> [<word1> <word2>...] \n
 	}
 	if (!strcmp(argv[1], "mask")) {
 		--argc, ++argv;
+		char *old_arg = argv[0];
+		argv[0] = true_arg;
+		SCOPE_EXIT { argv[0] = old_arg; };
 		sigset_t s;
 		if (sigprocmask(0, NULL, &s) < 0) {
 			perror("sigprocmask");
