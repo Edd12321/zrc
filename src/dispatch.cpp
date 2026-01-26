@@ -95,15 +95,13 @@ bool regex_match(std::string const& txt, std::string const& reg, int cflags = RE
 }
 
 // Dir stack
-std::stack<std::string> pstack;
+std::vector<std::string> pstack;
 
-static inline void prints(std::stack<std::string> sp) {
+static inline void prints(std::vector<std::string> const& sp) {
 	if (!sp.empty())
-		chdir(sp.top().c_str());
-	while (!sp.empty()) {
-		std::cout << sp.top() << ' ';
-		sp.pop();
-	}
+		chdir(sp.back().c_str());
+	for (auto it = sp.rbegin(); it != sp.rend(); ++it)
+		std::cout << *it << ' ';
 	std::cout << '\n';
 }
 
@@ -1270,7 +1268,7 @@ COMMAND(pushd, [<dir>])
 	if (pstack.empty()) {
 		char wd[PATH_MAX];
 		getcwd(wd, sizeof wd);
-		pstack.push(wd);
+		pstack.push_back(wd);
 	}
 	if (argc == 2) {
 		struct stat strat;
@@ -1287,17 +1285,17 @@ COMMAND(pushd, [<dir>])
 			perror("realpath");
 			return "2";
 		}
-		pstack.push(rp);
+		pstack.push_back(rp);
 		free(rp);
 	} else {
 		if (pstack.size() == 1) {
 			std::cerr << "No other directory\n";
 			return "4";
 		}
-		auto p = pstack.top();
-		pstack.pop();
-		std::swap(p, pstack.top());
-		pstack.push(p);
+		auto p = pstack.back();
+		pstack.pop_back();
+		std::swap(p, pstack.back());
+		pstack.push_back(p);
 	}
 	prints(pstack)
 END
@@ -1307,7 +1305,7 @@ COMMAND(popd,)
 		std::cerr << "Directory stack empty\n";
 		return "1";
 	}
-	pstack.pop();
+	pstack.pop_back();
 	prints(pstack)
 END
 
