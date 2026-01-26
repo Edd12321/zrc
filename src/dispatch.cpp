@@ -319,12 +319,14 @@ END
 COMMAND(fn, <name> [<word1> <word2>...])
 	if (argc < 3) SYNTAX_ERROR
 	// Function body
-	functions[argv[1]] = zrc_fun(concat(argc, argv, 2));	
+	if (argc > 3)
+		functions[argv[1]] = zrc_fun("{*}{" + list(argc - 2, argv + 2) + "}");
+	else functions[argv[1]] = zrc_fun(argv[2])
 END
 COMMAND(unfn, <name1> <name2>...)
 	if (argc < 2) SYNTAX_ERROR
 	for (int i = 1; i < argc; ++i)
-		functions.erase(argv[i]);
+		functions.erase(argv[i])
 END
 
 // Add/remove a signal trap, block and suspend signals
@@ -341,7 +343,9 @@ COMMAND(sig, trap <SIG> [<word1> <word2>...] \n
 		if (argc < 3) SYNTAX_ERROR
 		int sig = get_sig(argv[1]);
 		if (sig < 0) SYNTAX_ERROR
-		sigtraps[sig] = zrc_trap(concat(argc, argv, 2));
+		if (argc == 3)
+			sigtraps[sig] = zrc_trap(argv[2]);
+		else sigtraps[sig] = zrc_trap("{*}{" + list(argc - 2, argv + 2) + "}");
 		if (!interactive_sesh && dflsigs.find(sig) != dflsigs.end())
 			signal2(sig, sighandler);
 		return vars::status;
@@ -1402,7 +1406,8 @@ COMMAND(str, <string> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
              <string> + <how-much> \n
              <string> <index> <how-much> \n
              <string> <index> = <char> \n
-             <string> -= <index> <how-much>)
+             <string> -= <index> <how-much> \n
+             <string> * <how-many>)
 
 #define STROP(x, op) if (argc == 4 && !strcmp(argv[2], #x)) return numtos(strcmp(argv[1], argv[3]) op);
 	// String comparisons
@@ -1450,8 +1455,20 @@ COMMAND(str, <string> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
 		str.erase(i, j);
 		return str;
 	}
+	// Return n-char string
+	if (argc == 4 && !strcmp(argv[2], "*")) {
+		zrc_num i = expr::eval(argv[3]);
+		if (isfinite(i) && i >= 0) {
+			std::ostringstream ss;
+			long n = i;
+			while (n--)
+				ss << argv[1];
+			return ss.str();
+		}
+		else SYNTAX_ERROR
+	}
 	// Return string range
-	if (argc == 4) {
+	if (argc == 4 /* && otherwise */) {
 		zrc_num i = expr::eval(argv[2]);
 		zrc_num j = expr::eval(argv[3]);
 		std::string str(argv[1]);
