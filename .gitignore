@@ -11,6 +11,7 @@ src/*.gch
 src/*.pch
 src/*.stamp
 examples/socket/*.html
+examples/man/.cache
 
 # Packages:
 # 1. Arch

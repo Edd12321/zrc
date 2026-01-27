@@ -1,0 +1,87 @@
+#!/usr/bin/env zrc
+
+echo 'Content-type: text/html
+
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="UTF-8" />
+<style>
+	h2 { font-size: 150%; }
+	h1 { font-size: 130%; }
+</style></head>
+<meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=0.80,
+                             user-scalable=no,minimal-ui"/>
+<body>'
+
+sig trap EXIT {
+	echo </body></html>
+}
+for {set i = 1} {$i <= 8} {inc i} {
+	echo <a href=man.cgi.zrc?$i>SECTION $i</a>
+}
+echo <a href=man.cgi.zrc?l>SECTION L</a>
+echo <a href=man.cgi.zrc?n>SECTION N</a>
+
+echo "<form action='man.cgi.zrc' method='get'>
+	<input type='hidden' name='recache' value='1' />
+	<button type='submit'>Regenerate cache</button>
+</form>"
+echo '<hr />'
+set MANPATH = /usr/lib/zrc/doc:$MANPATH
+set PATH    = /usr/lib/plan9:$PATH
+set q       = $QUERY_STRING
+if {![str $q len]} { set q = 1 }
+set category = {(l|n|(^[0-9]))}
+
+fn msg {
+	echo <strong>$1</strong><br />
+	if {$argc == 3} die
+}
+
+# Remake cache
+if {[str $q =~ ^recache]} {
+	if {[str $REMOTE_ADDR != '127.0.0.1'] && [str $REMOTE_ADDR != '::1']} {
+		msg 'Only admin can recache' die
+	}
+	mkdir -p .cache || msg "Couldn't create .cache" die
+	cd .cache       || msg "Couldn't cd to .cache" die
+	msg 'Rebuilding cache now...'
+	foreach it {l n 0 1 2 3 4 5 6 7 8 9} {
+		> $it.txt {
+			echo <pre>
+			man -k . | grep ($it) | while {![read line]} {
+				let {_} {
+					regexp {^(.+)\((.+)\)\ -\ (.+)$} $line _ name detail desc
+				}
+				echo $name | while {![read -d ' ,\n' line]} {
+					echo <a href=man.cgi.zrc?$detail/$line>$line($detail)</a> - $desc
+				}
+			}
+			echo </pre>
+		} &
+	}
+	for {set i = 0} {$i < 12} {inc i} {
+		wait [job $i]
+	}
+	msg 'Cache rebuilt succesfully!'
+	exit 0
+}
+# Just show all manpages
+if {[str $q =~ ^$category\$]} {
+		cat .cache/$q.txt
+		exit 0
+}
+# Show one particular manpage
+if {[str $q =~ ^$category/.+\$]} {
+	echo $q | eval {
+		read -d \n/ cat man
+		set where = `{man -w $cat $man | read}
+		if {[str $where =~ {\.gz$}]} {
+			set cmd = zcat
+		} else set cmd = cat
+		$cmd $cat $where | pandoc --from man --to html
+	}
+	exit 0
+}
+echo Bad query string $q
