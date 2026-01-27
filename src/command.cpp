@@ -86,7 +86,11 @@ bool pipeline::execute_act(bool in_subshell = false) {
 		int argc = cmds[i].argc();
 		char **argv = cmds[i].argv();
 		int pd[2];
-		pipe(pd);
+		if (pipe(pd) < 0) {
+			perror("pipe");
+			failed = true;
+			break;
+		}
 
 		main_shell = (interactive_sesh && getpid() == tty_pid);
 		if ((pid = fork()) < 0) {
