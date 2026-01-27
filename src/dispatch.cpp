@@ -188,8 +188,11 @@ END
 // Source a script
 COMMAND(source, <file1> <file2>...)
 	if (argc < 2) SYNTAX_ERROR
+	zrc_obj ret_val{};
 	for (int i = 1; i < argc; ++i)
-		source(argv[i])
+		if (!source(argv[i], true))
+			ret_val = "2";
+	return ret_val.empty() ? vars::status : ret_val;
 END
 
 // Wait for child processes to finish execution
