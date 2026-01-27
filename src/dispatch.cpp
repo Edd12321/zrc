@@ -216,7 +216,7 @@ COMMAND(wait, [<pid1> <pid2>...])
 				if (jtable.pid2jid.find(pid) != jtable.pid2jid.end()) {
 					int jid = jtable.pid2jid.at(pid);
 					auto& job = jtable.jid2job.at(jid);
-					for (int i = 0; i < job.pids.size(); ++i) {
+					for (size_t i = 0; i < job.pids.size(); ++i) {
 						if (job.pids[i] == pid) {
 							job.pids.erase(job.pids.begin() + i);
 							break;
@@ -1363,35 +1363,27 @@ COMMAND(shift, [<how-much>])
 END
 
 // regex
-COMMAND(regexp, <regex> <string> <var1> <var2>...)
+COMMAND(regexp, <regex> <string> <var-fullm> <var1> <var2>...)
 	if (argc < 4) SYNTAX_ERROR
 	regex_t rexp;
-	const char *pattern = argv[1], *txt = argv[2], *it = txt;
+	const char *pattern = argv[1], *txt = argv[2];
 	regmatch_t pmatch;
 	int k = 3;
 	if (regcomp(&rexp, pattern, REG_EXTENDED))
-		SYNTAX_ERROR
-	std::string ret_val = "2", match;
-	while (!regexec(&rexp, it, 1, &pmatch, 0)) {
-		ret_val = "0";
-		if (k >= argc) {
-			regfree(&rexp);
-			return vars::status;
+		return "2";
+	SCOPE_EXIT { regfree(&rexp); };
+	int nv = argc - 3;
+	std::vector<regmatch_t> pm(nv);
+	if (regexec(&rexp, txt, nv, pm.data(), 0) == 0) {
+		for (int i = 0; i < nv; ++i) {
+			std::string match{};
+			if (pm[i].rm_so != -1)
+				match = std::string(txt + pm[i].rm_so, pm[i].rm_eo - pm[i].rm_so);
+			setvar(argv[3 + i], match);
 		}
-		int start = pmatch.rm_so, end = pmatch.rm_eo, len = end - start;
-		if (end > start)
-			match = std::string(it + start, len);
-		else
-			match.clear();
-		setvar(argv[k++], match);
-		if (end == start) {
-			if (it[start] == '\0')
-				break;
-			++it;
-		} else it += end;
+		return "0";
 	}
-	regfree(&rexp);
-	return ret_val;
+	return "3";
 END
 
 /****************************************

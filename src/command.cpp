@@ -589,7 +589,7 @@ _syn_error_redir:
 	if (tcp || udp) {
 		// stolen from getaddrinfo manpage
 		struct addrinfo *result, *rp;
-		struct addrinfo hints{0};
+		struct addrinfo hints{};
 		hints.ai_family = AF_UNSPEC;
 		hints.ai_flags = AI_ADDRCONFIG;
 		hints.ai_protocol = 0;
@@ -616,7 +616,7 @@ _syn_error_redir:
 	// Normal
 	//
 	} else {
-		ffd = open(argv[1], fflags | O_CLOEXEC, S_IWUSR | S_IRUSR);
+		ffd = open(argv[1], fflags, S_IWUSR | S_IRUSR);
 		if (ffd < 0) {
 			perror(argv[1]);
 			return "4";

@@ -1,0 +1,51 @@
+#!/usr/bin/env zrc
+
+echo 'Content-type: text/html
+
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="UTF-8" />
+<style>
+	h2 { font-size: 150%; }
+	h1 { font-size: 130%; }
+</style></head>
+<body>
+<meta name=viewport content="width=device-width,initial-scale=1,maximum-scale=0.80,
+                             user-scalable=no,minimal-ui"/>'
+sig trap EXIT {
+	echo </body></html>
+}
+
+for {set i = 1} {$i <= 8} {inc i} {
+	echo <a href=man.cgi.zrc?$i>SECTION $i</a>
+}
+echo <a href=man.cgi.zrc?l>SECTION L</a>
+echo <a href=man.cgi.zrc?n>SECTION N</a>
+echo '<hr />'
+set MANPATH = /usr/lib/zrc/doc:$MANPATH
+set PATH    = /usr/lib/plan9:$PATH
+set q       = $QUERY_STRING
+if {![str $q len]} { set q = 1 }
+set pat = {{
+	nm = $1;
+	sub(/\(.*/, "", nm);
+	if (substr(nm, length(nm), 1) == ",")
+		nm = substr(nm, 1, length(nm) - 1);
+	print "<a href=man.cgi.zrc?" nm ">" nm "</a>";
+	$1 = "";
+	print $0;
+}}
+
+set category = {l|n|(^[0-9])$}
+# Just show all manpages
+if {[str $q =~ $category]} {
+	echo <pre>
+	man -k . | grep ($q) | while {![read line]} {
+		let _ regexp {^(.+)\((.+)\)\ -\ (.+)$} $line _ name detail desc
+		echo <a href=man.cgi.zrc?$detail/$name>$name($detail)</a> - $desc
+	}
+	echo </pre>
+} else {
+	echo Bad query string $q
+}
