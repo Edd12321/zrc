@@ -1,5 +1,5 @@
 #!/usr/bin/env zrc
-
+> /dev/null rehash
 echo 'Content-type: text/html
 
 <!DOCTYPE HTML>
@@ -47,10 +47,11 @@ if {[str $q =~ ^recache]} {
 	mkdir -p .cache || msg "Couldn't create .cache" die
 	cd .cache       || msg "Couldn't cd to .cache" die
 	msg 'Rebuilding cache now...'
+	set mank = `{man -k . | grep ($it)}
 	foreach it {l n 0 1 2 3 4 5 6 7 8 9} {
 		> $it.txt {
 			echo <pre>
-			man -k . | grep ($it) | while {![read line]} {
+			echo $mank | while {![read line]} {
 				let {_} {
 					regexp {^(.+)\((.+)\)\ -\ (.+)$} $line _ name detail desc
 				}
@@ -61,9 +62,7 @@ if {[str $q =~ ^recache]} {
 			echo </pre>
 		} &
 	}
-	for {set i = 0} {$i < 12} {inc i} {
-		wait [job $i]
-	}
+	wait
 	msg 'Cache rebuilt succesfully!'
 	exit 0
 }

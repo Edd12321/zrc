@@ -120,7 +120,7 @@ src/list.o src/list.do:             src/pch.hpp src/list.hpp src/syn.hpp
 
 src/main.o src/main.do:             src/pch.hpp src/command.hpp src/config.hpp src/custom_cmd.hpp   \
                                     src/expr.hpp src/global.hpp src/sig.hpp src/syn.hpp src/vars.hpp\
-                                    src/zlineedit.hpp
+                                    src/zlineedit.hpp src/path.hpp
 
 src/path.o src/path.do:             src/pch.hpp src/path.hpp src/vars.hpp
 

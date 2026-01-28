@@ -118,27 +118,33 @@ bool pipeline::execute_act(bool in_subshell = false) {
 			}
 
 			// If found alias, run
-			if (kv_alias.find(*argv) != kv_alias.end()) {
-				auto& at = kv_alias.at(*argv);
-				if (at.active)
-					_exit(std::uint8_t(atoi(at(argc, argv).c_str())));
-			}
+			auto found_alias = kv_alias.find(*argv);
+			if (found_alias != kv_alias.end() && found_alias->second.active)
+				_exit(std::uint8_t(atoi(found_alias->second(argc, argv).c_str())));
+			
 			// If found function, run (atoi used for no throw)
-			if (functions.find(*argv) != functions.end())
-				_exit(std::uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
+			auto found_fn = functions.find(*argv);
+			if (found_fn != functions.end())
+				_exit(std::uint8_t(atoi(found_fn->second(argc, argv).c_str())));
+			
 			// If found builtin, run
-			if (builtins.find(*argv) != builtins.end())
-				_exit(std::uint8_t(atoi(builtins.at(*argv)(argc, argv).c_str())));
+			auto found_builtin = builtins.find(*argv);
+			if (found_builtin != builtins.end())
+				_exit(std::uint8_t(atoi(found_builtin->second(argc, argv).c_str())));
+			
 			// Try to run as external
 			auto const& map = !hctable.empty() ? hctable : pathwalk();
-			if (map.find(*argv) != map.end())
-				execv(map.at(*argv).c_str(), argv);
+			auto found_cmd = map.find(*argv);
+			if (found_cmd != map.end())
+				execv(found_cmd->second.c_str(), argv);
 			struct stat sb;
 			if (strchr(*argv, '/') && !stat(*argv, &sb))
 				execv(*argv, argv);
+
 			// If that failed, run as `unknown`
-			if (functions.find("unknown") != functions.end()) {
-				auto ret = functions.at("unknown")(argc, argv);
+			auto found_unknown = functions.find("unknown");
+			if (found_unknown != functions.end()) {
+				auto ret = found_unknown->second(argc, argv);
 				_exit(std::uint8_t(atoi(ret.c_str())));
 			}
 			perror(argv[0]);
@@ -170,21 +176,24 @@ bool pipeline::execute_act(bool in_subshell = false) {
 	// This is literally the exec function but with extra stuff:
 
 
-	bool is_alias = kv_alias.find(*argv) != kv_alias.end() && kv_alias.at(*argv).active;
+	auto found_alias = kv_alias.find(*argv);
+	bool is_alias = found_alias != kv_alias.end() && found_alias->second.active;
 	if (this->pmode == proc_mode::FG && is_alias && !in_subshell && cmds.size() == 1) {
-		vars::status = kv_alias.at(*argv)(argc, argv);
+		vars::status = found_alias->second(argc, argv);
 		return true;
 	}
 	// If found function and FG, run (for side effects in the shell)
-	bool is_fun = functions.find(*argv) != functions.end();
+	auto found_fun = functions.find(*argv);
+	bool is_fun = found_fun != functions.end();
 	if (this->pmode == proc_mode::FG && is_fun && !in_subshell && cmds.size() == 1) {
-		vars::status = functions.at(*argv)(argc, argv);
+		vars::status = found_fun->second(argc, argv);
 		return true;
 	}
 	// If found builtin and FG, run (for side effects in the shell)
-	bool is_builtin = builtins.find(*argv) != builtins.end();
+	auto found_builtin = builtins.find(*argv);
+	bool is_builtin = found_builtin != builtins.end();
 	if (this->pmode == proc_mode::FG && is_builtin && !in_subshell && cmds.size() == 1) {
-		vars::status = builtins.at(*argv)(argc, argv);
+		vars::status = found_builtin->second(argc, argv);
 		return true;
 	}
 	// Try to run as external/BG
@@ -210,9 +219,10 @@ bool pipeline::execute_act(bool in_subshell = false) {
 			ok = IS_COMMAND_FILE;
 		else {	
 			auto const& map = !hctable.empty() ? hctable : pathwalk();
-			if (map.find(*argv) != map.end()) {
+			auto found_cmd = map.find(*argv);
+			if (found_cmd != map.end()) {
 				ok = IS_COMMAND_PATH;
-				full_path = map.at(*argv);
+				full_path = found_cmd->second;
 			} else if (functions.find("unknown") != functions.end())
 				ok = IS_UNKNOWN;
 		}
@@ -236,9 +246,9 @@ bool pipeline::execute_act(bool in_subshell = false) {
 				old_input = -1;
 			}
 			switch (ok) {
-				case IS_ALIAS: _exit(std::uint8_t(atoi(kv_alias.at(*argv)(argc, argv).c_str())));
-				case IS_FUNCTION: _exit(std::uint8_t(atoi(functions.at(*argv)(argc, argv).c_str())));
-				case IS_BUILTIN: _exit(std::uint8_t(atoi(builtins.at(*argv)(argc, argv).c_str())));
+				case IS_ALIAS: _exit(std::uint8_t(atoi(found_alias->second(argc, argv).c_str())));
+				case IS_FUNCTION: _exit(std::uint8_t(atoi(found_fun->second(argc, argv).c_str())));
+				case IS_BUILTIN: _exit(std::uint8_t(atoi(found_builtin->second(argc, argv).c_str())));
 				case IS_COMMAND_FILE: execv(*argv, argv); perror(*argv); _exit(127);
 				case IS_COMMAND_PATH: execv(full_path.c_str(), argv); perror(*argv); _exit(127);
 				case IS_UNKNOWN: _exit(std::uint8_t(atoi(functions.at("unknown")(argc, argv).c_str())));
@@ -392,8 +402,7 @@ void job_table::reaper() {
 }
 
 void job_table::disown(int jid) {
-	if (jid2job.find(jid) != jid2job.end())
-		jid2job.erase(jid);
+	jid2job.erase(jid);
 }
 
 std::ostream& operator<<(std::ostream& out, job_table& jt) {
@@ -449,8 +458,9 @@ int FD_MAX;
  * @return none
  */
 bool run_function(std::string const& str) {
-	if (functions.find(str) != functions.end()) {
-		invoke(functions.at(str), {str.c_str(), nullptr});
+	auto found_fn = functions.find(str);
+	if (found_fn != functions.end()) {
+		invoke(found_fn->second, {str.c_str(), nullptr});
 		return true;
 	}
 	return false;
@@ -464,8 +474,9 @@ bool run_function(std::string const& str) {
 void exec_extern(int argc, char *argv[]) {
 	auto largv = argv[argc];
 	argv[argc] = nullptr;
-	if (hctable.find(*argv) != hctable.end()) {
-		if (execv(hctable[*argv].c_str(), argv)) {
+	auto found_cmd = hctable.find(*argv);
+	if (found_cmd != hctable.end()) {
+		if (execv(found_cmd->second.c_str(), argv)) {
 			perror(*argv);
 			_exit(127);
 		}

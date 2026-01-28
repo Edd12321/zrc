@@ -8,6 +8,7 @@
 #include "vars.hpp"
 #include "zlineedit.hpp"
 #include "command.hpp"
+#include "path.hpp"
 
 decltype(kv_alias) kv_alias;
 decltype(functions) functions;
@@ -227,6 +228,9 @@ int main(int argc, char *argv[]) {
 	vars::argv = copy_argv(argc, argv);
 	// Setup expr
 	expr::init();
+#if REHASH_STARTUP == 1
+	hctable = pathwalk();
+#endif
 
 	// Interactive job control stuff
 	if (argc == 1) {
