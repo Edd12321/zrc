@@ -1,0 +1,112 @@
+#!/usr/bin/env zrc
+##################################################
+# HTTP Server demo                               #
+# Run remote-controlled commands on the server   #
+##################################################
+
+fn css {
+	echo -n "
+	pre {
+		background-color: #f9f2f4;
+		color:            #c7254e;
+		border-radius:    4px;
+		padding:          2px 4px;
+		width:            fit-content;
+	}"
+}
+
+fn button {
+	return "
+	<form action=\"$1\">
+		<input type=\"submit\" value=\"$2\">
+	</form>"
+}
+
+fn serve {
+	# The message itself
+	echo "
+		<!DOCTYPE HTML>
+		<html>
+		<head>
+		<style>"`{css}"</style>
+		</head>
+		<body>
+			<h1>Zrc dashboard demo</h1>
+			"`{date}"
+
+			<!-----COMMANDS BEGIN----->
+			"[button 'remo dialog' 'Show dialogue box on server']"
+			"[button 'remo killsv' 'Close the server'           ]"
+			"[button 'remo ksshag' 'Kill ssh-agent'             ]"
+			"[button 'remo shutdn' 'Shut down PC'               ]"
+			"[button 'remo clrscr' 'Clear terminal'             ]"
+			<!-----COMMANDS END----->
+
+			<h2>MPStat</h2><pre>
+				"`{mpstat | ansifilter}"
+			</pre>
+			<h2>VMStat</h2><pre>
+				"`{vmstat | ansifilter}"
+			</pre>
+			<h2>IOStat</h2><pre>
+				"`{iostat | ansifilter}"
+			</pre>
+		</body>
+		</html>
+	"
+}
+
+fn log {
+	echo $1 | tee -a $LOG_FILE
+}
+
+fn remo {
+	# Wrapper
+	switch $1 {
+		case "ksshag" {
+			log "\[SSH agent killed]"
+			sh -c `{ssh-agent -k}
+		}
+		case "dialog" {
+			log "\[Remote-controlled dialogue window]";
+			zenity --info \
+			       --title="Dialogue Box"\
+			       --text="test"
+		}
+		case "killsv" {
+			log "\[Exiting server]"
+			exit
+		}
+		case "shutdn" {
+			log "\[Shutting down]"
+			poweroff
+		}
+		case "clrscr" {
+			clear
+		}
+		default {	
+			log "\[Invalid command]"
+		}
+	}
+}
+
+fn main {
+	echo -n "Please enter log filename: "
+	read LOG_FILE
+
+	> /dev/null $BROWSER http://localhost:8080 &
+	if {[test -f $LOG_FILE] == 0} {
+		rm $LOG_FILE
+	}
+	# Main webserver loop
+	while 1 {
+		set CMD = `{echo -e "HTTP/1.1 200 OK\n\n`{serve}" \
+			| nc -l -p 8080 \
+			| grep "GET /remo" \
+			| sed -e 's/%20/ /g'
+		}
+		if {[str $CMD len]} { 
+			remo [str $CMD 10 6]
+		}
+	}
+}; main

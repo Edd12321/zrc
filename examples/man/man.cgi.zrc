@@ -23,10 +23,13 @@ for {set i = 1} {$i <= 8} {inc i} {
 echo <a href=man.cgi.zrc?l>SECTION L</a>
 echo <a href=man.cgi.zrc?n>SECTION N</a>
 
-echo "<form action='man.cgi.zrc' method='get'>
-	<input type='hidden' name='recache' value='1' />
-	<button type='submit'>Regenerate cache</button>
-</form>"
+set normal_user = [expr {[str $REMOTE_ADDR != '127.0.0.1'] && [str $REMOTE_ADDR != '::1']}]
+if {!$normal_user} {
+	echo "<form action='man.cgi.zrc' method='get'>
+		<input type='hidden' name='recache' value='1' />
+		<button type='submit'>Regenerate cache</button>
+	</form>"
+}
 echo '<hr />'
 set MANPATH = /usr/lib/zrc/doc:$MANPATH
 set PATH    = /usr/lib/plan9:$PATH
@@ -41,17 +44,17 @@ fn msg {
 
 # Remake cache
 if {[str $q =~ ^recache]} {
-	if {[str $REMOTE_ADDR != '127.0.0.1'] && [str $REMOTE_ADDR != '::1']} {
+	if {$normal_user} {
 		msg 'Only admin can recache' die
 	}
 	mkdir -p .cache || msg "Couldn't create .cache" die
 	cd .cache       || msg "Couldn't cd to .cache" die
 	msg 'Rebuilding cache now...'
-	set mank = `{man -k . | grep ($it)}
+	set mank = `{man -k .}
 	foreach it {l n 0 1 2 3 4 5 6 7 8 9} {
 		> $it.txt {
 			echo <pre>
-			echo $mank | while {![read line]} {
+			echo $mank | grep ($it) | while {![read line]} {
 				let {_} {
 					regexp {^(.+)\((.+)\)\ -\ (.+)$} $line _ name detail desc
 				}
@@ -62,7 +65,9 @@ if {[str $q =~ ^recache]} {
 			echo </pre>
 		} &
 	}
-	wait
+	for {set i = 1} {$i <= 12} {inc i} {
+		^ /dev/null { wait [job $i] }
+	}
 	msg 'Cache rebuilt succesfully!'
 	exit 0
 }

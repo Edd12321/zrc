@@ -1,0 +1,23 @@
+#!/usr/bin/env zrc
+################################
+# Disable Intel CPU throttling #
+################################
+if {`{id -u} == 0} {
+	set REG = `{rdmsr -d 0x1FC}
+	if {$REG & 1 == 0} {
+		if {[str $2 == "-d"]}\
+			exit
+		# Enable BD PROCHOT
+		inc REG
+	} else {
+		if {[str $2 == "-e"]}\
+			exit
+		# Disable BD PROCHOT
+		inc REG -1
+	}
+
+	# Apply changes
+	wrmsr -a 0x1FC $REG
+} else {
+	die "You are not root!"
+}
