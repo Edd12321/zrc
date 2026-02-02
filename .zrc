@@ -190,7 +190,7 @@ fn pzf {
 fn rot13 {
 	if {$argc == 1} {
 		tr '\[a-m]\[n-z]\[A-M]\[N-Z]' '\[n-z]\[a-m]\[N-Z]\[A-M]'
-	} else {
+	} else let {i} {
 		for {set i = 1} {$i < $argc} {inc i} {
 			echo ${argv $i}
 		} | rot13
@@ -199,10 +199,10 @@ fn rot13 {
 
 # go up n times
 fn up {
-	if {![str ${argv 1} =~ {^[1-9][0-9]*$}]} {
-		set {argv 1} = 1
+	if {![str $1 =~ {^[1-9][0-9]*$}]} {
+		set 1 = 1
 	}
-	for {set i = 0} {$i < ${argv 1}} {inc i} ..
+	repeat $1 ..
 	return 0
 }
 

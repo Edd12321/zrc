@@ -573,16 +573,13 @@ _syn_error_redir:
 		}
 	}
 
-	if ((flags & NO_CLOBBER) && !access(argv[1], F_OK)) {
-		std::cerr << "Cannot clobber " << argv[1] << std::endl;
-		return "3";
-	}
-
 	int fflags = 0, ffd;
 	if (flags & OVERWR) fflags = (O_TRUNC | O_WRONLY | O_CREAT);
 	if (flags & APPEND) fflags = (O_WRONLY | O_CREAT | O_APPEND);
 	if (flags & READFL) fflags = (O_RDONLY);
 	if (flags & RDWRFL) fflags = (O_RDWR | O_CREAT);
+	if (flags & NO_CLOBBER)
+		fflags |= O_EXCL;
 
 	//
 	// Networking like in bash (udp/tcp)
@@ -630,7 +627,7 @@ _syn_error_redir:
 		ffd = open(argv[1], fflags, S_IWUSR | S_IRUSR);
 		if (ffd < 0) {
 			perror(argv[1]);
-			return "4";
+			return "3";
 		}
 	}
 	new_fd nfd(fd);
