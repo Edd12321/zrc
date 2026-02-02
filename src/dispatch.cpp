@@ -1729,18 +1729,15 @@ COMMAND(>&-, [<fd>] <eoe>)
 	}
 	int int_fd = fd;
 	std::ostream *os = nullptr;
+	std::streambuf *buf = nullptr;
 	if (int_fd == STDOUT_FILENO) os = &std::cout;
 	if (int_fd == STDERR_FILENO) os = &std::cerr;
-	if (os) os->flush();
+	if (os) buf = os->rdbuf(nullptr);
 	new_fd nfd(int_fd);
 	close(int_fd);
 	SCOPE_EXIT {
 		if (os) {
-			os->clear();
-			int fd = open("/dev/null", O_WRONLY);
-			dup2(fd, int_fd); close(fd);
-			if (fd >= 0)
-				os->flush();
+			os->rdbuf(buf);
 			os->clear();
 		}
 		if (is_valid)
