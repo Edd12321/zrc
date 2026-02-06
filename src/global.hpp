@@ -48,7 +48,7 @@ class zrc_trap;
 struct token;
 
 // Tables
-extern std::unordered_map<std::string, std::function<zrc_obj(int, char**)>> builtins;
+extern std::unordered_map<std::string, zrc_obj(*)(int, char**)> builtins;
 extern std::unordered_map<std::string, zrc_fun> functions;
 extern std::unordered_map<std::string, zrc_alias> kv_alias;
 extern std::unordered_map<int, zrc_trap> sigtraps;

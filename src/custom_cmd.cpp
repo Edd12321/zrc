@@ -6,7 +6,7 @@
 
 std::vector<zrc_frame> callstack;
 
-zrc_obj zrc_fun::operator()(int argc, char *argv[]) {
+zrc_obj zrc_fun::operator()(int argc, char **argv) {
 	zrc_obj zargc_old = vars::argc;
 	int argc_old = ::argc;
 	zrc_arr zargv_old = std::move(vars::argv);
@@ -44,7 +44,7 @@ zrc_obj zrc_fun::operator()(int argc, char *argv[]) {
 	return vars::status;
 }
 
-zrc_obj zrc_alias::operator()(int argc, char *argv[]) {
+zrc_obj zrc_alias::operator()(int argc, char **argv) {
 	active = false;
 	for (int i = 1; i < argc; ++i)
 		lexbody.emplace_back(token(argv[i]));

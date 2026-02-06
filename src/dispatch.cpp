@@ -64,16 +64,16 @@ public:
 };
 
 std::unordered_map<std::string, std::string> help_strs;
-#define COMMAND(x, help_str) { (help_strs[#x] = #help_str, #x),  [](int argc, char *argv[]) -> zrc_obj {\
+#define COMMAND(x, help_str) { (help_strs[#x] = #help_str, #x),  static_cast<zrc_obj(*)(int, char**)>([](int argc, char **argv) -> zrc_obj {\
 	auto const& help = #help_str; \
 
-#define END ; return vars::status;} },
+#define END ; return vars::status;}) },
 
 bool in_loop;
 bool in_switch;
 bool in_func;
 
-static inline std::string concat(int argc, char *argv[], int i) {
+static inline std::string concat(int argc, char **argv, int i) {
 	std::string ret;
 	for (; i < argc; ++i) {
 		ret += argv[i];
@@ -110,7 +110,7 @@ static inline void prints(std::vector<std::string> const& sp) {
  * Command table *
  *               *
  *****************/
-std::unordered_map<std::string, std::function<zrc_obj(int, char**)>> builtins = {
+std::unordered_map<std::string, zrc_obj(*)(int, char**)> builtins = {
 
 // Commands that only work in certain contexts
 #define CTRLFLOW_HELPER(x, y, help_str, z)         \
@@ -172,8 +172,11 @@ COMMAND(concat, [<word1> <word2>...])
 END
 // Replace currently running process
 COMMAND(exec, <cmd> [<arg1> <arg2>...])
-	if (argc > 1)
+	if (argc > 1) {
 		execvp(*(argv+1), argv+1);
+		perror("exec");
+		return "127";
+	}
 	else SYNTAX_ERROR
 END
 // Disable internal hash table
@@ -616,7 +619,7 @@ COMMAND(fc, [-e <editor>] [-lnr] [<how-much>])
 	}
 	if (!lflag) {
 		fout.close();
-		invoke_void([](int argc, char *argv[]) { return exec(argc, argv); }, {editor.c_str(), fc_file.c_str()});
+		invoke_void([](int argc, char **argv) { return exec(argc, argv); }, {editor.c_str(), fc_file.c_str()});
 		source(fc_file);
 
 		unlink(fc_file.c_str());

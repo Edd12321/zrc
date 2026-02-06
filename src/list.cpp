@@ -2,7 +2,7 @@
 #include "list.hpp"
 #include "syn.hpp"
 
-std::string list(int argc, const char *argv[]) {
+std::string list(int argc, const char **argv) {
 	std::string ret;
 
 	for (int i = 0; i < argc; ++i) {
@@ -63,7 +63,7 @@ std::string list(int argc, const char *argv[]) {
 	return ret;
 }
 
-std::string list(int argc, char *argv[]) {
+std::string list(int argc, char **argv) {
 	return list(argc, const_cast<const char**>(argv));
 }
 

@@ -471,7 +471,7 @@ bool run_function(std::string const& str) {
  * @param {int}argc,{char**}argv
  * @return void
  */
-void exec_extern(int argc, char *argv[]) {
+void exec_extern(int argc, char **argv) {
 	auto largv = argv[argc];
 	argv[argc] = nullptr;
 	auto found_cmd = hctable.find(*argv);
@@ -493,7 +493,7 @@ void exec_extern(int argc, char *argv[]) {
  * @param {int}argc,{char**}argv
  * @return none
  */
-zrc_obj exec(int argc, char *argv[]) {
+zrc_obj exec(int argc, char **argv) {
 	command cmd;
 	for (int i = 0; i < argc; ++i)
 		cmd.add_arg(argv[i]);
@@ -505,7 +505,7 @@ zrc_obj exec(int argc, char *argv[]) {
 }
 
 // Eval-or-exec behaviour on arguments
-void eoe(int argc, char *argv[], int i) {
+void eoe(int argc, char **argv, int i) {
 	if (argc == i+1) 
 		eval(argv[i]);
 	else
@@ -550,7 +550,7 @@ std::string get_output(std::string const& str) {
  * @param {int}argc,{char**}argv,{redir_flags}flags
  * @return int
  */
-zrc_obj redir(int argc, char *argv[], int fd, redir_flags flags) {
+zrc_obj redir(int argc, char **argv, int fd, redir_flags flags) {
 	if (argc < 3) {
 _syn_error_redir:
 		std::cerr << "syntax error: " << argv[0];

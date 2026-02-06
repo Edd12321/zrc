@@ -36,7 +36,7 @@ token::operator std::string() const {
 					auto b = tmp.find_first_not_of(ws);
 					if (b != std::string::npos) {
 						auto e = tmp.find_last_not_of(ws);
-						ret_str += tmp.substr(b, e - b + 1);
+						ret_str.append(tmp.data() + b, e - b + 1);
 					}
 				}
 				break;

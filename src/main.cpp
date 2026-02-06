@@ -189,7 +189,7 @@ void eval_stream(std::istream& in) {
  * @param {int}argc,{char**}argv
  * @return zrc_arr
  */
-zrc_arr copy_argv(int argc, char *argv[]) {
+zrc_arr copy_argv(int argc, char **argv) {
 	zrc_arr ret;
 	for (int i = 0; i < argc; ++i)
 		ret[std::to_string(i)] = argv[i];
@@ -208,7 +208,7 @@ static inline void version() {
 	exit(EXIT_FAILURE);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv) {
 	// Heavily commented, because it does so much dang stuff at once
 
 	std::ios_base::sync_with_stdio(false);
