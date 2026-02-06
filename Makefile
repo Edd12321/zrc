@@ -29,7 +29,7 @@ DBGFLAGS = $(CXXFLAGS) -O0 -Wextra -g -fsanitize=address,undefined              
 PREFIX = /usr
 SYSCONFDIR = $(DESTDIR)/etc
 SHELLPATH = $(DESTDIR)$(PREFIX)/bin/zrc
-STRIP = y
+STRIP = n
 
 .SUFFIXES: .cpp .o .do
 .cpp.o:
