@@ -39,6 +39,7 @@ void command::add_arg(const char *str) {
 	char *s = strdup(str);
 	if (s == nullptr)
 		throw std::bad_alloc();
+	new (s) char[strlen(s) + 1];
 	args.back() = s;
 	args.push_back(nullptr);
 }

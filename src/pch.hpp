@@ -5,6 +5,7 @@
 #define _XOPEN_SOURCE 700
 #endif
 
+extern "C" {
 // System headers
 #include <sys/ioctl.h>
 #include <sys/resource.h>
@@ -34,6 +35,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <netdb.h>
+}
 
 // C++ standard headers
 #include <algorithm>
