@@ -7,7 +7,7 @@ SRCS = src/command.cpp src/custom_cmd.cpp src/dispatch.cpp                      
        src/sig.cpp src/syn.cpp src/vars.cpp src/zlineedit.cpp
 OBJS = $(SRCS:.cpp=.o)
 DOBJS = $(SRCS:.cpp=.do)
-CXXFLAGS = -std=c++11 -pedantic -Wno-unused-result -Winvalid-pch
+CXXFLAGS = -std=c++11 -pedantic -Wno-unused-result -Winvalid-pch -flto
 SETUP_CUSTOM_SH =                                                                                   \
     set -e;                                                                                         \
     peval() { echo "$$1";           eval "$$1"; };                                                  \

@@ -335,11 +335,10 @@ void job_table::sighupper() {
 }
 
 void job_table::reaper(pid_t who, int how) {
-	pid_t pid;
-	int status;
+	auto main_shell = (interactive_sesh && getpid() == tty_pid);
 	for (;;) {
-		pid = waitpid(who, &status, how);
-		if (pid < 0) {
+		int status, wp = waitpid(who, &status, how);
+		if (wp == -1) {
 			if (errno == EINTR)
 				continue;
 			if (errno == ECHILD)
@@ -347,52 +346,48 @@ void job_table::reaper(pid_t who, int how) {
 			perror("waitpid (reaper)");
 			break;
 		}
-		if (pid == 0)
+		if (wp == 0)
 			break;
-		if (pid2jid.find(pid) == pid2jid.end()) {
-			if (WIFEXITED(status))
-				vars::status = numtos(WEXITSTATUS(status));
-			else if (WIFSIGNALED(status))
-				vars::status = numtos(128 + WTERMSIG(status));
+		auto at_jid = pid2jid.find(wp);
+		if (at_jid == pid2jid.end())
 			continue;
-		}
-		int jid = pid2jid.at(pid);
-		auto& job = jid2job[jid];
-		bool lproc = pid == job.pids.back();
+		int jid = at_jid->second;
+		job_table::job& job = jid2job.at(jid);
+		bool lproc = wp == job.pids.back();
+		
 		if (WIFSTOPPED(status)) {
-			if (interactive_sesh && lproc == 1)
-				tty << '[' << jid << "] Stopped\t" << (std::string)job.ppl << std::endl;
-			if (/*who == -job.pgid && */!(how & WNOHANG))
-				return;
-			continue; 
-		}
-		for (size_t i = 0; i < job.pids.size(); ++i) {
-			if (job.pids[i] == pid) {
-				job.pids.erase(job.pids.begin() + i);
-				break;
-			}
-		}
-		pid2jid.erase(pid);
-		if (lproc && job.ppl.pmode == pipeline::proc_mode::FG) {
-			if (WIFEXITED(status))
-				vars::status = numtos(WEXITSTATUS(status));
-			else if (WIFSIGNALED(status))
-				vars::status = numtos(128 + WTERMSIG(status));
-		}
-		if (job.pids.empty()) {
-			if (interactive_sesh && lproc) {
-				if (job.ppl.pmode == pipeline::proc_mode::BG && WIFEXITED(status)) {
-					do_fifo_cleanup(job.fifo_cleanup);
-					tty << '[' << jid << "] Done\t" << (std::string)job.ppl << std::endl;
-				}
-				else if (WIFSIGNALED(status)) {
-					do_fifo_cleanup(job.fifo_cleanup);
-					tty << '[' << jid << "] " << strsignal(WTERMSIG(status)) << '\t' << (std::string)job.ppl << std::endl;
-				}
-			}
-			jid2job.erase(jid);
+			if ((lproc || who < -1) && main_shell)
+				tty << "[" << jid << "] Stopped\t" << (std::string)job.ppl << std::endl;
 			if (who < -1)
-				break;
+				return;
+		} else {
+			pid2jid.erase(wp);
+			bool sigd = WIFSIGNALED(status);
+			if (sigd) {
+				if (lproc || who < -1) {
+					int sig = WTERMSIG(status);
+					if (main_shell)
+						tty << "[" << jid << "] " << strsignal(sig)
+						    << " (" << sig2txt.at(sig) << ")\t" << (std::string)job.ppl << std::endl;
+					if (job.ppl.pmode == pipeline::proc_mode::FG)
+						vars::status = numtos(128 + sig);
+				}
+			} else if (lproc && WIFEXITED(status)) {
+				if (job.ppl.pmode == pipeline::proc_mode::FG)
+					vars::status = numtos(WEXITSTATUS(status));
+				else if (main_shell)
+					tty << "[" << jid << "] Done\t" << (std::string)job.ppl << std::endl;
+			}
+			for (size_t i = 0; i < job.pids.size(); ++i) {
+				if (job.pids[i] == wp) {
+					job.pids.erase(job.pids.begin() + i);
+					break;
+				}
+			}
+			if ((sigd && who < -1) || job.pids.empty()) {
+				do_fifo_cleanup(job.fifo_cleanup);
+				jid2job.erase(jid);
+			}
 		}
 	}
 }
