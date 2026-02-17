@@ -334,8 +334,8 @@ COMMAND(unfn, <name1> <name2>...)
 END
 
 // Add/remove a signal trap, block and suspend signals
-COMMAND(sig, trap <SIG> [<word1> <word2>...] \n
-             untrap <SIG> \n
+COMMAND(sig, trap {<SIG1> <SIG2>...} [<word1> <word2>...] \n
+             untrap <SIG1> <SIG2>... \n
              mask [-S] -bsu {<SIG1> <SIG2>...})
 	if (argc < 2) SYNTAX_ERROR
 	char *true_arg = argv[0];
@@ -345,13 +345,24 @@ COMMAND(sig, trap <SIG> [<word1> <word2>...] \n
 		argv[0] = true_arg;
 		SCOPE_EXIT { argv[0] = old_arg; };
 		if (argc < 3) SYNTAX_ERROR
-		int sig = get_sig(argv[1]);
-		if (sig < 0) SYNTAX_ERROR
-		if (argc == 3)
-			sigtraps[sig] = zrc_trap(argv[2]);
-		else sigtraps[sig] = zrc_trap("{*}{" + list(argc - 2, argv + 2) + "}");
-		if (!interactive_sesh && dflsigs.find(sig) != dflsigs.end())
-			signal2(sig, sighandler);
+		auto wlst = lex(argv[1], SPLIT_WORDS).elems;
+		std::vector<int> sigs;
+		for (auto const& it : wlst) {
+			std::string str = it;
+			int sig = get_sig(str);
+			if (sig < 0) {
+				std::cerr << "Bad signal " << str << std::endl;
+				return "1";
+			}
+			sigs.push_back(sig);
+		}
+		for (int sig : sigs) {
+			if (argc == 3)
+				sigtraps[sig] = zrc_trap(argv[2]);
+			else sigtraps[sig] = zrc_trap("{*}{" + list(argc - 2, argv + 2) + "}");
+			if (!interactive_sesh && dflsigs.find(sig) != dflsigs.end())
+				signal2(sig, sighandler);
+		}
 		return vars::status;
 	}
 	if (!strcmp(argv[1], "untrap")) {
