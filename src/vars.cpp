@@ -48,10 +48,14 @@ zrc_obj getvar(std::string const& str) {
 			std::cerr << "error: " << var << " is an array!\n";
 		else if (std::all_of(var.begin(), var.end(), isdigit))
 			return getvar("argv " + var);
-		else if (getenv(var.c_str()))
-			return getenv(var.c_str());
-		else if (vmap.find(var) != vmap.end())
-			return vmap.at(var);
+		else {
+			auto env = getenv(var.c_str());
+			if (env)
+				return env;
+			auto fnd = vmap.find(var);
+			if (fnd != vmap.end())
+				return fnd->second;
+		}
 
 	// Try to get an array key
 	} else {
@@ -62,10 +66,11 @@ zrc_obj getvar(std::string const& str) {
 			std::cerr << "error: " << arr << " is a scalar!\n";
 			return "";
 		}
-		if (amap.find(arr) != amap.end()) {
-			auto& found = amap.at(arr);
-			if (found.find(key) != found.end())
-				return found.at(key);
+		auto fnd = amap.find(arr);
+		if (fnd != amap.end()) {
+			auto fnd2 = fnd->second.find(key);
+			if (fnd2 != fnd->second.end())
+				return fnd2->second;
 		}
 	}
 	return "";
@@ -127,16 +132,25 @@ void unsetvar(std::string const& key) {
 		std::string var = wlst[0];
 		if (getenv(var.c_str()))
 			unsetenv(var.c_str());
-		else if (vmap.find(var) != vmap.end())
-			vars::vmap.erase(var);
-		else if (amap.find(var) != amap.end())
-			vars::amap.erase(var);
+		else {
+			auto fndv = vmap.find(var);
+			if (fndv != vmap.end())
+				vars::vmap.erase(fndv);
+			else {
+				auto fnda = amap.find(var);
+				if (fnda != amap.end())
+					vars::amap.erase(fnda);
+			}
+		}
 	} else {
 		std::string arr = wlst[0];
 		std::string key = wlst[1];
 		if (vmap.find(arr) != vmap.end())
 			std::cerr << "error: " << arr << " is a scalar!\n";
-		else if (amap.find(arr) != amap.end())
-			amap[arr].erase(key);
+		else {
+			auto fnd = amap.find(arr);
+			if (fnd != amap.end())
+				fnd->second.erase(key);
+		}
 	}
 }
