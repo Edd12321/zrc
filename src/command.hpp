@@ -35,9 +35,12 @@ public:
 	enum class proc_mode {
 		BG, FG
 	} pmode = proc_mode::FG;
+	int coproc_in = -1, coproc_out = -1;
+	std::string coproc_name;
 	std::vector<command> cmds;
+
 // private:
-	bool execute_act(bool);
+	bool execute_act(pplexec_flags = NORMAL_PPL);
 public:
 	void execute();
 	void add_cmd(command&&);
@@ -51,6 +54,12 @@ public:
 		pipeline ppl;
 		std::vector<pid_t> pids;
 		std::vector<std::string> fifo_cleanup;
+		~job() {
+			if (ppl.coproc_in != -1)
+				close(ppl.coproc_in);
+			if (ppl.coproc_out != -1)
+				close(ppl.coproc_out);
+		}
 	};
 //private: // encapsulation is too much of a hassle here
 	std::map<int, job> jid2job;
@@ -108,6 +117,8 @@ void invoke_void(Fun const& f, std::initializer_list<const char*> list) {
 
 extern std::vector<std::string> fifo_cleanup;
 
+int moveup(int, int&);
+int moveup(int&);
 bool run_function(std::string const&);
 void exec_extern(int, char**);
 zrc_obj exec(int, char**);

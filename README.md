@@ -18,6 +18,7 @@ Zrc is a small scripting language for Linux, BSD, etc. written in C++ (interpret
 - [X] Sockets (`/dev/tcp/ADDR/PORT` or `/dev/udp/ADDR/PORT`)
 - [X] Complex I/O handling (control flow, functions, built-ins and commands can be seamlessly piped together)
 - [X] Getopts
+- [X] Coprocesses
 - [X] Login/Logout file sourcing
 - [X] Procedures/functions
 	- [X] Function arguments

@@ -62,7 +62,12 @@ pipeline::operator std::string() {
 	return ret;
 }
 
-bool pipeline::execute_act(bool in_subshell = false) {
+bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
+	bool in_coprocess = flags & COPROCESS;
+	bool in_subshell = flags & SUBSHELL;
+	if (in_coprocess)
+		in_subshell = true;
+
 	int input = STDIN_FILENO, old_input = -1;
 	pid_t pid, pgid = 0;
 	// for reaper 
@@ -159,8 +164,7 @@ bool pipeline::execute_act(bool in_subshell = false) {
 			}
 			if (input != STDIN_FILENO)
 				close(input);
-			input = fcntl(pd[0], F_DUPFD_CLOEXEC, FD_MAX + 1);
-			close(pd[0]);
+			moveup(pd[0], input);
 			close(pd[1]);
 		}
 	}
@@ -175,7 +179,6 @@ bool pipeline::execute_act(bool in_subshell = false) {
 	int argc = cmds.back().argc();
 	char **argv = cmds.back().argv();
 	// This is literally the exec function but with extra stuff:
-
 
 	auto found_alias = kv_alias.find(*argv);
 	bool is_alias = found_alias != kv_alias.end() && found_alias->second.active;
@@ -228,15 +231,32 @@ bool pipeline::execute_act(bool in_subshell = false) {
 				ok = IS_UNKNOWN;
 		}
 	}
-	if (ok == IS_UNKNOWN && this->pmode == proc_mode::FG)
+	if (ok == IS_UNKNOWN && this->pmode == proc_mode::FG && !in_subshell)
 		vars::status = functions.at("unknown")(argc, argv);
 	else {
 		main_shell = (interactive_sesh && getpid() == tty_pid);
+		int c2p[2], p2c[2];
+		if (in_coprocess) {
+			if (pipe(c2p) < 0) {
+				perror("pipe");
+				return 1;
+			}
+			if (pipe(p2c) < 0) {
+				perror("pipe");
+				return 1;
+			}
+		}
 		if ((pid = fork()) < 0) {
 			perror("fork");
 		} else if (pid == 0) {
-			reset_sigs();
 			SCOPE_EXIT { _exit(127); }; // just in case
+			if (in_coprocess) {
+				dup2(p2c[0], STDIN_FILENO);
+				dup2(c2p[1], STDOUT_FILENO);
+				close(c2p[0]); close(p2c[1]);
+				close(c2p[1]); close(p2c[0]);
+			}
+			reset_sigs();
 			if (main_shell) {
 				if (!pgid)
 					pgid = getpid();
@@ -255,35 +275,41 @@ bool pipeline::execute_act(bool in_subshell = false) {
 				case IS_UNKNOWN: _exit(std::uint8_t(atoi(functions.at("unknown")(argc, argv).c_str())));
 				case IS_NOTHING: errno = ENOENT; perror(*argv); _exit(127);
 			}
-		} else if (main_shell) {
-			pids.push_back(pid);
-			if (!pgid)
-				pgid = pid;
-			if (setpgid(pid, pgid) < 0 && errno != EACCES && errno != ESRCH)
-				perror("setpgid (final)");
-			
-			if (this->pmode == proc_mode::FG) {
-				// Foreground jobs transfer the terminal control to the child
-				if (tcsetpgrp2(pgid) < 0)
-					perror("tcsetpgrp #1");
-				kill(-pgid, SIGCONT);
-				jtable.add_job(std::move(*this), std::move(pids));
-#if WINDOWS
-				struct timespec ts = { CYG_HACK_TIMEOUT }; // 4 ms
-				nanosleep(&ts, nullptr); // no idea.
-#endif
-				jtable.reaper(-pgid, WUNTRACED);
-				if (tcsetpgrp2(getpgrp()) < 0)
-					perror("tcsetpgrp #2");
-			} else {
-				auto jid = jtable.add_job(std::move(*this), std::move(pids));	
-				tty << '[' << jid << "]\t" << pgid << std::endl;
-			}
 		} else {
 			pids.push_back(pid);
-			jtable.add_job(std::move(*this), std::move(pids));
-			if (this->pmode == proc_mode::FG)
-				jtable.reaper(pid, WUNTRACED);
+			if (in_coprocess) {
+				coproc_in = c2p[0]; vars::amap[coproc_name]["0"] = numtos(c2p[0]);
+				coproc_out = p2c[1]; vars::amap[coproc_name]["1"] = numtos(p2c[1]);
+				close(c2p[1]); close(p2c[0]);
+			}
+			if (main_shell) {
+				if (!pgid)
+					pgid = pid;
+				if (setpgid(pid, pgid) < 0 && errno != EACCES && errno != ESRCH)
+					perror("setpgid (final)");
+				
+				if (this->pmode == proc_mode::FG) {
+					// Foreground jobs transfer the terminal control to the child
+					if (tcsetpgrp2(pgid) < 0)
+						perror("tcsetpgrp #1");
+					kill(-pgid, SIGCONT);
+					jtable.add_job(std::move(*this), std::move(pids));
+#if WINDOWS
+					struct timespec ts = { CYG_HACK_TIMEOUT }; // 4 ms
+					nanosleep(&ts, nullptr); // no idea.
+#endif
+					jtable.reaper(-pgid, WUNTRACED);
+					if (tcsetpgrp2(getpgrp()) < 0)
+						perror("tcsetpgrp #2");
+				} else {
+					auto jid = jtable.add_job(std::move(*this), std::move(pids));	
+					tty << '[' << jid << "]\t" << pgid << std::endl;
+				}
+			} else {
+				jtable.add_job(std::move(*this), std::move(pids));
+				if (this->pmode == proc_mode::FG)
+					jtable.reaper(pid, WUNTRACED);
+			}
 		}
 	}
 	return true;
@@ -447,6 +473,20 @@ int FD_MAX;
 //
 // Remaining code
 //
+int moveup(int who, int& where) {
+	int ret;
+	do
+		ret = fcntl(who, F_DUPFD_CLOEXEC, FD_MAX + 1);
+	while (ret == -1 && errno == EINTR);
+	if (ret != -1) {
+		close(who);
+		where = ret;
+	}
+	return ret;
+}
+int moveup(int& both) {
+	return moveup(both, both);
+}
 
 /** Run a function with no args.
  *
@@ -664,5 +704,3 @@ std::string get_fifo(std::string const& str) {
 		return fifo_file;
 	}
 }
-
-

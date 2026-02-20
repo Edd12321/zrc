@@ -36,6 +36,12 @@ FLAG_TYPE(redir, ARG(
 	OPTFD_Y      = 1 << 5, // 01000000
 	OPTFD_N      = 1 << 6, // 10000000
 ))
+
+FLAG_TYPE(pplexec, ARG(
+	NORMAL_PPL   =      0, // 00000000
+	SUBSHELL     = 1 << 0, // 00000001
+	COPROCESS    = 1 << 1  // 00000010
+))
 // Types
 using zrc_obj = std::string;
 using zrc_arr = std::unordered_map<zrc_obj, zrc_obj>;

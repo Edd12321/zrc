@@ -272,8 +272,8 @@ int main(int argc, char **argv) {
 		perror("pipe");
 		return EXIT_FAILURE;
 	}
-	selfpipe_rd = fcntl(selfpipe[0], F_DUPFD_CLOEXEC, FD_MAX + 1); close(selfpipe[0]);
-	selfpipe_wrt = fcntl(selfpipe[1], F_DUPFD_CLOEXEC, FD_MAX + 1); close(selfpipe[1]);
+	moveup(selfpipe[0], selfpipe_rd);
+	moveup(selfpipe[1], selfpipe_wrt);
 	fcntl(selfpipe_wrt, F_SETFL, O_NONBLOCK);
 	fcntl(selfpipe_rd, F_SETFL, O_NONBLOCK);
 	for (auto const& it : sig2txt)

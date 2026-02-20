@@ -914,7 +914,22 @@ COMMAND(@, [<eoe>])
 	for (int i = 1; i < argc; ++i)
 		cmd.add_arg(argv[i]);
 	ppl.add_cmd(std::move(cmd));
-	ppl.execute_act(true);
+	ppl.execute_act(SUBSHELL);
+END
+
+// Coprocess
+COMMAND(coproc, <name> <eoe>)
+	if (argc < 3) SYNTAX_ERROR
+	pipeline ppl;
+	command cmd;
+	if (argc == 3)
+		cmd.add_arg("eval");
+	for (int i = 2; i < argc; ++i)
+		cmd.add_arg(argv[i]);
+	ppl.add_cmd(std::move(cmd));
+	ppl.coproc_name = argv[1];
+	ppl.pmode = pipeline::proc_mode::BG;
+	ppl.execute_act(COPROCESS)
 END
 
 // Fork off a new process, C-style
@@ -1768,7 +1783,7 @@ COMMAND(x, __VA_ARGS__)            \
     for (int i = 1; i < argc; ++i) \
         cmd.add_arg(argv[i]);      \
     ppl.add_cmd(std::move(cmd));   \
-    ppl.execute_act(false);        \
+    ppl.execute_act();             \
 END
 DUPLICATION(<&,  >&,  0, <fd> <eoe>)
 DUPLICATION(^&,  >&,  2, <fd> <eoe>)
