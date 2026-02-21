@@ -3,7 +3,7 @@
 #include "pch.hpp"
 #include "global.hpp"
 
-#define ZVERSION         "zrc v2.7 staging" /* Version string */
+#define ZVERSION         "zrc v2.7"         /* Version string */
 #define ZCONF            ".zrc"             /* Configuration file */
 #define ZHIST            ".zrc_history"     /* History file */
 #define ZLOGIN1          ".zrc_profile"     /* Login filename #1 */
