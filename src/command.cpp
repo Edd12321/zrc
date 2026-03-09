@@ -379,7 +379,10 @@ void job_table::reaper(pid_t who, int how) {
 		if (at_jid == pid2jid.end())
 			continue;
 		int jid = at_jid->second;
-		job_table::job& job = jid2job.at(jid);
+		auto fnd_job = jid2job.find(jid);
+		if (fnd_job == jid2job.end())
+			continue;
+		job_table::job& job = fnd_job->second;
 		bool lproc = wp == job.pids.back();
 		
 		if (WIFSTOPPED(status)) {

@@ -62,7 +62,6 @@ public:
 #endif
 	}
 };
-
 std::unordered_map<std::string, std::string> help_strs;
 #define COMMAND(x, help_str) { (help_strs[#x] = #help_str, #x),  static_cast<zrc_obj(*)(int, char**)>([](int argc, char **argv) -> zrc_obj {\
 	auto const& help = #help_str; \
