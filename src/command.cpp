@@ -699,11 +699,10 @@ std::string get_fifo(std::string const& str) {
 			_exit(1);
 		}
 		dup2(fd, STDOUT_FILENO);
+		SCOPE_EXIT { exit(0); };
 		eval(str);
 		close(fd);
-		_exit(0);
-	} else {
-		fifo_cleanup.push_back(fifo_name);
-		return fifo_file;
 	}
+	fifo_cleanup.push_back(fifo_name);
+	return fifo_file;
 }
