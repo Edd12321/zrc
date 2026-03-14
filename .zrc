@@ -173,6 +173,12 @@ alias 777     "chmod 777"
 # Ctrl flow
 alias forever "while 1"
 
+# JC aliases
+alias jobs    "job table"
+alias fg      "job fg"
+alias bg      "job bg"
+alias disown  "job disown"
+
 fn mkcd { mkdir ${argv 1} && cd ${argv 1} }
 fn lcd  { cd ${argv 1} && l }
 fn pzf {

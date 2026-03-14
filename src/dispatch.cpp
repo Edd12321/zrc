@@ -345,6 +345,7 @@ COMMAND(job, pids <jid> \n
 		std::cout << jtable;
 		return vars::status;
 	}
+	SYNTAX_ERROR
 END
 
 // Refresh internal hash table
