@@ -107,9 +107,11 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 			reset_sigs();
 			SCOPE_EXIT { _exit(127); };
 			if (main_shell) {
-				if (!pgid)
+				if (!pgid) {
 					pgid = getpid();
-				setpgid(0, pgid);
+					setpgid(0, pgid);
+					tcsetpgrp2(pgid);
+				} else setpgid(0, pgid);
 			}
 			if (input != STDIN_FILENO) {
 				dup2(input, STDIN_FILENO);
@@ -258,9 +260,11 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 			}
 			reset_sigs();
 			if (main_shell) {
-				if (!pgid)
+				if (!pgid) {
 					pgid = getpid();
-				setpgid(0, pgid);
+					setpgid(0, pgid);
+					tcsetpgrp2(pgid);
+				} else setpgid(0, pgid);
 			}
 			if (old_input >= 0) {
 				close(old_input);
@@ -386,7 +390,7 @@ void job_table::reaper(pid_t who, int how) {
 		bool lproc = wp == job.pids.back();
 		
 		if (WIFSTOPPED(status)) {
-			if ((lproc || who < -1) && main_shell)
+			if (lproc && main_shell)
 				tty << "[" << jid << "] Stopped\t" << (std::string)job.ppl << std::endl;
 			if (who < -1)
 				return;

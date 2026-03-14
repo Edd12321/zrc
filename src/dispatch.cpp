@@ -271,12 +271,15 @@ END
       std::cerr << "Bad PID\n";                                \
       return "3";                                              \
     }                                                          \
+    bool main_shell = getpid() == tty_pid && interactive_sesh; \
     kill(-getpgid(n), SIGCONT);                                \
     jtable.jid2job.at(jtable.pid2jid.at(n)).ppl.pmode = z; y;  \
-    if (getpid() == tty_pid && interactive_sesh)               \
-       tcsetpgrp2(tty_pid)                                     \
+    if (main_shell) tcsetpgrp2(tty_pid)                        \
   END
-FGBG(pipeline::proc_mode::FG, fg, tcsetpgrp2(getpgid(n)); jtable.reaper(n, WUNTRACED))
+FGBG(pipeline::proc_mode::FG, fg,
+		if (main_shell)
+			tcsetpgrp2(getpgid(n));
+		jtable.reaper(-getpgid(n), WUNTRACED))
 FGBG(pipeline::proc_mode::BG, bg,)
 
 // JID to PGID
