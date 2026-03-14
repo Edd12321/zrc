@@ -182,10 +182,6 @@ END
 COMMAND(unhash,) 
 	hctable.clear()
 END
-// Display internal job table
-COMMAND(jobs,) 
-	std::cout << jtable
-END
 
 // Source a script
 COMMAND(source, <file1> <file2>...)
@@ -261,45 +257,94 @@ COMMAND(getopts, <optstring> <var>)
 	return opt != -1 ? std::to_string(opt) : "false";
 END
 
-// Foreground/background tasks
-#define FGBG(z, x, y)                                          \
-  COMMAND(x, <pid>)                                            \
-    if (argc != 2) SYNTAX_ERROR                                \
-    auto n = expr::eval(argv[1]);                              \
-    if (!isfinite(n)) SYNTAX_ERROR                             \
-    if (jtable.pid2jid.find(n) == jtable.pid2jid.end()) {      \
-      std::cerr << "Bad PID\n";                                \
-      return "3";                                              \
-    }                                                          \
-    bool main_shell = getpid() == tty_pid && interactive_sesh; \
-    kill(-getpgid(n), SIGCONT);                                \
-    jtable.jid2job.at(jtable.pid2jid.at(n)).ppl.pmode = z; y;  \
-    if (main_shell) tcsetpgrp2(tty_pid)                        \
-  END
-FGBG(pipeline::proc_mode::FG, fg,
-		if (main_shell)
-			tcsetpgrp2(getpgid(n));
-		jtable.reaper(-getpgid(n), WUNTRACED))
-FGBG(pipeline::proc_mode::BG, bg,)
-
 // JID to PGID
-COMMAND(job, <jid>)
-	if (argc != 2) SYNTAX_ERROR
-	auto x = expr::eval(argv[1]);
-	if (!isfinite(x)) SYNTAX_ERROR
-	if (jtable.jid2job.find(x) == jtable.jid2job.end()) {
-		std::cerr << "Expected a valid JID" << std::endl;
-		return "-2";
+COMMAND(job, pids <jid> \n
+             leader <pid> \n
+             jid <pid> \n
+             table \n
+             fg <jid> \n
+             bg <jid> \n
+             disown <jid>)
+	zrc_num n;
+	if (argc == 3) {
+		n = expr::eval(argv[2]);
+		if (!isfinite(n)) SYNTAX_ERROR
 	}
-	return numtos(jtable.jid2job.at(x).pids[0])
-END
-
-// Remove jobs from table
-COMMAND(disown, <jid>)
-	if (argc != 2) SYNTAX_ERROR
-	auto x = expr::eval(argv[1]);
-	if (!isfinite(x)) SYNTAX_ERROR
-	jtable.disown(x)
+	bool main_shell = interactive_sesh && isatty(STDIN_FILENO);
+	if (argc == 3 && !strcmp(argv[1], "pids")) {
+		auto fnd = jtable.jid2job.find(n);
+		if (fnd == jtable.jid2job.end()) {
+			std::cerr << "No such JID " << n << std::endl;
+			return "-1";
+		}
+		zrc_obj ret;
+		for (auto const& it : fnd->second.pids)
+			ret += std::to_string(it) + ' ';
+		if (!ret.empty()) ret.pop_back();
+		return ret;
+	}
+	if (argc == 3 && !strcmp(argv[1], "leader")) {
+		if (!main_shell) {
+			std::cerr << "No leader in script mode" << std::endl;
+			return "-3";
+		}
+		auto fnd = jtable.jid2job.find(n);
+		if (fnd == jtable.jid2job.end()) {
+			std::cerr << "No such JID " << n << std::endl;
+			return "-1";
+		}
+		if (fnd->second.pids.empty())
+			return "-2";
+		return std::to_string(fnd->second.pids[0]);
+	}
+	if (argc == 3 && (!strcmp(argv[1], "fg") || !strcmp(argv[1], "bg"))) {
+		bool fg = argv[1][0] == 'f';
+		auto fnd = jtable.jid2job.find(n);
+		if (fnd == jtable.jid2job.end()) {
+			std::cerr << "No such JID " << n << std::endl;
+			return "-1";
+		}
+		auto& j = fnd->second;
+		if (fnd->second.pids.empty())
+			return "-2";
+		if (main_shell) {
+			pid_t pgrp = getpgid(fnd->second.pids[0]);
+			if (fg)
+				tcsetpgrp2(pgrp);
+			kill(-pgrp, SIGCONT);
+			if (fg) {
+				jtable.reaper(-pgrp, WUNTRACED);
+				tcsetpgrp2(tty_pid);
+			}
+		} else {
+			for (auto const& it : fnd->second.pids)
+				kill(it, SIGCONT);
+			if (fg)
+				// script mode, no process groups
+				for (auto const& it : fnd->second.pids)
+					jtable.reaper(it, WUNTRACED);
+		}
+	}
+	if (argc == 3 && !strcmp(argv[1], "disown")) {
+		auto fnd = jtable.jid2job.find(n);
+		if (fnd == jtable.jid2job.end()) {
+			std::cerr << "No such JID " << n << std::endl;
+			return "-1";
+		}
+		jtable.disown(n);
+	}
+	if (argc == 3 && !strcmp(argv[1], "jid")) {
+		auto fnd = jtable.pid2jid.find(n);
+		if (fnd == jtable.pid2jid.end()) {
+			std::cerr << "No job having PID " << n << std::endl;
+			return "-1";
+		}
+		return std::to_string(fnd->second);
+	}
+	if (argc == 2 && !strcmp(argv[1], "table")) {
+		std::cout << jtable;
+		return vars::status;
+	}
 END
 
 // Refresh internal hash table

@@ -110,7 +110,8 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 				if (!pgid) {
 					pgid = getpid();
 					setpgid(0, pgid);
-					tcsetpgrp2(pgid);
+					if (this->pmode == proc_mode::FG)
+						tcsetpgrp2(pgid);
 				} else setpgid(0, pgid);
 			}
 			if (input != STDIN_FILENO) {
@@ -263,7 +264,8 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 				if (!pgid) {
 					pgid = getpid();
 					setpgid(0, pgid);
-					tcsetpgrp2(pgid);
+					if (this->pmode == proc_mode::FG)
+						tcsetpgrp2(pgid);
 				} else setpgid(0, pgid);
 			}
 			if (old_input >= 0) {
