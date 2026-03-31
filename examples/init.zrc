@@ -1,0 +1,54 @@
+#!/usr/bin/zrc
+
+let {mypid} {
+	set mypid = [pid]
+	if {$mypid != 1} {
+		die 'PID $mypid is not 1'
+	}
+}
+
+echo Welcome to Linux!
+
+cd /
+
+set PATH = /usr/local/bin:/usr/bin
+export PATH
+
+mkdir -p /proc && mount -t proc none /proc
+mkdir -p /sys && mount -t sysfs none /sys
+mkdir -p /dev && mount -t devtmpfs none /dev
+mkdir -p /tmp && mount -t tmpfs none /tmp
+mkdir -p /dev/pts && mount -t devpts none /dev/pts
+
+mkdir -p /run/udev
+/lib/systemd/systemd-udevd --daemon
+udevadm trigger --action=add --type=devices
+udevadm settle
+
+set con = /dev/console
+< $con > $con ^ $con eval {
+	
+	eval {
+		mount -a
+		foreach tty {console tty2 tty3 tty4 tty5 tty6}  {
+			while true {
+				agetty -J $tty
+			} &
+		}
+	} &
+
+	sig mask -b
+	sig mask -u CHLD; sig trap CHLD {
+		wait
+	}
+	sig mask -u USR1; sig trap USR1 {
+		poweroff -f
+	}
+	sig mask -u INT; sig trap INT {
+		reboot -f
+	}
+	while true {
+		^&- wait
+		sleep 5
+	}
+}
