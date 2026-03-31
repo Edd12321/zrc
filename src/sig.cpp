@@ -74,7 +74,6 @@ int selfpipe_rd, selfpipe_wrt;
 struct pollfd selfpipe_wait;
 
 int selfpipe_trick() {
-	static struct pollfd selfpipe_wait;
 	selfpipe_wait.fd = selfpipe_rd;
 	selfpipe_wait.events = POLLIN;
 	

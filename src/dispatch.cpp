@@ -226,6 +226,8 @@ COMMAND(wait, [<pid1> <pid2>...])
 				last = status;
 				break;
 			}
+			selfpipe_wait.fd = selfpipe_rd;
+			selfpipe_wait.events = POLLIN;
 			poll(&selfpipe_wait, 1, -1);
 			int ran = selfpipe_trick();
 			if (interactive_sesh && getpid() == tty_pid && ran == SIGINT)
@@ -324,6 +326,7 @@ COMMAND(job, pids <jid> \n
 				for (auto const& it : fnd->second.pids)
 					jtable.reaper(it, WUNTRACED);
 		}
+		return vars::status;
 	}
 	if (argc == 3 && !strcmp(argv[1], "disown")) {
 		auto fnd = jtable.jid2job.find(n);
@@ -332,6 +335,7 @@ COMMAND(job, pids <jid> \n
 			return "-1";
 		}
 		jtable.disown(n);
+		return vars::status;
 	}
 	if (argc == 3 && !strcmp(argv[1], "jid")) {
 		auto fnd = jtable.pid2jid.find(n);
@@ -408,7 +412,7 @@ COMMAND(sig, trap {<SIG1> <SIG2>...} [<word1> <word2>...] \n
 			if (argc == 3)
 				sigtraps[sig] = zrc_trap(argv[2]);
 			else sigtraps[sig] = zrc_trap("{*}{" + list(argc - 2, argv + 2) + "}");
-			if (!interactive_sesh && dflsigs.find(sig) != dflsigs.end())
+			if (!interactive_sesh || dflsigs.find(sig) != dflsigs.end())
 				signal2(sig, sighandler);
 		}
 		return vars::status;
@@ -425,7 +429,7 @@ COMMAND(sig, trap {<SIG1> <SIG2>...} [<word1> <word2>...] \n
 				std::cerr << "Bad signal " << argv[i] << std::endl;
 				continue;
 			}
-			if (!interactive_sesh && dflsigs.find(sig) != dflsigs.end())
+			if (!interactive_sesh || dflsigs.find(sig) != dflsigs.end())
 				signal2(sig, SIG_DFL);
 			sigtraps.erase(sig);
 		}
