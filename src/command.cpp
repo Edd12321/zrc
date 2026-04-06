@@ -620,9 +620,9 @@ _syn_error_redir:
 
 	int fflags = 0, ffd;
 	if (flags & OVERWR) fflags = (O_TRUNC | O_WRONLY | O_CREAT);
-	if (flags & APPEND) fflags = (O_WRONLY | O_CREAT | O_APPEND);
-	if (flags & READFL) fflags = (O_RDONLY);
-	if (flags & RDWRFL) fflags = (O_RDWR | O_CREAT);
+	else if (flags & APPEND) fflags = (O_WRONLY | O_CREAT | O_APPEND);
+	else if (flags & READFL) fflags = (O_RDONLY);
+	else if (flags & RDWRFL) fflags = (O_RDWR | O_CREAT);
 	if (flags & NO_CLOBBER)
 		fflags |= O_EXCL;
 
