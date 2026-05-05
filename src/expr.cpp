@@ -33,6 +33,7 @@ using vstr = std::vector<std::string>;
     X(LOG2,       1,   (vstr{"log2"}),                                                      RIGHT,   16,   log2(x))                      \
     X(LN,         1,   (vstr{"ln"}),                                                        RIGHT,   16,   log(x))                       \
     X(SQRT,       1,   (vstr{"sqrt"}),                                                      RIGHT,   16,   sqrt(x))                      \
+    X(CBRT,       1,   (vstr{"cbrt"}),                                                      RIGHT,   16,   cbrt(x))                      \
     X(FLOOR,      1,   (vstr{"floor"}),                                                     RIGHT,   16,   floor(x))                     \
     X(CEIL,       1,   (vstr{"ceil"}),                                                      RIGHT,   16,   ceil(x))                      \
     X(TRUNC,      1,   (vstr{"trunc"}),                                                     RIGHT,   16,   trunc(x))                     \
@@ -259,7 +260,7 @@ zrc_num eval(const char *buf) {
 						||  top_assoc == RIGHT && top_prec > prec) {
 							if (!popper(buf, ops, vals))
 								return NAN;
-							} else break;
+						} else break;
 					}
 					ops.push(op);
 					i += it.first.length() - 1;
