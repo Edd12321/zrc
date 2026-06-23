@@ -234,7 +234,7 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 				ok = IS_UNKNOWN;
 		}
 	}
-	if (ok == IS_UNKNOWN && this->pmode == proc_mode::FG && !in_subshell)
+	if (ok == IS_UNKNOWN && this->pmode == proc_mode::FG && cmds.size() == 1 && !in_subshell)
 		vars::status = functions.at("unknown")(argc, argv);
 	else {
 		main_shell = (interactive_sesh && getpid() == tty_pid);

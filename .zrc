@@ -276,7 +276,7 @@ fn expvar {
 	set ${argv 1} = ${argv 2}
 	export ${argv 1}
 }
-expvar AUTH    doas
+expvar AUTH    sudo # doas
 expvar CDPATH  $CDPATH:$HOME
 expvar PATH    $HOME/.local/bin:$PATH
 expvar PAGER   most
