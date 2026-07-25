@@ -6,7 +6,7 @@
 
 Zrc is a small scripting language for Linux, BSD, etc. written in C++ (interpreter + builtins in a very small ~4000SLOC). It is a shell with syntax similar to Tcl/TK ([EIAS](https://wiki.tcl-lang.org/page/everything+is+a+string)). The code is quite small, but minimalism is not the main focus of Zrc (which is why it has way more "luxury features" compared to usual shells). Instead, the idea is to be a better alternative to `tclsh` that extends its syntax and adds features like job control, a custom line editor and more, while still almost keeping Tcl's "pure syntax".
 
-**Note**: The shell is experimental and behvaiour may change often between releases. The codebase is also intentionally written in C++11 without any compiler extensions, for compatibility reasons.
+**Note**: The shell is experimental and behaviour may change often between releases. The codebase is also intentionally written in C++11 without any compiler extensions, for compatibility reasons.
 
 ## Features left to implement:
 

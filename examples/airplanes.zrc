@@ -66,8 +66,7 @@ fn main {
 		switch $c {
 			# Begin guess phase
 			case 'p' { 
-				if {$phase == 2} continue
-				set phase = 2  turn = 2
+				set phase = 2
 			}
 			# Hit cockpit
 			case 'c' {
@@ -104,7 +103,7 @@ fn main {
 				clear && exit
 			}
 		}
-		if {$phase == 2 && [str $c =~ c|b|m]} {
+		if {$phase == 2 && [str $c =~ c|b|m|p]} {
 			set turn = [expr {$turn == 1 ? 2 : 1}]
 		}
 	}
