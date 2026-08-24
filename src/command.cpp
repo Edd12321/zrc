@@ -101,6 +101,8 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 		main_shell = (interactive_sesh && getpid() == tty_pid);
 		if ((pid = fork()) < 0) {
 			perror("fork");
+			close(pd[0]);
+			close(pd[1]);
 			failed = true;
 			break;
 		} else if (pid == 0) {
@@ -158,8 +160,8 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 			}
 			perror(argv[0]);
 		} else {
+			pids.push_back(pid);
 			if (main_shell) {
-				pids.push_back(pid);
 				if (!pgid)
 					pgid = pid;	
 				if (setpgid(pid, pgid) < 0)
@@ -246,6 +248,8 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 			}
 			if (pipe(p2c) < 0) {
 				perror("pipe");
+				close(p2c[0]);
+				close(p2c[1]);
 				return 1;
 			}
 		}
@@ -567,8 +571,17 @@ std::string get_output(std::string const& str) {
 	ret_str.reserve(RESERVE_STR); // Try to speed up just a bit
 	int pd[2];
 
-	pipe(pd);
+	if (pipe(pd) < 0) {
+		perror("pipe");
+		return {};
+	}
 	pid_t pid = fork();
+	if (pid < 0) {
+		perror("fork");
+		close(pd[0]);
+		close(pd[1]);
+		return {};
+	}
 	if (pid == 0) {
 		reset_sigs();
 		dup2(pd[1], STDOUT_FILENO);
@@ -691,12 +704,23 @@ _syn_error_redir:
  * @return std::string
  */
 std::string get_fifo(std::string const& str) {
-	char temp[] = FIFO_DIRNAME;
-	std::string fifo_name = mkdtemp(temp);
+	char temp[] = FIFO_DIRNAME, *dir = mkdtemp(temp);
+	if (!dir)
+		return {};
+	std::string fifo_name(dir);
 	std::string fifo_file = fifo_name+"/" FIFO_FILNAME;
-	
-	mkfifo(fifo_file.c_str(), S_IRUSR | S_IWUSR);
+	 
+	if (mkfifo(fifo_file.c_str(), S_IRUSR | S_IWUSR) < 0) {
+		rmdir(fifo_name.c_str());
+		return {};
+	}
 	pid_t pid = fork();
+	if (pid < 0) {
+		perror("fork");
+		unlink(fifo_file.c_str());
+		rmdir(fifo_name.c_str());
+		return {};
+	}
 	if (pid == 0) {
 		reset_sigs();
 		int fd = open(fifo_file.c_str(), O_WRONLY);
@@ -705,7 +729,7 @@ std::string get_fifo(std::string const& str) {
 			_exit(1);
 		}
 		dup2(fd, STDOUT_FILENO);
-		SCOPE_EXIT { exit(0); };
+		SCOPE_EXIT { _exit(0); };
 		eval(str);
 		close(fd);
 	}
