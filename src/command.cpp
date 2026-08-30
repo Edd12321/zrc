@@ -255,6 +255,17 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 		}
 		if ((pid = fork()) < 0) {
 			perror("fork");
+			if (!pids.empty()) {
+				jtable.add_job(std::move(*this), std::move(pids));
+				if (this->pmode == proc_mode::FG) {
+					if (pgid)
+						jtable.reaper(-pgid, WUNTRACED);
+					if (main_shell)
+						tcsetpgrp2(getpgrp());
+				}
+			}
+			return true;
+
 		} else if (pid == 0) {
 			SCOPE_EXIT { _exit(127); }; // just in case
 			if (in_coprocess) {
@@ -291,6 +302,8 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 				coproc_in = c2p[0]; vars::amap[coproc_name]["0"] = numtos(c2p[0]);
 				coproc_out = p2c[1]; vars::amap[coproc_name]["1"] = numtos(p2c[1]);
 				close(c2p[1]); close(p2c[0]);
+				fcntl(coproc_in, F_SETFD, O_CLOEXEC);
+				fcntl(coproc_out, F_SETFD, O_CLOEXEC);
 			}
 			if (main_shell) {
 				if (!pgid)
@@ -358,6 +371,7 @@ int job_table::add_job(pipeline&& ppl, std::vector<pid_t>&& pids) {
 	jid2job[jc].ppl = std::move(ppl);
 	for (auto const& it : pids)
 		pid2jid[it] = jc;
+	jid2job[jc].pgid = pids.empty() ? 0 : pids[0];
 	jid2job[jc].pids = std::move(pids);
 	jid2job[jc].fifo_cleanup = std::move(fifo_cleanup);
 	fifo_cleanup.clear();
@@ -366,8 +380,10 @@ int job_table::add_job(pipeline&& ppl, std::vector<pid_t>&& pids) {
 
 void job_table::sighupper() {
 	for (auto const& it : jid2job) {
-		kill(-it.second.pids[0], SIGHUP);
-		kill(-it.second.pids[0], SIGCONT);
+		if (!it.second.pgid)
+			continue;
+		kill(-it.second.pgid, SIGHUP);
+		kill(-it.second.pgid, SIGCONT);
 	}
 }
 
@@ -444,7 +460,7 @@ std::ostream& operator<<(std::ostream& out, job_table& jt) {
 	using pp = pipeline::proc_mode;
 	for (auto& it : jt.jid2job) {
 		auto& v = it.second;
-		out << it.first << ' ' << v.pids[0];
+		out << it.first << ' ' << v.pgid;
 		if (v.ppl.pmode == pp::BG)
 			out << " bg ";
 		else out << " fg ";
@@ -587,8 +603,10 @@ std::string get_output(std::string const& str) {
 		dup2(pd[1], STDOUT_FILENO);
 		close(pd[0]);
 		close(pd[1]);
-		auto st = stonum(vars::status);
-		SCOPE_EXIT { _exit(std::uint8_t(!isfinite(st) ? 0 : st)); };
+		SCOPE_EXIT {
+			auto st = stonum(vars::status);
+			_exit(std::uint8_t(!isfinite(st) ? 0 : st));
+		};
 		eval(str);
 	} else {
 		close(pd[1]);
@@ -692,7 +710,9 @@ _syn_error_redir:
 	dup2(ffd, fd);
 	SCOPE_EXIT {
 		close(ffd);
-		dup2(nfd, fd);
+		if (nfd.index >= 0)
+			dup2(nfd, fd);
+		else close(fd);
 	};
 	eoe(argc, argv, 2);
 	return vars::status;
