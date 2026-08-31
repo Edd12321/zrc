@@ -743,17 +743,15 @@ COMMAND(do, <eoe> while|until <expr>)
 	if (evl)
 		lex1 = lex(argv[1], SEMICOLON | SPLIT_WORDS).elems;
 	// use loop unswitching
-	if (w) {
-		do {
-			try {
-				evl ? eval(lex1) : exec(argc - 3, argv + 1);
-			} catch (break_handler const& ex) {
-				break;
-			} catch (continue_handler const& ex) {
-				continue;
-			}
-		} while (u ? !expr::eval(argv[argc-1]) : expr::eval(argv[argc-1]));
-	}
+	do {
+		try {
+			evl ? eval(lex1) : exec(argc - 3, argv + 1);
+		} catch (break_handler const& ex) {
+			break;
+		} catch (continue_handler const& ex) {
+			continue;
+		}
+	} while (u ? !expr::eval(argv[argc-1]) : expr::eval(argv[argc-1]));
 END
 
 COMMAND(repeat, <expr> <eoe>)
@@ -1308,10 +1306,11 @@ COMMAND(let, <var-list> <eoe>)
 	std::unordered_map<std::string, bool> didnt_exist;
 	auto wlst = lex(argv[1], SPLIT_WORDS).elems;
 	for (auto const& it : wlst) {
-		if (vars::amap.find(it) != vars::amap.end())
-			amap[it] = vars::amap[it];
-		else if (vars::vmap.find(it) != vars::vmap.end())
-			vmap[it] = vars::vmap[it];
+		std::string sit = it;
+		if (vars::amap.find(sit) != vars::amap.end())
+			amap[sit] = vars::amap[sit];
+		else if (vars::vmap.find(sit) != vars::vmap.end())
+			vmap[sit] = vars::vmap[sit];
 		else
 			didnt_exist[it] = true;
 	}
