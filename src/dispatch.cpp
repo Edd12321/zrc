@@ -1739,6 +1739,61 @@ COMMAND(list, new <word1> <word2> ... \n
 	SYNTAX_ERROR
 END
 
+// simple test to avoid fork
+COMMAND(test, <file1> -ef|-nt|-ot <file2> \n
+              -b|-c|-d|-e|-f|-g|-G|-h|-k|-L|-N|-O|-p|-r|-s|-S|-u|-w|-x <file> \n
+              -t <fd>)
+	if (argc == 4) {
+		struct stat sb1, sb2;
+		if (stat(argv[1], &sb1) == -1 || stat(argv[3], &sb2) == -1) {
+			int err = errno;
+			perror("stat");
+			return numtos(err);
+		}
+		if (!strcmp(argv[2], "-ef"))
+			return numtos(!(sb1.st_dev == sb2.st_dev && sb1.st_ino == sb2.st_ino));
+		if (!strcmp(argv[2], "-nt"))
+			return numtos(!(sb1.st_mtime > sb2.st_mtime));
+		if (!strcmp(argv[2], "-ot"))
+			return numtos(!(sb1.st_mtime < sb2.st_mtime));
+	}
+	if (argc == 3) {
+		if (argv[1][0] != '-' || !argv[1][1] || argv[1][2]) SYNTAX_ERROR
+		struct stat sb;
+		zrc_num zn;
+
+#define S(c, x) case c: if (stat(argv[2], &sb) == -1) return numtos(errno); return numtos(!(x));
+#define L(c, x) case c: if (lstat(argv[2], &sb) == -1) return numtos(errno); return numtos(!(x));
+#define E(c, x) case c: return numtos(!(x));
+		switch (argv[1][1]) {
+			S('b', S_ISBLK(sb.st_mode))
+			S('c', S_ISCHR(sb.st_mode))
+			S('d', S_ISDIR(sb.st_mode))
+			L('e', 1)
+			S('f', S_ISREG(sb.st_mode))
+			S('g', sb.st_mode & S_ISGID)
+			S('G', sb.st_gid == getegid())
+			L('h', S_ISLNK(sb.st_mode))
+			S('k', sb.st_mode & S_ISVTX)
+			L('L', S_ISLNK(sb.st_mode))
+			S('N', sb.st_mtime > sb.st_atime)
+			S('O', sb.st_uid == geteuid())
+			S('p', S_ISFIFO(sb.st_mode))
+			E('r', !faccessat(AT_FDCWD, argv[2], R_OK, AT_EACCESS))
+			S('s', sb.st_size > 0)
+			S('S', S_ISSOCK(sb.st_mode))
+			E('t', !isnan(zn = stonum(argv[2])) && isatty(zn))
+			S('u', sb.st_mode & S_ISUID)
+			S('w', !faccessat(AT_FDCWD, argv[2], W_OK, AT_EACCESS))
+			S('x', !faccessat(AT_FDCWD, argv[2], X_OK, AT_EACCESS))
+		}
+#undef S
+#undef L
+#undef E
+	}
+	SYNTAX_ERROR
+END
+
 /**************************
  *                        *
  * Shell I/O redirections *

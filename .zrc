@@ -107,6 +107,8 @@ bindkey -c "\cb"  { firefox & }
 bindkey -c "\ct"  { $TERMINAL & }
 bindkey -c "\cf"  { doublecmd & }
 bindkey -c "\cft" { thunar & }
+bindkey "\e\[H" cursor-move-begin
+bindkey "\e\[4~" cursor-move-end
 
 set __use_lsd = false
 fn enable_lsd {
@@ -125,10 +127,9 @@ fn enable_lsd {
 	}
 }
 
-fn soundchk { timeout 0.15 aplay /dev/random }
-fn life { ffplay -f lavfi -i life }
-fn xkcd { $BROWSER https://xkcd.com/${argv 1}}
-fn cowfort { fortune | cowsay -f `{ls /usr/share/cowsay/cows | shuf -n1} }
+fn soundchk {
+	timeout 0.15 aplay /dev/random
+}
 
 # Aliases
 enable_lsd
