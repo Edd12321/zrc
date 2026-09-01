@@ -231,16 +231,28 @@ token_list lex(const char *p, lexer_flags flags) {
 			case '\\':
 				curr.bareword = false;
 				switch (*++p) {
-					case 'a': text += '\a'              ; break;
-					case 'b': text += '\b'              ; break;
-					case 'e': text += '\033'            ; break;
-					case 'f': text += '\f'              ; break;
-					case 'n': text += '\n'              ; break;
-					case 'r': text += '\r'              ; break;
-					case 't': text += '\t'              ; break;
-					case 'v': text += '\v'              ; break;
-					case 'c': if (*++p) text += CTRL(*p); break;
-			  		default : text += *p                ; break;
+#define ESCPARSE(pre) \
+					case 'a': pre '\a';   break; \
+					case 'b': pre '\b';   break; \
+					case 'e': pre '\033'; break; \
+					case 'f': pre '\f';   break; \
+					case 'n': pre '\n';   break; \
+					case 'r': pre '\r';   break; \
+					case 't': pre '\t';   break; \
+					case 'v': pre '\v';   break; \
+					default:  pre *p;     break;
+					ESCPARSE(text += )
+					case 'c':
+						if (*++p) {
+							char c = *p;
+							if (*p == '\\')
+								switch (*++p) {
+									ESCPARSE(c = )
+#undef ESCPARSE
+								}
+							text += CTRL(c);
+						}
+						break;
 				}
 				break;
 			

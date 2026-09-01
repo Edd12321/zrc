@@ -107,8 +107,16 @@ bindkey -c "\cb"  { firefox & }
 bindkey -c "\ct"  { $TERMINAL & }
 bindkey -c "\cf"  { doublecmd & }
 bindkey -c "\cft" { thunar & }
-bindkey "\e\[H" cursor-move-begin
-bindkey "\e\[4~" cursor-move-end
+bindkey "\cY" hist-go-up
+bindkey "\cE" hist-go-down
+
+if {[str $TERM =~ linux]} {
+	bindkey "\c\[\[1~" cursor-move-begin
+	bindkey "\c\[\[4~" cursor-move-end
+} else {
+	bindkey "\e\[H" cursor-move-begin
+	bindkey "\e\[4~" cursor-move-end
+}
 
 set __use_lsd = false
 fn enable_lsd {
