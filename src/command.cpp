@@ -279,8 +279,8 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 				if (!pgid) {
 					pgid = getpid();
 					setpgid(0, pgid);
-					if (this->pmode == proc_mode::FG)
-						tcsetpgrp2(pgid);
+					if (this->pmode == proc_mode::FG && tcsetpgrp2(pgid) < 0)
+						perror("tcsetpgrp");
 				} else setpgid(0, pgid);
 			}
 			if (old_input >= 0) {
@@ -317,10 +317,6 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 						perror("tcsetpgrp #1");
 					kill(-pgid, SIGCONT);
 					jtable.add_job(std::move(*this), std::move(pids));
-#if WINDOWS
-					struct timespec ts = { CYG_HACK_TIMEOUT }; // 4 ms
-					nanosleep(&ts, nullptr); // no idea.
-#endif
 					jtable.reaper(-pgid, WUNTRACED);
 					if (tcsetpgrp2(getpgrp()) < 0)
 						perror("tcsetpgrp #2");
@@ -389,6 +385,13 @@ void job_table::sighupper() {
 
 void job_table::reaper(pid_t who, int how) {
 	auto main_shell = (interactive_sesh && getpid() == tty_pid);
+#if WINDOWS
+	if (who < -1) {
+		// this is actually ~5 million seconds btw
+		struct timespec ts = { CYG_HACK_TIMEOUT };
+		nanosleep(&ts, nullptr);
+	}
+#endif
 	for (;;) {
 		int status, wp = waitpid(who, &status, how);
 		if (wp == -1) {
@@ -401,20 +404,24 @@ void job_table::reaper(pid_t who, int how) {
 		}
 		if (wp == 0)
 			break;
+		if (wp < 0)
+			wp = -wp;
 		auto at_jid = pid2jid.find(wp);
 		if (at_jid == pid2jid.end())
 			continue;
 		int jid = at_jid->second;
 		auto fnd_job = jid2job.find(jid);
-		if (fnd_job == jid2job.end())
+		if (fnd_job == jid2job.end()) {
+			pid2jid.erase(wp);
 			continue;
+		}
 		job_table::job& job = fnd_job->second;
-		bool lproc = wp == job.pids.back();
+		bool lproc = job.pids.size() == 1;
 		
 		if (WIFSTOPPED(status)) {
-			if (lproc && main_shell)
+			if (wp == job.pids.back() && main_shell)
 				tty << "[" << jid << "] Stopped\t" << (std::string)job.ppl << std::endl;
-			if (who < -1)
+			if (lproc || who < -1)
 				return;
 		} else {
 			pid2jid.erase(wp);
@@ -422,7 +429,7 @@ void job_table::reaper(pid_t who, int how) {
 			if (sigd) {
 				if (lproc || who < -1) {
 					int sig = WTERMSIG(status);
-					if (main_shell)
+					if (lproc && main_shell)
 						tty << "[" << jid << "] " << strsignal(sig)
 						    << " (" << sig2txt.at(sig) << ")\t" << (std::string)job.ppl << std::endl;
 					if (job.ppl.pmode == pipeline::proc_mode::FG)
@@ -434,13 +441,13 @@ void job_table::reaper(pid_t who, int how) {
 				else if (main_shell)
 					tty << "[" << jid << "] Done\t" << (std::string)job.ppl << std::endl;
 			}
-			for (size_t i = 0; i < job.pids.size(); ++i) {
-				if (job.pids[i] == wp) {
-					job.pids.erase(job.pids.begin() + i);
+			for (auto it = job.pids.begin(); it != job.pids.end(); ++it) {
+				if (*it == wp) {
+					job.pids.erase(it);
 					break;
 				}
 			}
-			if ((sigd && who < -1) || job.pids.empty()) {
+			if (/*(sigd && who < -1) || */job.pids.empty()) {
 				do_fifo_cleanup(job.fifo_cleanup);
 				jid2job.erase(jid);
 			}

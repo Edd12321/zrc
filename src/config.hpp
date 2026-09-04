@@ -3,7 +3,7 @@
 #include "pch.hpp"
 #include "global.hpp"
 
-#define ZVERSION         "zrc v2.8 staging" /* Version string */
+#define ZVERSION         "zrc v2.8"         /* Version string */
 #define ZCONF            ".zrc"             /* Configuration file */
 #define ZHIST            ".zrc_history"     /* History file */
 #define ZLOGIN1          ".zrc_profile"     /* Login filename #1 */
@@ -23,7 +23,7 @@
 
 #define RESERVE_STR      512                /* How many bytes to reserve for string values by default */
 #define ZRC_BIND_TIMEOUT 400000             /* Line editor timeout (be careful, some values yield unexpected results */
-#define CYG_HACK_TIMEOUT 550000             /* Empirical and racey, because Cygwin sucks. */
+#define CYG_HACK_TIMEOUT 550000             /* Because Cygwin sucks. */
 #define REHASH_STARTUP   1                  /* Generate lookup table for commands at startup? */
 
 /* If you have an atypical terminal */
