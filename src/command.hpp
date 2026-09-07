@@ -53,7 +53,8 @@ public:
 	struct job {
 		pipeline ppl;
 		std::vector<pid_t> pids;
-		pid_t pgid = 0;
+		pid_t pgid = 0, lastpid = 0;
+		int term = 0;
 		std::vector<std::string> fifo_cleanup;
 		~job() {
 			if (ppl.coproc_in != -1)

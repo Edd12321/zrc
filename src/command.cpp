@@ -368,7 +368,8 @@ int job_table::add_job(pipeline&& ppl, std::vector<pid_t>&& pids) {
 	jid2job[jc].ppl = std::move(ppl);
 	for (auto const& it : pids)
 		pid2jid[it] = jc;
-	jid2job[jc].pgid = pids.empty() ? 0 : pids[0];
+	jid2job[jc].pgid = pids.empty() ? 0 : pids.front();
+	jid2job[jc].lastpid = pids.empty() ? 0 : pids.back();
 	jid2job[jc].pids = std::move(pids);
 	jid2job[jc].fifo_cleanup = std::move(fifo_cleanup);
 	fifo_cleanup.clear();
@@ -417,41 +418,43 @@ void job_table::reaper(pid_t who, int how) {
 			continue;
 		}
 		job_table::job& job = fnd_job->second;
-		bool lproc = job.pids.size() == 1;
 		
 		if (WIFSTOPPED(status)) {
-			if (wp == job.pids.back() && main_shell)
+			if (wp == job.lastpid && main_shell)
 				tty << "[" << jid << "] Stopped\t" << (std::string)job.ppl << std::endl;
-			if (lproc || who < -1)
+			if (job.pids.size() == 1 || who < -1)
 				return;
-		} else {
-			pid2jid.erase(wp);
-			bool sigd = WIFSIGNALED(status);
-			if (sigd) {
-				if (lproc || who < -1) {
-					int sig = WTERMSIG(status);
-					if (lproc && main_shell)
-						tty << "[" << jid << "] " << strsignal(sig)
-						    << " (" << sig2txt.at(sig) << ")\t" << (std::string)job.ppl << std::endl;
-					if (job.ppl.pmode == pipeline::proc_mode::FG)
-						vars::status = numtos(128 + sig);
-				}
-			} else if (lproc && WIFEXITED(status)) {
-				if (job.ppl.pmode == pipeline::proc_mode::FG)
-					vars::status = numtos(WEXITSTATUS(status));
-				else if (main_shell)
+			continue;
+		}
+		pid2jid.erase(wp);
+		if (job.ppl.pmode == pipeline::proc_mode::FG && wp == job.lastpid) {
+			if (WIFSIGNALED(status))
+				vars::status = numtos(128 + WTERMSIG(status));
+			else if (WIFEXITED(status))
+				vars::status = numtos(WEXITSTATUS(status));
+		}
+		if (WIFSIGNALED(status) && wp == job.lastpid)
+			job.term = WTERMSIG(status);
+
+		for (auto it = job.pids.begin(); it != job.pids.end(); ++it) {
+			if (*it == wp) {
+				job.pids.erase(it);
+				break;
+			}
+		}
+		if (job.pids.empty()) {
+			if (main_shell) {
+				if (job.term) {
+					auto fnd = sig2txt.find(job.term);
+					auto str = (fnd == sig2txt.end()) ? std::to_string(job.term) : fnd->second;
+					tty << "[" << jid << "] " << strsignal(job.term)
+					   << " (" << str << ")\t" << (std::string)job.ppl << std::endl;
+				} else if (job.ppl.pmode == pipeline::proc_mode::BG) {
 					tty << "[" << jid << "] Done\t" << (std::string)job.ppl << std::endl;
-			}
-			for (auto it = job.pids.begin(); it != job.pids.end(); ++it) {
-				if (*it == wp) {
-					job.pids.erase(it);
-					break;
 				}
 			}
-			if (/*(sigd && who < -1) || */job.pids.empty()) {
-				do_fifo_cleanup(job.fifo_cleanup);
-				jid2job.erase(jid);
-			}
+			do_fifo_cleanup(job.fifo_cleanup);
+			jid2job.erase(jid);
 		}
 	}
 }
