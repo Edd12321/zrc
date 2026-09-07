@@ -301,6 +301,7 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 			if (in_coprocess) {
 				coproc_in = c2p[0]; vars::amap[coproc_name]["0"] = numtos(c2p[0]);
 				coproc_out = p2c[1]; vars::amap[coproc_name]["1"] = numtos(p2c[1]);
+				setvar(coproc_name + "_PID", numtos(pid));
 				close(c2p[1]); close(p2c[0]);
 				fcntl(coproc_in, F_SETFD, O_CLOEXEC);
 				fcntl(coproc_out, F_SETFD, O_CLOEXEC);
