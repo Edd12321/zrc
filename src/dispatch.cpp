@@ -1527,9 +1527,10 @@ COMMAND(str, <string> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
 		zrc_num j = expr::eval(argv[4]);
 		if (isnan(j)) SYNTAX_ERROR
 		std::string str = argv[1];
-		if (i < 0 || j < 0 || i >= str.length())
+		if (j < 0)
 			SYNTAX_ERROR
-		str.erase(i, j);
+		if (i >= 0 && i < str.length())
+			str.erase(i, j);
 		return str;
 	}
 	// Return n-char string
@@ -1549,16 +1550,20 @@ COMMAND(str, <string> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
 		zrc_num i = expr::eval(argv[2]);
 		zrc_num j = expr::eval(argv[3]);
 		std::string str(argv[1]);
-		if (!isfinite(i) || isnan(j) || i < 0 || j < 0 || i >= str.length())
+		if (!isfinite(i) || isnan(j) || j < 0)
 			SYNTAX_ERROR
+		if (i < 0 || i >= str.length())
+			return {};
 		return str.substr(i, j);
 	}
 	// Return string with replaced char
 	if (argc == 5 && !strcmp(argv[3], "=")) {
 		zrc_num i = expr::eval(argv[2]);
-		if (isfinite(i) && i >= 0 && i < strlen(argv[1])) {
-			argv[1][size_t(i)] = argv[4][0];
-			return argv[1];
+		if (isfinite(i)) {
+			if (i >= 0 && i < strlen(argv[1])) {
+				argv[1][size_t(i)] = argv[4][0];
+				return argv[1];
+			}
 		} else SYNTAX_ERROR
 	}
 	SYNTAX_ERROR

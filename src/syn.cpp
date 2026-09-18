@@ -201,7 +201,8 @@ token_list lex(const char *p, lexer_flags flags) {
 			 *************/
 			case '\n': /* FALLTHROUGH */
 			case  ';':
-				if ((flags & SPLIT_WORDS) && !(flags & SEMICOLON) && !quoted_single && !quoted_double) {
+				if (*p == '\n' && (flags & SPLIT_WORDS) && !(flags & SEMICOLON)
+				&& !quoted_single && !quoted_double) {
 					add_remaining_txt(std::string(), 1);
 				} else if (!quoted_single && !quoted_double && (flags & SEMICOLON)) {
 					add_remaining_txt(std::string() , 1);

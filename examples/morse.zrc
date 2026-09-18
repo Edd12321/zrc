@@ -4,7 +4,7 @@ alias log >& 1 2 echo
 log Please wait... doing sound stuff.
 # systemctl --user restart pulseaudio
 
-set freq        = 440 # Hz
+set freq        = 600 # Hz
 set sample_rate = 44100 # samples / s
 set ramp_len    = [expr {floor(0.0015 * $sample_rate)}]
 
@@ -30,7 +30,7 @@ fn beep {
 	}
 }
 
-set unit         = 0.025
+set unit         = 0.03
 set dot          = [beep $unit]
 set line         = [beep [expr {3 * $unit}]]
 set pause_elem   = [str [chr 128] * [expr {$unit * $sample_rate}]]
@@ -46,6 +46,13 @@ arr morse = {
 	u ..- v ...- w .-- x -..- y -.--
 	z --..
 
+	A .- B -... C -.-. D -.. E .
+	F ..-. G --. H .... I .. J .---
+	K -.- L .-.. M -- N -. O ---
+	P .--. Q --.- R .-. S ... T -
+	U ..- V ...- W .-- X -..- Y -.--
+	Z --..
+
 	# Numbers
 	0 -----
 	1 .----
@@ -57,6 +64,36 @@ arr morse = {
 	7 --...
 	8 ---..
 	9 ----.
+
+	# Standard punctuation
+	. .-.-.- , --..-- ? ..--.. / -..-. : ---...
+	\' .----. - -....- ( -.--. ) -.--.- \" .-..-.
+	= -...- + .-.-. * -..- × -..- @ .--.-.
+	Error ........ <HH> ........ % "----- -..-. -----"
+	# Nonstandard
+	! -.-.-- & .-... ; -.-.-. _ ..--.- \$ ...-..-
+
+	# Accented letters
+	à .--.- å .--.- ä .-.- ą .-.- æ .-.-
+	ć -.-.. ĉ -.-.. ç -.-.. ch ----
+	ĥ ---- š ---- đ ..-.. é ..-.. ę ..-..
+	ð ..--. è .-..- ł .-..- ĝ --.-. ĵ .---.
+	ń --.-- ñ --.-- ó ---. ö ---. ø ---.
+	ś ...-... ŝ ...-. þ .--.. ü ..-- ŭ ..--
+	ź --..-. ż --..-
+
+	À .--.- Å .--.- Ä .-.- Ą .-.- Æ .-.-
+	Ć -.-.. Ĉ -.-.. Ç -.-.. Ch ---- CH ----
+	Ĥ ---- Š ---- Đ ..-.. É ..-.. Ę ..-..
+	Ð ..--. È .-..- Ł .-..- Ĝ --.-. Ĵ .---.
+	Ń --.-- Ñ --.-- Ó ---. Ö ---. Ø ---.
+	Ś ...-... Ŝ ...-. Þ .--.. Ü ..-- Ŭ ..--
+	Ź --..-. Ż --..-
+
+	# Prosigns
+	<AA> .-.- <AR> .-.-. <AS> .-... <BT> -...- <CL> -.-..-..
+	<CT> -.-.- <DO> -..--- <KA> -.-.- <SK> ...-.- <VA> ...-.-
+	<SN> ...-. <VE> ...-. <SOS> ...---...
 }
 
 foreach c [arr morse keys] {
@@ -66,6 +103,7 @@ foreach c [arr morse keys] {
 		switch [str $mor $i] {
 			case '-' { set {morsesnd $c} .= $line }
 			case '.' { set {morsesnd $c} .= $dot }
+			case ' ' { set {morsesnd $c} .= $pause_letter }
 		}
 		if {$i < $len - 1} {
 			set {morsesnd $c} .= $pause_elem
@@ -73,28 +111,32 @@ foreach c [arr morse keys] {
 	}
 }
 
-log Welcome to the very slow morse code beeper. Type ! to quit.
+log Welcome to the very slow morse code beeper.
 while 1 {
 	log -n '> '
 	read phrase
-	if {[str $phrase == '!']} {
-		exit 0
-	}
 	set buf = '' res = ''
 	set len = [str $phrase len]
-	foreach k `{seq 0 [expr {$len - 1}]} {
+	for {set k = 0} {$k < $len} {inc k} {
 		set c = [str $phrase $k]
 		set o = [ord $c]
-		if {$o >= [ord 'A'] && $o <= [ord 'Z']} {
-			inc o 32
-			set c = [chr $o]
-		}
 		set m = ${morse $c}
 		set mlen = [str $m len]
+
+		if {!$mlen} {
+			foreach key [arr morse keys] {
+				set klen = [str $key len]
+				if {[str $key == [str $phrase $k $klen]]} {
+					set c = $key k += $klen-1
+					set m = ${morse $key} mlen = [str ${morse $key} len]
+					break
+				}
+			}
+		}
 		if {$mlen} {
 			set res .= "$m "
 			set buf .= ${morsesnd $c}
-			set next_c = [str $phrase {$k + 1}]
+			set next_c = [str $phrase {$k + [str $c len]}]
 			if {$k < $len - 1 && [str $next_c len] && [ord $next_c] != [ord ' ']} {
 				set buf .= $pause_letter
 			}
