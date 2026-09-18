@@ -2,28 +2,40 @@
 alias log >& 1 2 echo
 
 log Please wait... doing sound stuff.
-systemctl --user restart pulseaudio
+# systemctl --user restart pulseaudio
 
-set freq = 440 # Hz
-set amp = 127
+set freq        = 440 # Hz
 set sample_rate = 44100 # samples / s
-set phi = 0
+set ramp_len    = [expr {floor(0.0015 * $sample_rate)}]
 
-set omega = [expr {2*3.14159265 * $freq}]
+set omega = [expr {2 * pi * $freq}]
 fn beep {
-	let {duration no_samples} {
+	let {duration no_samples buf} {
 		set duration = ${argv 1} # s
-		set no_samples = [expr{$duration * $sample_rate}]
-		
-		set buffer = `{
-			for {set i = 0} {$i < $no_samples} {inc i} {
-				set t = [expr {$i / $sample_rate}]
-				set sample = [expr {floor($amp * sin($omega*$t + $phi))}]
-				echo -n [chr {$sample + 128}]
+		set no_samples = [expr {$duration * $sample_rate}]
+	
+		for {set i = 0} {$i < $no_samples} {inc i} {
+			set amp = 1
+
+			if {$i < $ramp_len} {
+				set amp = [expr {$i / $ramp_len}]
+			} else if {$i >= $no_samples - $ramp_len} {
+				set amp = [expr {($no_samples - 1 - $i) / $ramp_len}]
 			}
-		}; echo $buffer | >&- 2 aplay -r $sample_rate
+		
+			set buf .= [chr {128 + floor(127 * $amp *
+				sin($omega * $i / $sample_rate))}]
+		}
+		return $buf
 	}
 }
+
+set unit         = 0.025
+set dot          = [beep $unit]
+set line         = [beep [expr {3 * $unit}]]
+set pause_elem   = [str [chr 128] * [expr {$unit * $sample_rate}]]
+set pause_letter = [str [chr 128] * [expr {3 * $unit * $sample_rate}]]
+set pause_word   = [str [chr 128] * [expr {7 * $unit * $sample_rate}]]
 
 arr morse = {
 	# Letters
@@ -47,29 +59,49 @@ arr morse = {
 	9 ----.
 }
 
-log Welcome to the very slow morse code beeper. Type q to quit.
+foreach c [arr morse keys] {
+	set mor = ${morse $c}
+	set len = [str $mor len]
+	foreach i `{seq 0 [expr {$len - 1}]} {
+		switch [str $mor $i] {
+			case '-' { set {morsesnd $c} .= $line }
+			case '.' { set {morsesnd $c} .= $dot }
+		}
+		if {$i < $len - 1} {
+			set {morsesnd $c} .= $pause_elem
+		}
+	}
+}
+
+log Welcome to the very slow morse code beeper. Type ! to quit.
 while 1 {
 	log -n '> '
 	read phrase
-	if {[str $phrase == 'q']} {
+	if {[str $phrase == '!']} {
 		exit 0
 	}
-	foreach k `{seq 0 [expr{[str $phrase len]-1}]} {
-		set o = [ord [str $phrase $k]]
+	set buf = '' res = ''
+	set len = [str $phrase len]
+	foreach k `{seq 0 [expr {$len - 1}]} {
+		set c = [str $phrase $k]
+		set o = [ord $c]
 		if {$o >= [ord 'A'] && $o <= [ord 'Z']} {
 			inc o 32
+			set c = [chr $o]
 		}
-		set m = ${morse [chr $o]}
-		if {[str $m len]} {
-			echo -n "$m "
-			foreach c `{seq 0 [expr {[str $m len]-1}]} {
-				beep [expr {[ord [str $m $c]] == [ord '-'] ? 0.175 : 0.035}]
+		set m = ${morse $c}
+		set mlen = [str $m len]
+		if {$mlen} {
+			set res .= "$m "
+			set buf .= ${morsesnd $c}
+			if {$k < $len - 1} {
+				set buf .= $pause_letter
 			}
-			sleep 0.1
 		} else {
-			echo -n "/ "
-			sleep 0.3
+			set res .= "/ "
+			set buf .= $pause_word
 		}
 	}
-	echo
+	log $res
+	echo -n $buf | ^&- aplay -r $sample_rate -f U8 -c 1
 }
