@@ -1505,16 +1505,20 @@ COMMAND(str, <string> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
 	// Return string char at index
 	if (argc == 3) {
 		zrc_num i = expr::eval(argv[2]);
-		if (isfinite(i) && i >= 0 && i < strlen(argv[1]))
-			return std::string(1, argv[1][size_t(i)]);
-		else SYNTAX_ERROR
+		if (isfinite(i)) {
+			if (i >= 0 && i < strlen(argv[1]))
+				return std::string(1, argv[1][size_t(i)]);
+			else return {};
+		} else SYNTAX_ERROR
 	}
 	// Return string starting from index
 	if (argc == 4 && !strcmp(argv[2], "+")) {
 		zrc_num i = expr::eval(argv[3]);
-		if (isfinite(i) && i >= 0 && i <= strlen(argv[1]))
-			return std::string(argv[1]+size_t(i));
-		else SYNTAX_ERROR
+		if (isfinite(i)) {
+			if (i >= 0 && i <= strlen(argv[1]))
+				return std::string(argv[1]+size_t(i));
+			else return {};
+		} else SYNTAX_ERROR
 	}
 	// Return string minus chars from range
 	if (argc == 5 && !strcmp(argv[2], "-=")) {
