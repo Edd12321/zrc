@@ -285,12 +285,13 @@ fn expvar {
 	set ${argv 1} = ${argv 2}
 	export ${argv 1}
 }
-expvar AUTH    sudo # doas
-expvar CDPATH  $CDPATH:$HOME
-expvar PATH    $HOME/.local/bin:$PATH
-expvar PAGER   most
-expvar BROWSER firefox
-expvar EDITOR  nvim
+expvar AUTH     sudo # doas
+expvar CDPATH   $CDPATH:$HOME
+expvar PATH     $HOME/.local/bin:$PATH
+expvar PAGER    most
+expvar BROWSER  firefox
+expvar EDITOR   nvim
+expvar TERMINAL st
 
 > /dev/null rehash
 set status = 0

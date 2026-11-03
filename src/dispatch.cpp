@@ -992,8 +992,15 @@ COMMAND(fork,)
 END
 
 // Get pid of self or job
-COMMAND(pid,)
-	return numtos(getpid())
+COMMAND(pid, [-p])
+	pid_t p;
+	if (argc == 2) {
+		if (!strcmp(argv[1], "-p"))
+			p = getppid();
+		else SYNTAX_ERROR
+	}
+	else p = getpid();
+	return numtos(p)
 END
 
 // Read from stdin
