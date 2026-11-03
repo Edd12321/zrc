@@ -232,6 +232,9 @@ int main(int argc, char **argv) {
 	hctable = pathwalk();
 #endif
 
+	// one liner to fix script (lol)
+	if (argc == 2 && !strcmp(argv[1], "-i")) --argc, ++argv;
+	
 	// Interactive job control stuff
 	if (argc == 1) {
 		// Terminal file descriptor for interactive use
