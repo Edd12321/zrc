@@ -1,0 +1,62 @@
+#!/usr/bin/zrc
+##########################
+# Vlad MP3 player script #
+##########################
+^&- >&- which yt-dlp || die please download yt-dlp.
+
+shift
+if {[str $BROWSER len] == 0} {
+	set BROWSER = firefox
+}
+if {$argc != 3} {
+	die Usage: $0 <n-parallel> <links-file>
+}
+set PARDOWN = $1 FILE = $2
+if {[test -f $FILE] != 0} {
+	die Error: file $FILE not found.
+}
+
+fn wait-n-comment {
+	let {pid} {
+		foreach pid [arr pid2line keys] {
+			if {$pid != -1} {
+				if {[wait $pid] == 0} {
+					set buf .= "# "
+				}
+			}
+			set buf .= ${pid2line $pid}\n
+		}
+		arr pid2line destroy
+	}
+}
+
+# 1==download, 2==skip
+set mode = 1
+set k = 0 buf = ''
+
+sig trap {INT} {
+	set mode = 2
+}
+< $FILE until {[read line]} {
+	set pid = -1
+	if {$mode == 1 && ![str $line =~ {^\#}]} {
+		echo Downloading $line
+		set pid = [fork]
+	}
+	if {$pid == 0} {
+		exec yt-dlp --cookies-from-browser $BROWSER \
+		            -x --audio-format mp3 $line
+	} else {
+		set {pid2line $pid} = $line
+		if {$pid != -1} {
+			inc k
+		}
+		if {$k % $PARDOWN == 0} {
+			wait-n-comment
+		}
+	}
+}
+wait-n-comment
+sig mask -b
+> $FILE echo $buf
+sig mask -u

@@ -261,7 +261,7 @@ END
 
 // JID to PGID
 COMMAND(job, pids <jid> \n
-             leader <pid> \n
+             leader <jid> \n
              jid <pid> \n
              table \n
              fg <jid> \n

@@ -12,6 +12,7 @@ src/*.pch
 src/*.stamp
 examples/socket/*.html
 examples/man/.cache
+examples/yt-mp3/*.mp3
 
 # Packages:
 # 1. Arch
