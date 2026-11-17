@@ -101,6 +101,7 @@ Zrc is a small scripting language for Linux, BSD, etc. written in C++ (interpret
 	- [X] Tab completion (need to re-implement)
 	- [ ] Syntax highlighting
     - [X] Keybindings
+    - [X] Precmd, Postcmd
 
 As mentioned on [the Oil wiki's Alternative Shells list](https://github.com/oilshell/oil/wiki/Alternative-Shells).
 

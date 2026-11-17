@@ -1,5 +1,6 @@
 #include "pch.hpp"
 #include "custom_cmd.hpp"
+#include "command.hpp"
 #include "zlineedit.hpp"
 #include "config.hpp"
 #include "global.hpp"
@@ -343,9 +344,17 @@ static inline bool zlineedit(std::string& buf) {
  */
 bool zrc_getline(std::istream& in, std::string& str, bool show_secondary_prompt = false) {
 	if (&in == &std::cin && isatty(fileno(stdin))) {
+		auto fnd_pre = functions.find("precmd");
+		if (fnd_pre != functions.end())
+			invoke_void(fnd_pre->second, {"precmd"});
 		display_prompt(show_secondary_prompt);
 		line_edit::in_prompt = eval_level == 0;
-		SCOPE_EXIT { line_edit::in_prompt = false; };
+		SCOPE_EXIT {
+			line_edit::in_prompt = false;
+			auto fnd_post = functions.find("postcmd");
+			if (fnd_post != functions.end())
+				invoke_void(fnd_post->second, {"postcmd"});
+		};
 		if (line_edit::use)
 			return zlineedit(str);
 		bool fail = std::getline(in, str).fail();

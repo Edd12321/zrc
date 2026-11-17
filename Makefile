@@ -1,4 +1,5 @@
-#  vim: set tabstop=4 shiftwidth=4 noexpandtab nowrap: -*- tab-width: 4; indent-tabs-mode: t; truncate-lines: t; -*-
+#  -*- tab-width: 4; indent-tabs-mode: t; truncate-lines: t; -*-
+#  vim: set tabstop=4 shiftwidth=4 noexpandtab nowrap:
 .POSIX:
 
 # Do not override these
@@ -11,7 +12,7 @@ CXXFLAGS        = -std=c++11 -pedantic -Wno-unused-result -Wno-unused-value -Win
                   -Iinclude -Wno-c2y-extensions
 SETUP_CUSTOM_SH =                                                                                       \
     set -e;                                                                                             \
-    peval() { echo "$$1";           eval "$$1"; };                                                      \
+    peval() { echo "$$1";           eval "$$1    "; };                                                  \
     pcomp() { echo "  CXX     $$2"; eval "$$1 $$2"; };                                                  \
     pcdbg() { echo "  CXX (D) $$2"; eval "$$1 $$2"; };                                                  \
     case "$$($(CXX) --version | head -n 1)" in                                                          \
@@ -43,9 +44,8 @@ STRIP           = n
 	pcdbg '$(CXX) $(DBGFLAGS) $$PCH_CXX -c -o $@' '$<'
 
 release: bin/zrc
-bin/zrc: $(OBJS)
+bin/zrc: bin $(OBJS)
 	@$(SETUP_CUSTOM_SH)                                                                                 \
-	[ -d bin ] || peval 'mkdir -p bin';                                                                 \
 	case "$$(uname -s)" in                                                                              \
 	    CYGWIN*)                                                                                        \
 	        peval 'cd img/icon && windres winico.rc winico.o && cd ../..';                              \
@@ -59,12 +59,14 @@ bin/zrc: $(OBJS)
 	esac
 
 debug: bin/zrc-debug
-bin/zrc-debug: $(DOBJS)
+bin/zrc-debug: bin $(DOBJS)
 	@$(SETUP_CUSTOM_SH)                                                                                 \
-	[ -d bin ] || peval 'mkdir -p bin';                                                                 \
 	pcdbg '$(CXX) $(DBGFLAGS) -o bin/zrc-debug' '$(DOBJS)'
 
 all: release debug
+bin:
+	mkdir -p bin
+	touch bin/.keep
 
 include/pch-rel.stamp: include/pch.hpp
 	@$(SETUP_CUSTOM_SH)                                                                                 \
@@ -80,7 +82,7 @@ $(DOBJS): include/pch-dbg.stamp
 # Like .PHONY but portable
 FORCE: 
 
-install:   FORCE
+install:   FORCE bin/zrc
 	@$(SETUP_CUSTOM_SH)                                                                                 \
 	[ -d $(DESTDIR)$(PREFIX)/bin ] || peval 'mkdir -p $(DESTDIR)$(PREFIX)/bin';                         \
 	peval 'cp -f bin/zrc $(SHELLPATH)';                                                                 \
@@ -143,4 +145,5 @@ src/vars.o src/vars.do:             include/pch.hpp        include/global.hpp   
 
 src/zlineedit.o src/zlineedit.do:   include/pch.hpp        include/custom_cmd.hpp include/zlineedit.hpp \
                                     include/config.hpp     include/global.hpp     include/vars.hpp      \
-                                    include/syn.hpp        include/sig.hpp        include/path.hpp
+                                    include/syn.hpp        include/sig.hpp        include/path.hpp      \
+                                    include/command.hpp

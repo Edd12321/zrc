@@ -112,7 +112,7 @@ zrc_obj invoke(Fun& f, std::initializer_list<const char*> list) {
 }
 
 template<typename Fun>
-void invoke_void(Fun const& f, std::initializer_list<const char*> list) {
+void invoke_void(Fun&& f, std::initializer_list<const char*> list) {
 	command cmd(list);
 	f(cmd.argc(), cmd.argv());
 }
