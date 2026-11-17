@@ -1,3 +1,4 @@
+#include "global.hpp"
 #include "pch.hpp"
 #include "custom_cmd.hpp"
 #include "command.hpp"
@@ -183,10 +184,6 @@ COMMAND(exec, <cmd> [<arg1> <arg2>...])
 	}
 	else SYNTAX_ERROR
 END
-// Disable internal hash table
-COMMAND(unhash,) 
-	hctable.clear()
-END
 
 // Source a script
 COMMAND(source, <file1> <file2>...)
@@ -364,6 +361,16 @@ COMMAND(rehash,)
 		hctable[path] = full;
 		std::cout << "Added " << path << " (" << full << ")\n";
 	}
+END
+COMMAND(unhash,) 
+	hctable.clear()
+END
+COMMAND(hashstat,)
+	if (a_hcstat == nullptr) {
+		std::cerr << "Failed to initialise counter\n";
+		return "1";
+	}
+	std::cout << *a_hcstat
 END
 
 // Prioritise builtins

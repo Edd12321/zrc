@@ -15,6 +15,8 @@ decltype(functions) functions;
 std::string script_name; bool is_script;
 std::string fun_name; bool is_fun;
 bool interactive_sesh, login_sesh, killed_sigexit;
+void *v_hcstat;
+atomic_hcstat *a_hcstat;
 int tty_pid, tty_fd;
 int argc; char **argv;
 
@@ -233,6 +235,14 @@ int main(int argc, char **argv) {
 #if REHASH_STARTUP == 1
 	hctable = pathwalk();
 #endif
+	if ((v_hcstat = mmap(nullptr, sizeof(atomic_hcstat),
+		PROT_READ | PROT_WRITE,
+		MAP_SHARED | MAP_ANONYMOUS, -1, 0)) == MAP_FAILED) {
+
+		perror("mmap");
+		a_hcstat = nullptr;
+	} else
+		a_hcstat = new (v_hcstat) atomic_hcstat{};
 
 	// one liner to fix script (lol)
 	if (argc == 2 && !strcmp(argv[1], "-i")) --argc, ++argv;

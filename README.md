@@ -10,7 +10,7 @@ Zrc is a small scripting language for Linux, BSD, etc. written in C++ (interpret
 
 ## Features left to implement:
 
-- [X] Path hashing/caching (`unhash`, `rehash`)
+- [X] Path hashing/caching (`unhash`, `rehash`, `hashstat`)
 - [X] Cdpath support
 - [X] Home directory config file (`~/.zrc`)
 - [X] Aliases

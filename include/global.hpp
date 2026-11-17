@@ -53,6 +53,53 @@ class zrc_alias;
 class zrc_trap;
 struct token;
 
+#if ATOMIC_LLONG_LOCK_FREE == 2
+	using lock_free_t = unsigned long long;
+#elif ATOMIC_LONG_LOCK_FREE == 2
+	using lock_free_t = unsigned long;
+#elif ATOMIC_INT_LOCK_FREE == 2
+	using lock_free_t = unsigned int;
+#elif ATOMIC_SHORT_LOCK_FREE == 2
+	using lock_free_t = unsigned short;
+#elif ATOMIC_CHAR_LOCK_FREE == 2
+	using lock_free_t = unsigned char;
+#elif ATOMIC_LONG_LOCK_FREE == 1
+	using lock_free_t = unsigned long;
+#elif ATOMIC_INT_LOCK_FREE == 1
+	using lock_free_t = unsigned int;
+#elif ATOMIC_SHORT_LOCK_FREE == 1
+	using lock_free_t = unsigned short;
+#else
+	using lock_free_t = unsigned char;
+#endif
+
+extern struct atomic_hcstat {
+	std::atomic<lock_free_t> hits{};
+	std::atomic<lock_free_t> misses{};
+
+	void good() {
+		if (hits.is_lock_free())
+			hits.fetch_add(1, std::memory_order_relaxed);
+	}
+	void bad() {
+		if (misses.is_lock_free())
+			misses.fetch_add(1, std::memory_order_relaxed);
+	}
+} *a_hcstat;
+extern void *v_hcstat;
+
+inline std::ostream &operator<<(std::ostream &out, const atomic_hcstat& A) {
+	if (A.hits.is_lock_free() && A.misses.is_lock_free()) {
+		auto h = A.hits.load(std::memory_order_relaxed);
+		auto m = A.misses.load(std::memory_order_relaxed);
+		out << h << " hits, " << m << " misses";
+		if (h || m)
+		    out << ", " << (100. * h) / (h + m) << "%";
+		out << '\n';
+	} else out << "Atomic counter not lock free.\n";
+	return out;
+}
+
 // Tables
 extern std::unordered_map<std::string, zrc_obj(*)(int, char**)> builtins;
 extern std::unordered_map<std::string, zrc_fun> functions;

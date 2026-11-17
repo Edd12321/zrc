@@ -293,5 +293,4 @@ expvar BROWSER  firefox
 expvar EDITOR   nvim
 expvar TERMINAL st
 
-> /dev/null rehash
 set status = 0

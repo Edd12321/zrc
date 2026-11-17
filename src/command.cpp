@@ -9,6 +9,7 @@
 #include "global.hpp"
 
 std::vector<std::string> fifo_cleanup;
+
 void do_fifo_cleanup(std::vector<std::string>& fifo_cleanup = ::fifo_cleanup) {
 	for (auto const& it : fifo_cleanup) {
 		unlink((it + "/" FIFO_FILNAME).c_str());
@@ -144,10 +145,26 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 				_exit(std::uint8_t(atoi(found_builtin->second(argc, argv).c_str())));
 			
 			// Try to run as external
-			auto const& map = !hctable.empty() ? hctable : pathwalk();
-			auto found_cmd = map.find(*argv);
-			if (found_cmd != map.end())
-				execv(found_cmd->second.c_str(), argv);
+			if (!hctable.empty()) {
+				auto found_cmd = hctable.find(*argv);
+				if (found_cmd != hctable.end()) {
+					if (a_hcstat)
+						a_hcstat->good();
+					execv(found_cmd->second.c_str(), argv);
+				} else {
+					hctable = pathwalk();
+					if ((found_cmd = hctable.find(*argv)) != hctable.end()) {
+						if (a_hcstat)
+							a_hcstat->bad();
+						execv(found_cmd->second.c_str(), argv);
+					}
+				}
+			} else {
+				auto map = pathwalk();
+				auto found_cmd = map.find(*argv);
+				if (found_cmd != map.end())
+					execv(found_cmd->second.c_str(), argv);
+			}
 			struct stat sb;
 			if (strchr(*argv, '/') && !stat(*argv, &sb))
 				execv(*argv, argv);
@@ -226,14 +243,31 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 		struct stat sb;
 		if (strchr(*argv, '/') && !stat(*argv, &sb))
 			ok = IS_COMMAND_FILE;
-		else {	
-			auto const& map = !hctable.empty() ? hctable : pathwalk();
-			auto found_cmd = map.find(*argv);
-			if (found_cmd != map.end()) {
-				ok = IS_COMMAND_PATH;
-				full_path = found_cmd->second;
-			} else if (functions.find("unknown") != functions.end())
-				ok = IS_UNKNOWN;
+		else {
+			if (!hctable.empty()) {
+				auto found_cmd = hctable.find(*argv);
+				if (found_cmd != hctable.end()) {
+					ok = IS_COMMAND_PATH;
+					full_path = found_cmd->second;
+					if (a_hcstat)
+						a_hcstat->good();
+				} else {
+					hctable = pathwalk();
+					if ((found_cmd = hctable.find(*argv)) != hctable.end()) {
+						ok = IS_COMMAND_PATH;
+						full_path = found_cmd->second;
+						if (a_hcstat)
+							a_hcstat->bad();
+					}
+				}
+			} else {
+				auto map = pathwalk();
+				auto found_cmd = map.find(*argv);
+				if (found_cmd != map.end()) {
+					ok = IS_COMMAND_PATH;
+					full_path = found_cmd->second;
+				}
+			}
 		}
 	}
 	if (ok == IS_UNKNOWN && this->pmode == proc_mode::FG && cmds.size() == 1 && !in_subshell)
@@ -552,16 +586,23 @@ void exec_extern(int argc, char **argv) {
 	argv[argc] = nullptr;
 	auto found_cmd = hctable.find(*argv);
 	if (found_cmd != hctable.end()) {
+		if (a_hcstat != nullptr)
+			a_hcstat->good();
 		if (execv(found_cmd->second.c_str(), argv)) {
 			perror(*argv);
 			_exit(127);
 		}
 	}
-	if (execvp(*argv, argv)) {
-		argv[argc] = largv;
+	auto newtab = pathwalk();
+	found_cmd = newtab.find(*argv);
+	if (found_cmd != newtab.end()) {
+		if (a_hcstat != nullptr)
+			a_hcstat->bad();
+		execv(found_cmd->second.c_str(), argv);
 		perror(*argv);
 		_exit(127);
-	}
+	} else std::cerr << *argv << ": command not found\n";
+	_exit(127);
 }
 
 /** Run arguments as a function, builtin or external command.

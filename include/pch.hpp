@@ -8,6 +8,7 @@
 extern "C" {
 // System headers
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -39,6 +40,7 @@ extern "C" {
 
 // C++ standard headers
 #include <algorithm>
+#include <atomic>
 #include <cstdint>
 #include <cstdlib>
 #include <ctime>
