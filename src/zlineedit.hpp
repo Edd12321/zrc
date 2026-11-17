@@ -26,6 +26,7 @@ protected:
 extern std::ostream tty;
 
 namespace line_edit {
+	extern std::unordered_map<std::string, std::function<bool(std::string&, char)>> actions;
 	extern std::vector<std::string> histfile;
 	extern bool use, in_prompt;
 	void init_term(size_t&, size_t&);

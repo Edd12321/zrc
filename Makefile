@@ -1,4 +1,4 @@
-# vim: set tabstop=4 shiftwidth=4 noexpandtab: -*- tab-width: 4; indent-tabs-mode: t -*-
+# vim: set tabstop=4 shiftwidth=4 noexpandtab nowrap: -*- tab-width: 4; indent-tabs-mode: t; truncate-lines: t; -*-
 .POSIX:
 
 # Do not override these
@@ -114,7 +114,7 @@ src/dispatch.o src/dispatch.do:     src/pch.hpp src/custom_cmd.hpp src/command.h
                                     src/sig.hpp src/vars.hpp src/expr.hpp src/path.hpp src/list.hpp \
                                     src/config.hpp src/syn.hpp src/zlineedit.hpp
 
-src/expr.o src/expr.do:             src/pch.hpp src/global.hpp src/syn.hpp
+src/expr.o src/expr.do:             src/pch.hpp src/expr.hpp src/global.hpp src/syn.hpp
 
 src/list.o src/list.do:             src/pch.hpp src/list.hpp src/syn.hpp
 

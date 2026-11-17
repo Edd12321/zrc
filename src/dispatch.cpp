@@ -555,6 +555,46 @@ COMMAND(help, [<cmd1> <cmd2>...])
 			std::cout << buf << '\n';
 			while (getline(ss, buf))
 				std::cout << '#' << buf << '\n';
+		
+			//
+			// Special commands need special helpstrings
+			//
+			if (!strcmp(argv[i], "expr")) {
+				std::stringstream ss;
+				ss << std::left;
+				
+				ss << "#\n"
+				      "# List of operations:\n"
+				      "# " << std::setw(9)  << "NAME"
+				           << std::setw(6)  << "ARITY"
+				           << std::setw(41) << "STRINGS"
+				           << std::setw(6)  << "ASSOC"
+				           << std::setw(5)  << "PREC"
+						   << "RULE\n";
+				for (auto const& row : expr::doc) {
+					ss << "# ";
+					ss << std::setw(9)  << row.name;
+					ss << std::setw(6)  << row.arity;
+					std::string str;
+					for (auto it = row.strings.begin(); it != row.strings.end(); ++it) {
+						str += *it;
+						if (std::next(it) != row.strings.end())
+							str += ' ';
+					}
+					ss << std::setw(41) << str;
+					ss << std::setw(6)  << row.assoc;
+					ss << std::setw(5)  << row.prec;
+					ss << row.rule << '\n';
+				}
+				std::cout << ss.str();
+			}
+			if (!strcmp(argv[i], "bindkey")) {
+				std::cout << "# \n# List of line editor commands:\n# ";
+				for (auto const& it : line_edit::actions)
+					std::cout << it.first << ' ';
+				std::cout << '\n';
+			}
+			
 			handled_args = true;
 		}
 		if (hctable.find(argv[i]) != hctable.end()) {
