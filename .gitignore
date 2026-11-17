@@ -7,9 +7,9 @@ bin/zrc-debug
 bin/zrc.exe
 bin/zrc-debug.exe
 img/icon/*.o
-src/*.gch
-src/*.pch
-src/*.stamp
+include/*.gch
+include/*.pch
+include/*.stamp
 examples/socket/*.html
 examples/man/.cache
 examples/yt-mp3/*.mp3

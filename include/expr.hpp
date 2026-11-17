@@ -1,6 +1,7 @@
 // vim: set nowrap: -*- truncate-lines: t; -*-
 #ifndef EXPR_HPP
 #define EXPR_HPP
+#include "pch.hpp"
 #include "global.hpp"
 
 namespace expr {
