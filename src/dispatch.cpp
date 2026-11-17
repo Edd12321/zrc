@@ -71,6 +71,7 @@ std::unordered_map<std::string, std::string> help_strs;
 bool in_loop;
 bool in_switch;
 bool in_func;
+bool in_defer;
 
 static inline std::string concat(int argc, char **argv, int i) {
 	std::string ret;
@@ -114,6 +115,10 @@ std::unordered_map<std::string, zrc_obj(*)(int, char**)> builtins = {
 // Commands that only work in certain contexts
 #define CTRLFLOW_HELPER(x, y, help_str, z)         \
   COMMAND(y, help_str)                             \
+    if (in_defer) {                                \
+      std::cerr << "can't " #y " in defer\n";      \
+      return vars::status;                         \
+    }                                              \
     if (!in_##x) {                                 \
       std::cerr << "can't " #y ", not in " #x "\n";\
       return vars::status;                         \

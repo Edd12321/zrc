@@ -76,6 +76,8 @@ zrc_obj eval(std::vector<token> const& wlst) {
 	++eval_level;
 	SCOPE_EXIT {
 		if (eval_level > 1 && eval_defer.find(eval_level) != eval_defer.end()) {
+			extern bool in_defer;
+			block_handler dh(&in_defer);
 			eval(eval_defer.at(eval_level));
 			eval_defer.erase(eval_level);
 		}
