@@ -48,6 +48,8 @@ inline std::unordered_map<std::string, zrc_bind>& kv_bindkey() {
 		{ Sc(CTRL('E')), { "cursor-move-end"  , 0 } },
 		{ Sc(BACKSPACE), { "cursor-erase"     , 0 } },
 		{ Sc(ALTBSPACE), { "cursor-erase"     , 0 } },
+		{     "\033[3~", { "cursor-move-right "
+		                   "cursor-erase"     , 0 } },
 		{ Sc(KEY_RET)  , { "key-return"       , 0 } },
 		{          "\t", { "expand-word"      , 0 } },
 		{            "", { "cursor-insert"    , 0 } },

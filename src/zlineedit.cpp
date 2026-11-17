@@ -154,7 +154,7 @@ namespace line_edit {
   cursor_pos = buf.length()       \
 
 
-	std::unordered_map<std::string, std::function<bool(std::string&, char c)> > actions = {
+	std::unordered_map<std::string, std::function<bool(std::string&, char c)>> actions = {
 		// Moving through command history
 		ACTION(hist-go-down) ARROW_MACRO((histpos < histmax) ? histpos+1 : 0) END
 		ACTION(hist-go-up)   ARROW_MACRO((histpos > 0) ? histpos-1 : histmax) END
@@ -164,13 +164,13 @@ namespace line_edit {
 			if (cursor_pos) {
 				--cursor_pos;
 				CURSOR_BWD(1);
-			}
+			} else tty << '\a'
 		END
 		ACTION(cursor-move-right)
 			if (cursor_pos < buf.length()) {
 				++cursor_pos;
 				CURSOR_FWD(1);
-			}
+			} else tty << '\a'
 		END
 		ACTION(cursor-move-begin)
 			while (cursor_pos) {
@@ -192,7 +192,7 @@ namespace line_edit {
 				buf.erase(--cursor_pos, 1);
 				tty << buf << ' ';
 				CURSOR_BWD(len-cursor_pos);
-			}
+			} else tty << '\a'
 		END
 		ACTION(cursor-insert)
 			if (isspace(c)) first_word = true;
@@ -264,17 +264,33 @@ static inline bool zlineedit(std::string& buf) {
 	auto exec_act = [&]() {
 		if (s.empty())
 			return false;
-		if (kv_bindkey().find(s) == kv_bindkey().end())
+		auto fnd = kv_bindkey().find(s);
+		if (fnd == kv_bindkey().end()) {
 			s.clear();
-		if (kv_bindkey()[s].zrc_cmd) {
+			fnd = kv_bindkey().find(s);
+			if (fnd == kv_bindkey().end())
+				kv_bindkey()[""] = {"cursor-insert", 0};
+		}
+		auto const &cmds = fnd->second;
+		if (cmds.zrc_cmd) {
 			raw.toggle();
-			eval(kv_bindkey()[s].cmd);
+			eval(cmds.cmd);
 			raw.toggle();
-		} else if (actions.find(kv_bindkey()[s].cmd) != actions.end())
-			return actions[kv_bindkey()[s].cmd](buf, c);
-		else
-			std::cerr << "syntax error: Invalid line editor command " << kv_bindkey()[s].cmd << std::endl;
-		return false;
+			return false;
+		} else {
+			std::stringstream ss{cmds.cmd};
+			std::string buff;
+			bool ret = false;
+			while (ss >> buff) {
+				auto fnd2 = actions.find(buff);
+				if (fnd2 == actions.end()) {
+					std::cerr << "syntax error: Invalid line editor command "
+					          << buff << std::endl;
+					ret = false;
+				} else ret = fnd2->second(buf, c);
+			}
+			return ret;
+		}
 	};
 	
 	// Check if the keyboard was hit
