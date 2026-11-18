@@ -258,7 +258,8 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 						full_path = found_cmd->second;
 						if (a_hcstat)
 							a_hcstat->bad();
-					}
+					} else if (functions.find(*argv) != functions.end())
+						ok = IS_UNKNOWN;
 				}
 			} else {
 				auto map = pathwalk();
@@ -266,7 +267,8 @@ bool pipeline::execute_act(pplexec_flags flags /* = NORMAL */) {
 				if (found_cmd != map.end()) {
 					ok = IS_COMMAND_PATH;
 					full_path = found_cmd->second;
-				}
+				} else if (functions.find(*argv) != functions.end())
+					ok = IS_UNKNOWN;
 			}
 		}
 	}
