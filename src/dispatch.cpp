@@ -1532,7 +1532,7 @@ END
  ****************************************/
 
 // Strings
-COMMAND(str, <string> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
+COMMAND(str, <string> > | >= | == | != | =~ | !~ | <\x3d> | <= | < <p> \n
              <string> len \n
              <string> <index> \n
              <string> + <how-much> \n
@@ -1548,15 +1548,19 @@ COMMAND(str, <string> > | >= | == | != | =~ | <\x3d> | <= | < <p> \n
 	STROP(<\x3d>,) // <=>, to make clang++ shut up
 	
 	// Regex comparison
-	if (argc == 4 && !strcmp(argv[2], "=~")) {
+	bool eqtilde = !strcmp(argv[2], "=~");
+	bool extilde = !strcmp(argv[2], "!~");
+	if (argc == 4 && (eqtilde || extilde)) {
 		regex_t rexp;
 		const char *pattern = argv[3], *txt = argv[1];
 		regmatch_t pmatch;
 		if (regcomp(&rexp, pattern, REG_EXTENDED))
 			SYNTAX_ERROR
-		auto ret_val = !regexec(&rexp, txt, 1, &pmatch, 0) ? "true" : "false";
+		bool regret = !regexec(&rexp, txt, 1, &pmatch, 0);
+		if (extilde)
+			regret = !regret;
 		regfree(&rexp);
-		return ret_val;
+		return regret ? "true" : "false";
 	}
 
 	// Return string length
