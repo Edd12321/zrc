@@ -88,18 +88,6 @@ extern struct atomic_hcstat {
 } *a_hcstat;
 extern void *v_hcstat;
 
-inline std::ostream &operator<<(std::ostream &out, const atomic_hcstat& A) {
-	if (A.hits.is_lock_free() && A.misses.is_lock_free()) {
-		auto h = A.hits.load(std::memory_order_relaxed);
-		auto m = A.misses.load(std::memory_order_relaxed);
-		out << h << " hits, " << m << " misses";
-		if (h || m)
-		    out << ", " << (100. * h) / (h + m) << "%";
-		out << '\n';
-	} else out << "Atomic counter not lock free.\n";
-	return out;
-}
-
 // Tables
 extern std::unordered_map<std::string, zrc_obj(*)(int, char**)> builtins;
 extern std::unordered_map<std::string, zrc_fun> functions;

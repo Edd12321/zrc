@@ -367,10 +367,28 @@ COMMAND(unhash,)
 END
 COMMAND(hashstat,)
 	if (a_hcstat == nullptr) {
-		std::cerr << "Failed to initialise counter\n";
+		std::cerr << "hashstat: failed to initialise counter\n";
 		return "1";
 	}
-	std::cout << *a_hcstat
+	auto bc = hctable.bucket_count();
+	std::cout << bc << " buckets of ~";
+	long double s = 0;
+	for (size_t i = 0; i < bc; ++i)
+		s += hctable.bucket_size(i);
+	std::cout << 8 * s * sizeof(decltype(hctable)::value_type) / bc
+	          << " bits each\n";
+
+	if (a_hcstat->hits.is_lock_free() && a_hcstat->misses.is_lock_free()) {
+		auto h = a_hcstat->hits.load(std::memory_order_relaxed);
+		auto m = a_hcstat->misses.load(std::memory_order_relaxed);
+		std::cout << h << " hits, " << m << " misses";
+		if (h || m)
+		    std::cout << ", " << (100. * h) / (h + m) << "%";
+		std::cout << '\n';
+	} else {
+		std::cerr << "hashstat: atomic counter not lock free\n";
+		return "2";
+	}
 END
 
 // Prioritise builtins
